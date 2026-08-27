@@ -82,7 +82,7 @@ export async function downloadSkillFromGitHub(
       await ensureParentDir(skillMdPath);
       await Deno.writeTextFile(skillMdPath, skillContent);
     } else {
-      // If no SKILL.md found on root, create a default template so the skill is recognized
+      // Create a default SKILL.md template so the skill is discoverable
       const defaultSkillMd = `---
 name: ${skillSlug}
 description: Skill installed from ${repoInfo.owner}/${repoInfo.repo}
@@ -121,12 +121,26 @@ Installed from https://github.com/${repoInfo.owner}/${repoInfo.repo}
 }
 
 /**
- * Uninstalls a skill from the local filesystem.
+ * Uninstalls a skill from the local filesystem and cleans up any real directory if symlinked.
  */
 export async function uninstallSkill(
   skillPath: string
 ): Promise<UninstallResult> {
   try {
+    try {
+      const lstat = await Deno.lstat(skillPath);
+      if (lstat.isSymlink) {
+        const real = await Deno.realPath(skillPath);
+        await Deno.remove(skillPath);
+        if (real && real !== skillPath) {
+          await Deno.remove(real, { recursive: true }).catch(() => {});
+        }
+        return { ok: true };
+      }
+    } catch {
+      // Non-fatal lstat check
+    }
+
     await Deno.remove(skillPath, { recursive: true });
     return { ok: true };
   } catch (err: unknown) {

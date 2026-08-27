@@ -34,7 +34,7 @@ export function App() {
       if (data.length > 0) {
         setSelectedSkill((prev) => {
           if (!prev) return data[0];
-          const match = data.find((s) => s.id === prev.id);
+          const match = data.find((s) => s.id === prev.id || s.path === prev.path);
           return match || data[0];
         });
       } else {
@@ -92,7 +92,10 @@ export function App() {
 
   const handleUninstallSkill = async (skill: Skill) => {
     try {
-      await api.uninstallSkill(skill.path);
+      const res = await api.uninstallSkill(skill.path);
+      if (res.ok) {
+        setSelectedSkill(null);
+      }
       await loadSkills();
     } catch (err) {
       console.error("Uninstall failed:", err);

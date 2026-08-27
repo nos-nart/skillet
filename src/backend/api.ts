@@ -10,8 +10,13 @@ import { WorkspaceManager } from "./workspace.ts";
 import { Skill, Workspace, SkillToggleRequest, AgentId } from "../types/skills.ts";
 import { SUPPORTED_AGENTS, getAgentGlobalPath } from "./agents.ts";
 
-const homeDir = Deno.env.get("HOME") || "/tmp";
-const workspaceManager = new WorkspaceManager();
+export interface ApiHandlerOptions {
+  workspaceManager?: WorkspaceManager;
+  homeDir?: string;
+}
+
+const defaultHomeDir = Deno.env.get("HOME") || "/tmp";
+const defaultWorkspaceManager = new WorkspaceManager();
 
 interface RawPayload {
   path?: any;
@@ -90,19 +95,30 @@ function parseWorkspaceRequest(raw: RawPayload): Workspace | null {
   };
 }
 
-export async function handleApiRequest(req: Request): Promise<Response> {
+export async function handleApiRequest(
+  req: Request,
+  options: ApiHandlerOptions = {}
+): Promise<Response> {
   const url = new URL(req.url);
+  const home = options.homeDir || defaultHomeDir;
+  const wm = options.workspaceManager || defaultWorkspaceManager;
 
   try {
     // GET /api/skills
     if (url.pathname === "/api/skills" && req.method === "GET") {
       const allSkills: Skill[] = [];
-      const workspaces = await workspaceManager.getWorkspaces();
+      const seenPaths = new Set<string>();
+      const workspaces = await wm.getWorkspaces();
 
       for (const agent of SUPPORTED_AGENTS) {
-        const globalPath = getAgentGlobalPath(agent.id, homeDir);
+        const globalPath = getAgentGlobalPath(agent.id, home);
         const agentSkills = await scanDirectoryForSkills(globalPath, "global", agent.id);
-        allSkills.push(...agentSkills);
+        for (const skill of agentSkills) {
+          if (!seenPaths.has(skill.path)) {
+            seenPaths.add(skill.path);
+            allSkills.push(skill);
+          }
+        }
       }
 
       // Check which workspaces have each skill enabled
@@ -141,7 +157,7 @@ export async function handleApiRequest(req: Request): Promise<Response> {
 
     // GET /api/workspaces
     if (url.pathname === "/api/workspaces" && req.method === "GET") {
-      const workspaces = await workspaceManager.getWorkspaces();
+      const workspaces = await wm.getWorkspaces();
       return Response.json({ workspaces });
     }
 
@@ -161,8 +177,8 @@ export async function handleApiRequest(req: Request): Promise<Response> {
           { status: 400 }
         );
       }
-      await workspaceManager.addWorkspace(ws);
-      return Response.json({ ok: true });
+      await wm.addWorkspace(ws);
+      return Response.json({ ok: true, workspace: ws });
     }
 
     // DELETE /api/workspaces
@@ -173,7 +189,7 @@ export async function handleApiRequest(req: Request): Promise<Response> {
       if (!id || !id.trim()) {
         return Response.json({ ok: false, error: "Missing required 'id' parameter" }, { status: 400 });
       }
-      await workspaceManager.removeWorkspace(id.trim());
+      await wm.removeWorkspace(id.trim());
       return Response.json({ ok: true });
     }
 

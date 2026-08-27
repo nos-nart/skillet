@@ -129,18 +129,19 @@ export function Sidebar({
 
       {/* Workspace Selector */}
       <div className="p-3.5 space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <label className="text-xs uppercase font-bold tracking-wider text-zinc-500 block">
+        <div className="flex items-center justify-between px-1 h-5">
+          <span className="text-[11px] uppercase font-bold tracking-wider text-zinc-500 leading-none flex items-center">
             Scope / Workspace
-          </label>
+          </span>
           <button
+            type="button"
             onClick={handlePickFolder}
             disabled={isPickingFolder}
-            className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 flex items-center gap-1 transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
+            className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 flex items-center gap-1.5 leading-none transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
             title="Choose workspace folder from Finder"
           >
-            <FolderSimplePlus weight="light" className="w-4 h-4" />
-            <span>{isPickingFolder ? "Opening..." : "Add Folder"}</span>
+            <FolderSimplePlus weight="light" className="w-4 h-4 shrink-0" />
+            <span className="leading-none">{isPickingFolder ? "Opening..." : "Add Folder"}</span>
           </button>
         </div>
 

@@ -54,6 +54,17 @@ html.dark .shiki span {
   color: var(--shiki-dark) !important;
 }
 
+/* Code Block Interior Padding & Appearance */
+.code-block-inner {
+  padding: 1.25rem !important; /* 20px padding */
+}
+
+.code-block pre {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
 /* Micro-interaction Animation Utilities */
 .press-scale {
   transition: transform 140ms var(--ease-out-strong);

@@ -3,6 +3,7 @@ import { parseMarkdown, type MarkdownDocument as MarkdownDocType } from "comark"
 import shiki from "comark/plugins/shiki";
 import { MarkdownDocument } from "@comark/react";
 import { Copy, Check } from "@phosphor-icons/react";
+import { cn } from "../lib/utils.ts";
 
 interface MarkdownViewerProps {
   content: string;
@@ -11,6 +12,7 @@ interface MarkdownViewerProps {
 function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { language?: string }) {
   const [copied, setCopied] = useState(false);
   const preRef = useRef<HTMLPreElement>(null);
+  const { className, style, language, ...rest } = props;
 
   const handleCopy = () => {
     if (preRef.current) {
@@ -23,8 +25,8 @@ function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { langua
 
   return (
     <div className="code-block my-5 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800/90 bg-zinc-100/80 dark:bg-zinc-950">
-      <div className="flex items-center justify-between px-4.5 py-2 bg-zinc-200/60 dark:bg-zinc-900/90 border-b border-zinc-200 dark:border-zinc-800 text-[11.5px] font-mono font-medium text-zinc-600 dark:text-zinc-400">
-        <span className="tracking-wide font-semibold uppercase text-[10.5px] text-zinc-500 dark:text-zinc-400">{props.language || "code"}</span>
+      <div className="flex items-center justify-between px-4.5 py-2 bg-zinc-200/60 dark:bg-zinc-900/90 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-mono font-medium text-zinc-600 dark:text-zinc-400">
+        <span className="tracking-wider font-semibold uppercase text-[10.5px] text-zinc-500 dark:text-zinc-400">{language || "code"}</span>
         <button
           type="button"
           onClick={handleCopy}
@@ -44,11 +46,14 @@ function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { langua
           )}
         </button>
       </div>
-      <pre
-        ref={preRef}
-        className="p-5 text-[12px] font-mono overflow-x-auto text-zinc-900 dark:text-zinc-100 leading-[1.7] font-normal"
-        {...props}
-      />
+      <div className="code-block-inner p-5 overflow-x-auto">
+        <pre
+          ref={preRef}
+          className={cn("text-[12px] font-mono text-zinc-900 dark:text-zinc-100 leading-[1.7] font-normal block", className)}
+          style={style}
+          {...rest}
+        />
+      </div>
     </div>
   );
 }

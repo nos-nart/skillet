@@ -168,7 +168,7 @@ export function SkillList({
                       <button
                         key={skill.id}
                         onClick={() => onSelectSkill(skill)}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-150 active:scale-[0.985] flex items-center justify-between group cursor-pointer ${
+                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors duration-100 flex items-center justify-between group cursor-pointer ${
                           isSelected
                             ? "bg-orange-500/10 text-orange-600 dark:text-orange-200 border border-orange-500/30"
                             : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -189,8 +189,8 @@ export function SkillList({
                         </div>
                         <CaretRight
                           weight="light"
-                          className={`w-4 h-4 transition-transform duration-150 shrink-0 ${
-                            isSelected ? "text-orange-500 translate-x-0.5" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 group-hover:translate-x-0.5"
+                          className={`w-4 h-4 shrink-0 transition-colors ${
+                            isSelected ? "text-orange-500" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
                           }`}
                         />
                       </button>
