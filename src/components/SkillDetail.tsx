@@ -43,12 +43,12 @@ export function SkillDetail({
 
   if (!skill) {
     return (
-      <main className="flex-1 flex flex-col items-center justify-center text-zinc-600 h-full p-6 text-center bg-zinc-950 select-none">
-        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800/80 flex items-center justify-center mb-3 text-zinc-700">
+      <main className="w-full h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none">
+        <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center mb-3 text-zinc-400 dark:text-zinc-600">
           <Sparkle weight="light" className="w-6 h-6" />
         </div>
-        <h3 className="text-xs font-semibold text-zinc-400">No skill selected</h3>
-        <p className="text-[11px] text-zinc-600 mt-1 max-w-xs">
+        <h3 className="text-xs font-semibold text-zinc-700 dark:text-zinc-400">No skill selected</h3>
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-600 mt-1 max-w-xs">
           Select a skill from the center list to view instructions, tools, and toggle per-repository activation.
         </p>
       </main>
@@ -91,17 +91,17 @@ export function SkillDetail({
   };
 
   return (
-    <main className="flex-1 bg-zinc-950 flex flex-col h-full overflow-y-auto">
+    <main className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col overflow-y-auto">
       {/* Header Banner */}
-      <div className="p-6 border-b border-zinc-800/80 bg-zinc-900/20 flex items-start justify-between shrink-0">
+      <div className="p-6 border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-900/20 flex items-start justify-between shrink-0">
         <div className="space-y-2 max-w-2xl">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700/50 shadow-inner">
-              <Sparkle weight="light" className="w-6 h-6 text-orange-400" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 border border-zinc-300 dark:border-zinc-700/50 shadow-inner">
+              <Sparkle weight="light" className="w-6 h-6 text-orange-500" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base font-bold text-zinc-100">{skill.name}</h2>
+                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">{skill.name}</h2>
                 <Badge variant={skill.scope === "global" ? "secondary" : "default"}>
                   {skill.scope === "global" ? "Global" : "Project"}
                 </Badge>
@@ -116,7 +116,7 @@ export function SkillDetail({
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-zinc-400 mt-1 leading-normal">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-normal">
                 {skill.metadata.description || "No description provided."}
               </p>
             </div>
@@ -169,22 +169,22 @@ export function SkillDetail({
       {/* Content Area */}
       <div className="p-6 space-y-6 flex-1 max-w-4xl">
         {/* Metadata Grid */}
-        <Card className="bg-zinc-900/50">
+        <Card className="bg-zinc-50/80 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800">
           <CardContent className="p-4 grid grid-cols-3 gap-3 text-xs">
             <div>
-              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <span className="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Source Package
               </span>
-              <span className="text-zinc-200 font-mono text-xs truncate block">{skill.packageName}</span>
+              <span className="text-zinc-800 dark:text-zinc-200 font-mono text-xs truncate block">{skill.packageName}</span>
             </div>
             <div>
-              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <span className="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Agent Target
               </span>
-              <span className="text-zinc-200 capitalize font-medium">{skill.agent}</span>
+              <span className="text-zinc-800 dark:text-zinc-200 capitalize font-medium">{skill.agent}</span>
             </div>
             <div>
-              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <span className="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Provider
               </span>
               <Badge variant={skill.provider === "github" ? "accent" : "secondary"} className="capitalize">
@@ -193,10 +193,10 @@ export function SkillDetail({
             </div>
 
             <div>
-              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <span className="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Tools Used
               </span>
-              <span className="text-zinc-300 text-xs font-mono">
+              <span className="text-zinc-700 dark:text-zinc-300 text-xs font-mono">
                 {skill.metadata.tools && skill.metadata.tools.length > 0
                   ? skill.metadata.tools.join(", ")
                   : "None"}
@@ -204,7 +204,7 @@ export function SkillDetail({
             </div>
 
             <div className="col-span-2">
-              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <span className="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Source Repository / URL
               </span>
               {skill.sourceUrl ? (
@@ -212,7 +212,7 @@ export function SkillDetail({
                   href={skill.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-orange-400 hover:text-orange-300 font-mono text-[11px] truncate flex items-center gap-1"
+                  className="text-orange-600 dark:text-orange-400 hover:text-orange-500 font-mono text-[11px] truncate flex items-center gap-1"
                 >
                   <span className="truncate">{skill.sourceUrl}</span>
                   <ArrowSquareOut weight="light" className="w-3 h-3 shrink-0" />
@@ -222,11 +222,11 @@ export function SkillDetail({
               )}
             </div>
 
-            <div className="col-span-3 pt-2 border-t border-zinc-800/60">
-              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+            <div className="col-span-3 pt-2 border-t border-zinc-200 dark:border-zinc-800/60">
+              <span className="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Path on Disk
               </span>
-              <span className="text-zinc-400 font-mono text-[11px] truncate block select-all">
+              <span className="text-zinc-600 dark:text-zinc-400 font-mono text-[11px] truncate block select-all">
                 {skill.path}
               </span>
             </div>
@@ -236,31 +236,30 @@ export function SkillDetail({
         {/* Per-Repository Switchboard */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
-              <GitBranch weight="light" className="w-3.5 h-3.5 text-orange-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+              <GitBranch weight="light" className="w-3.5 h-3.5 text-orange-500" />
               Per-Repository Activation Switchboard
             </h3>
             <span className="text-[11px] text-zinc-500">Symlinks managed automatically</span>
           </div>
 
-          <div className="border border-zinc-800 rounded-xl overflow-hidden divide-y divide-zinc-800/80 bg-zinc-900/30">
+          <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/30">
             {workspaces.map((ws) => {
               const isGlobal = ws.id === "global";
-              // Check live switchboard status from backend or local overrides
               const isChecked = toggleState[ws.id] ?? (isGlobal ? true : (skill.enabledInWorkspaces?.includes(ws.id) ?? false));
 
               return (
                 <div
                   key={ws.id}
-                  className="px-4 py-3 flex items-center justify-between hover:bg-zinc-900/60 transition"
+                  className="px-4 py-3 flex items-center justify-between hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60 transition"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-lg ${isGlobal ? "bg-amber-500/10 text-amber-400" : "bg-sky-500/10 text-sky-400"}`}>
+                    <div className={`p-1.5 rounded-lg ${isGlobal ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-sky-500/10 text-sky-600 dark:text-sky-400"}`}>
                       <GitBranch weight="light" className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-zinc-200">{ws.name}</span>
+                        <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{ws.name}</span>
                         {isGlobal && (
                           <Badge variant="secondary" className="text-[9px] px-1.5 uppercase font-mono font-bold">
                             All Repos
@@ -293,13 +292,13 @@ export function SkillDetail({
         {/* SKILL.md Markdown Preview */}
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
-              <Terminal weight="light" className="w-3.5 h-3.5 text-emerald-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+              <Terminal weight="light" className="w-3.5 h-3.5 text-emerald-500" />
               SKILL.md Documentation & Prompts
             </h3>
-            <span className="text-[11px] font-mono text-zinc-500">Live Preview</span>
+            <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">Live Preview</span>
           </div>
-          <div className="bg-zinc-900/30 border border-zinc-800/80 rounded-xl p-6 shadow-inner">
+          <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-6 shadow-xs">
             <MarkdownViewer content={skill.rawMarkdown || "# No body content in SKILL.md"} />
           </div>
         </div>

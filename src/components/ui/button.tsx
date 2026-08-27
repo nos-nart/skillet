@@ -9,16 +9,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-orange-500 text-zinc-950 shadow hover:bg-orange-400 font-semibold",
+          "bg-orange-500 text-white dark:text-zinc-950 shadow-xs hover:bg-orange-600 dark:hover:bg-orange-400 font-semibold",
         destructive:
-          "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20",
+          "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20",
         outline:
-          "border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100",
+          "border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100",
         secondary:
-          "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 border border-zinc-700/50",
+          "bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700/50",
         ghost:
-          "text-zinc-400 hover:bg-zinc-850 hover:text-zinc-200",
-        link: "text-orange-400 underline-offset-4 hover:underline",
+          "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200",
+        link: "text-orange-600 dark:text-orange-400 underline-offset-4 hover:underline",
       },
       size: {
         default: "h-8 px-3 py-1.5",

@@ -13,11 +13,11 @@ export function AgentsTab() {
   }, []);
 
   return (
-    <main className="flex-1 p-8 bg-zinc-950 overflow-y-auto">
+    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto">
       <div className="max-w-3xl space-y-6">
         <div>
-          <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
-            <Robot weight="light" className="w-5 h-5 text-sky-400" />
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <Robot weight="light" className="w-5 h-5 text-sky-500" />
             Detected Coding Agents
           </h2>
           <p className="text-xs text-zinc-500 mt-1">
@@ -25,14 +25,14 @@ export function AgentsTab() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {agents.map((agent) => (
-            <Card key={agent.id} className="bg-zinc-900/50">
+            <Card key={agent.id} className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800">
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-base">{agent.icon}</span>
-                    <span className="text-sm font-semibold text-zinc-200">{agent.name}</span>
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">{agent.name}</span>
                   </div>
                   <Badge variant={agent.status === "Active" ? "success" : "secondary"}>
                     {agent.status}

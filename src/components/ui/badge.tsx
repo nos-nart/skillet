@@ -8,17 +8,17 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-orange-500 text-zinc-950 shadow hover:bg-orange-500/80",
+          "border-transparent bg-orange-500 text-white dark:text-zinc-950 shadow-xs hover:bg-orange-600 dark:hover:bg-orange-400",
         secondary:
-          "border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-800/80",
+          "border-zinc-200 dark:border-zinc-700 bg-zinc-200/80 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300 hover:bg-zinc-300/80 dark:hover:bg-zinc-800/80",
         destructive:
-          "border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20",
-        outline: "text-zinc-300 border-zinc-700",
+          "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20",
+        outline: "text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700",
         warning:
-          "border-amber-500/30 bg-amber-500/15 text-amber-300",
-        info: "border-sky-500/30 bg-sky-500/15 text-sky-300",
-        success: "border-emerald-500/30 bg-emerald-500/15 text-emerald-300",
-        accent: "border-orange-500/20 bg-orange-500/10 text-orange-300",
+          "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300",
+        info: "border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300",
+        success: "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+        accent: "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-300",
       },
     },
     defaultVariants: {
