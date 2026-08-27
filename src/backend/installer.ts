@@ -43,10 +43,19 @@ export async function downloadSkillFromGitHub(
     return { ok: false, error: "Invalid GitHub repository format" };
   }
 
+  // Intelligently determine the best global directory based on owner/repo name
+  let globalDir = ".skills";
+  const repoStr = `${repoInfo.owner}/${repoInfo.repo}`.toLowerCase();
+  if (repoStr.includes("cursor")) globalDir = ".cursor/skills";
+  else if (repoStr.includes("gemini") || repoStr.includes("antigravity")) globalDir = ".gemini/config/skills";
+  else if (repoStr.includes("claude")) globalDir = ".claude/skills";
+  else if (repoStr.includes("windsurf")) globalDir = ".codeium/windsurf/skills";
+  else if (repoStr.includes("copilot")) globalDir = ".github/skills";
+
   // Use explicit skillName, or the subdirectory name, or the repo name
   const pathParts = repoInfo.path?.split("/").filter(Boolean) || [];
   const skillSlug = options.skillName || pathParts.pop() || repoInfo.repo;
-  const targetDir = options.targetDir || `${home}/.skills/${repoInfo.owner}/${skillSlug}`;
+  const targetDir = options.targetDir || `${home}/${globalDir}/${repoInfo.owner}/${skillSlug}`;
   
   const repoUrl = `${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/tree/main/${repoInfo.path}` : ""}`;
 
