@@ -1,10 +1,56 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { parseMarkdown, type MarkdownDocument as MarkdownDocType } from "comark";
 import shiki from "comark/plugins/shiki";
 import { MarkdownDocument } from "@comark/react";
+import { Copy, Check } from "@phosphor-icons/react";
 
 interface MarkdownViewerProps {
   content: string;
+}
+
+function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { language?: string }) {
+  const [copied, setCopied] = useState(false);
+  const preRef = useRef<HTMLPreElement>(null);
+
+  const handleCopy = () => {
+    if (preRef.current) {
+      const text = preRef.current.innerText || "";
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="code-block my-4 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800/90 bg-zinc-100/80 dark:bg-zinc-950">
+      <div className="flex items-center justify-between px-3.5 py-1.5 bg-zinc-200/60 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400">
+        <span>{props.language || "code"}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors cursor-pointer px-2 py-0.5 rounded-md hover:bg-zinc-300/50 dark:hover:bg-zinc-800"
+          title="Copy code"
+        >
+          {copied ? (
+            <>
+              <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400 font-sans">Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy weight="light" className="w-3.5 h-3.5" />
+              <span className="font-sans">Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      <pre
+        ref={preRef}
+        className="p-4 text-xs font-mono overflow-x-auto text-zinc-900 dark:text-zinc-100 leading-relaxed font-normal"
+        {...props}
+      />
+    </div>
+  );
 }
 
 const customComponents = {
@@ -59,20 +105,11 @@ const customComponents = {
       {...props}
     />
   ),
-  pre: (props: React.HTMLAttributes<HTMLPreElement> & { language?: string }) => {
-    return (
-      <div className="code-block my-4 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/80">
-        <div className="flex items-center justify-between px-3.5 py-1.5 bg-zinc-200/80 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400">
-          <span>{props.language || "code"}</span>
-        </div>
-        <pre className="p-3.5 text-xs font-mono overflow-x-auto text-zinc-800 dark:text-zinc-200 leading-relaxed" {...props} />
-      </div>
-    );
-  },
+  pre: CodeBlockWrapper,
   code: (props: React.HTMLAttributes<HTMLElement>) => {
     return (
       <code
-        className="font-mono text-xs px-1.5 py-0.5 rounded-md bg-zinc-200 dark:bg-zinc-800/90 text-orange-600 dark:text-orange-300 border border-zinc-300 dark:border-zinc-700/50"
+        className="font-mono text-xs px-1.5 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-800/90 text-orange-600 dark:text-orange-300 border border-zinc-300 dark:border-zinc-700/50"
         {...props}
       />
     );

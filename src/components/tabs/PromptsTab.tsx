@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useDeferredValue } from "react";
 import {
   Terminal,
   MagnifyingGlass,
@@ -18,6 +18,7 @@ interface PromptsTabProps {
 
 export function PromptsTab({ skills }: PromptsTabProps) {
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
   const [copiedTrigger, setCopiedTrigger] = useState<string | null>(null);
 
   const copyToClipboard = (trigger: string) => {
@@ -29,12 +30,13 @@ export function PromptsTab({ skills }: PromptsTabProps) {
   };
 
   const filtered = skills.filter((s) => {
-    const q = search.toLowerCase();
-    const trigger = (s.metadata.trigger || `/${s.slug}`).toLowerCase();
-    const name = s.name.toLowerCase();
-    const desc = (s.metadata.description || "").toLowerCase();
-    const tools = (s.metadata.tools || []).join(" ").toLowerCase();
-    const agent = s.agent.toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
+    if (!q) return true;
+    const trigger = (s.metadata?.trigger || `/${s.slug}`).toLowerCase();
+    const name = (s.name || "").toLowerCase();
+    const desc = (s.metadata?.description || "").toLowerCase();
+    const tools = (s.metadata?.tools || []).join(" ").toLowerCase();
+    const agent = (s.agent || "").toLowerCase();
     return (
       trigger.includes(q) ||
       name.includes(q) ||

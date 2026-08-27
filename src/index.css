@@ -1,12 +1,18 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
-  * {
-    border-color: rgba(255, 255, 255, 0.1);
+  :root {
+    color-scheme: light dark;
   }
 
-  html.light * {
-    border-color: rgba(0, 0, 0, 0.1);
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
   }
 
   ::-webkit-scrollbar {
@@ -17,29 +23,16 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(120, 120, 120, 0.2);
+    background: rgba(120, 120, 120, 0.25);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(120, 120, 120, 0.4);
+    background: rgba(120, 120, 120, 0.45);
   }
 }
 
-/* Shiki Dual-Theme Support */
+/* Shiki Dual-Theme Token Support */
 html.dark .shiki,
 html.dark .shiki span {
   color: var(--shiki-dark) !important;
-  background-color: transparent !important;
-  font-style: var(--shiki-dark-font-style) !important;
-  font-weight: var(--shiki-dark-font-weight) !important;
-  text-decoration: var(--shiki-dark-text-decoration) !important;
-}
-
-html.light .shiki,
-html.light .shiki span {
-  color: var(--shiki-light) !important;
-  background-color: transparent !important;
-  font-style: var(--shiki-light-font-style) !important;
-  font-weight: var(--shiki-light-font-weight) !important;
-  text-decoration: var(--shiki-light-text-decoration) !important;
 }

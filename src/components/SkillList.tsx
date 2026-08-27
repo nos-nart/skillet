@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useDeferredValue } from "react";
 import {
   MagnifyingGlass,
   ArrowsClockwise,
@@ -36,14 +36,28 @@ export function SkillList({
   isCheckingUpdates,
 }: SkillListProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredQuery = useDeferredValue(searchQuery);
 
-  const filteredSkills = skills.filter((s) =>
-    (s.name && s.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (s.slug && s.slug.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (s.packageName && s.packageName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (s.metadata?.trigger && s.metadata.trigger.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (s.metadata?.description && s.metadata.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredSkills = skills.filter((s) => {
+    const q = deferredQuery.trim().toLowerCase();
+    if (!q) return true;
+    const name = (s.name || "").toLowerCase();
+    const slug = (s.slug || "").toLowerCase();
+    const pkg = (s.packageName || "").toLowerCase();
+    const trigger = (s.metadata?.trigger || `/${s.slug || ""}`).toLowerCase();
+    const desc = (s.metadata?.description || "").toLowerCase();
+    const tools = (s.metadata?.tools || []).join(" ").toLowerCase();
+    const agent = (s.agent || "").toLowerCase();
+    return (
+      name.includes(q) ||
+      slug.includes(q) ||
+      pkg.includes(q) ||
+      trigger.includes(q) ||
+      desc.includes(q) ||
+      tools.includes(q) ||
+      agent.includes(q)
+    );
+  });
 
   // Group by package
   const grouped = filteredSkills.reduce<Record<string, Skill[]>>((acc, skill) => {
