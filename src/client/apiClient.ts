@@ -82,6 +82,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(options),
     });
+    // SAFETY: Endpoint returns JSON matching InstallResult discriminated union
     const data = (await res.json()) as InstallResult;
     return data;
   },
@@ -92,6 +93,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path }),
     });
+    // SAFETY: Endpoint returns JSON matching UninstallResult discriminated union
     const data = (await res.json()) as UninstallResult;
     return data;
   },

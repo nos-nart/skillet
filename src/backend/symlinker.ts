@@ -9,14 +9,14 @@ export { getAgentRelPath };
  * or illegal characters that could escape the intended target directory.
  */
 export function validateSafeSlug(slug: string): boolean {
-  if (!slug || typeof slug !== "string") return false;
+  if (!slug) return false;
   const trimmed = slug.trim();
   if (trimmed === "" || trimmed === "." || trimmed === "..") return false;
   if (trimmed.includes("..") || trimmed.includes("/") || trimmed.includes("\\") || trimmed.includes("\0")) {
     return false;
   }
   // Allow letters, numbers, hyphens, underscores, dots
-  return /^[a-zA-Z0-9_\-\.]+$/.test(trimmed);
+  return /^[a-zA-Z0-9_.-]+$/.test(trimmed);
 }
 
 function resolveSafeTarget(workspacePath: string, agent: AgentId, skillSlug: string): string | null {

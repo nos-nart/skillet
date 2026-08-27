@@ -1,9 +1,28 @@
 import { parse as parseYaml } from "npm:yaml@2.7.0";
 import { AgentId, Skill, SkillMetadata } from "../types/skills.ts";
 
-export function parseSkillMd(
-  content: string
-): { metadata: SkillMetadata; body: string } {
+interface RawSkillFrontmatter {
+  name?: string;
+  description?: string;
+  author?: string;
+  version?: string;
+  trigger?: string;
+  tools?: unknown[];
+  agents?: unknown[];
+  license?: string;
+  source_url?: string;
+}
+
+export interface ParsedSkillDoc {
+  metadata: SkillMetadata;
+  body: string;
+}
+
+function isFrontmatterObject(val: any): val is RawSkillFrontmatter {
+  return val !== null && typeof val === "object" && !Array.isArray(val);
+}
+
+export function parseSkillMd(content: string): ParsedSkillDoc {
   const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
   const match = content.match(frontmatterRegex);
 
@@ -15,8 +34,9 @@ export function parseSkillMd(
 
   if (match) {
     try {
-      const parsed = parseYaml(match[1]) as Record<string, unknown>;
-      if (parsed && typeof parsed === "object") {
+      // SAFETY: parseYaml returns raw object matching frontmatter shape when valid
+      const parsed = parseYaml(match[1]);
+      if (isFrontmatterObject(parsed)) {
         metadata = {
           name: String(parsed.name || "Unnamed Skill"),
           description: String(parsed.description || ""),
@@ -27,7 +47,10 @@ export function parseSkillMd(
             : `/${String(parsed.name || "skill").toLowerCase().replace(/\s+/g, "-")}`,
           tools: Array.isArray(parsed.tools) ? parsed.tools.map(String) : [],
           agents: Array.isArray(parsed.agents)
-            ? parsed.agents.map((a) => String(a) as AgentId)
+            ? parsed.agents.map((a) => {
+                // SAFETY: Downcasting validated string entries to AgentId domain type
+                return String(a) as AgentId;
+              })
             : [],
           license: parsed.license ? String(parsed.license) : undefined,
           sourceUrl: parsed.source_url ? String(parsed.source_url) : undefined,

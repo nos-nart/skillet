@@ -1,4 +1,5 @@
 import { Skill } from "../types/skills.ts";
+import { ensureParentDir } from "./fs.ts";
 
 export interface LockFileEntry {
   source: string;
@@ -14,24 +15,24 @@ export type SkillsLock = Record<string, LockFileEntry>;
  * Supports shorthand (owner/repo), HTTPS URLs, and SSH URLs.
  */
 export function parseGitHubRepo(input: string): { owner: string; repo: string } | null {
-  if (!input || typeof input !== "string") return null;
+  if (!input) return null;
 
   const cleaned = input.trim().replace(/\.git$/, "");
 
   // HTTPS GitHub URL format: https://github.com/owner/repo...
-  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([a-zA-Z0-9_\-\.]+)\/([a-zA-Z0-9_\-\.]+)/);
+  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/);
   if (httpsMatch) {
     return { owner: httpsMatch[1], repo: httpsMatch[2] };
   }
 
   // SSH GitHub URL format: git@github.com:owner/repo
-  const sshMatch = cleaned.match(/^git@github\.com:([a-zA-Z0-9_\-\.]+)\/([a-zA-Z0-9_\-\.]+)/);
+  const sshMatch = cleaned.match(/^git@github\.com:([\w.-]+)\/([\w.-]+)/);
   if (sshMatch) {
     return { owner: sshMatch[1], repo: sshMatch[2] };
   }
 
   // Shorthand format: owner/repo
-  const shortMatch = cleaned.match(/^([a-zA-Z0-9_\-\.]+)\/([a-zA-Z0-9_\-\.]+)$/);
+  const shortMatch = cleaned.match(/^([\w.-]+)\/([\w.-]+)$/);
   if (shortMatch) {
     return { owner: shortMatch[1], repo: shortMatch[2] };
   }
@@ -57,12 +58,12 @@ export async function fetchLatestGitHubCommit(ownerRepo: string, token?: string)
   const parsed = parseGitHubRepo(ownerRepo);
   if (!parsed) return null;
 
-  const headers: Record<string, string> = {
+  const headers = new Headers({
     "User-Agent": "Skillet-Desktop-App",
     Accept: "application/vnd.github.v3+json",
-  };
+  });
   if (token) {
-    headers["Authorization"] = `token ${token}`;
+    headers.set("Authorization", `token ${token}`);
   }
 
   try {
@@ -87,13 +88,12 @@ export async function loadSkillsLock(lockFilePath?: string): Promise<SkillsLock>
 
   try {
     const content = await Deno.readTextFile(targetPath);
+    // SAFETY: skills-lock.json persists as a JSON-serialized SkillsLock record
     return JSON.parse(content) as SkillsLock;
   } catch {
     return {};
   }
 }
-
-import { ensureParentDir } from "./fs.ts";
 
 /**
  * Saves the skills-lock.json file.

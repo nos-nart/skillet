@@ -125,7 +125,7 @@ export function Sidebar({
           >
             {workspaces.map((ws) => (
               <option key={ws.id} value={ws.id}>
-                {ws.name} ({ws.path.replace(/^\/Users\/[^\/]+/, "~")})
+                {ws.name} ({ws.path.replace(/^\/Users\/[^/]+/, "~")})
               </option>
             ))}
           </select>

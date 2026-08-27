@@ -56,11 +56,11 @@ export async function downloadSkillFromGitHub(
     const branches = ["main", "master"];
     let skillContent: string | null = null;
 
-    const headers: Record<string, string> = {
+    const headers = new Headers({
       "User-Agent": "Skillet-Desktop-App",
-    };
+    });
     if (options.token) {
-      headers["Authorization"] = `token ${options.token}`;
+      headers.set("Authorization", `token ${options.token}`);
     }
 
     for (const branch of branches) {

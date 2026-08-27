@@ -6,9 +6,12 @@
     "preview": "deno run -A npm:vite@8.2.2 preview",
     "desktop": "deno desktop --hmr desktop.ts",
     "desktop:build": "deno desktop desktop.ts",
+    "lint": "deno run -A npm:oxlint@1.80.0",
     "test": "deno test -A"
   },
   "imports": {
+    "oxlint": "npm:oxlint@1.80.0",
+    "@oxlint/plugins": "npm:@oxlint/plugins@1.80.0",
     "react": "npm:react@19.0.0",
     "react/": "npm:react@19.0.0/",
     "react-dom": "npm:react-dom@19.0.0",

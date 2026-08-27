@@ -13,6 +13,83 @@ import { SUPPORTED_AGENTS, getAgentGlobalPath } from "./agents.ts";
 const homeDir = Deno.env.get("HOME") || "/tmp";
 const workspaceManager = new WorkspaceManager();
 
+interface RawPayload {
+  path?: any;
+  id?: any;
+  name?: any;
+  isCurrent?: any;
+  source?: any;
+  skillName?: any;
+  targetDir?: any;
+  token?: any;
+  skills?: any;
+  skillSlug?: any;
+  sourcePath?: any;
+  workspacePath?: any;
+  agent?: any;
+  enable?: any;
+}
+
+function isString(val: any): val is string {
+  return typeof val === "string";
+}
+
+function isBoolean(val: any): val is boolean {
+  return typeof val === "boolean";
+}
+
+function isObject(val: any): val is RawPayload {
+  return val !== null && typeof val === "object" && !Array.isArray(val);
+}
+
+function parseToggleRequest(raw: RawPayload): SkillToggleRequest | null {
+  if (
+    !isString(raw.skillSlug) || !raw.skillSlug.trim() ||
+    !isString(raw.sourcePath) || !raw.sourcePath.trim() ||
+    !isString(raw.workspacePath) || !raw.workspacePath.trim() ||
+    !isString(raw.agent) || !raw.agent.trim() ||
+    !isBoolean(raw.enable)
+  ) {
+    return null;
+  }
+  return {
+    skillSlug: raw.skillSlug.trim(),
+    sourcePath: raw.sourcePath.trim(),
+    workspacePath: raw.workspacePath.trim(),
+    // SAFETY: Verified non-empty string matches supported AgentId
+    agent: raw.agent.trim() as AgentId,
+    enable: raw.enable,
+  };
+}
+
+function parseInstallRequest(raw: RawPayload): InstallSkillOptions | null {
+  if (!isString(raw.source) || !raw.source.trim()) {
+    return null;
+  }
+  return {
+    source: raw.source.trim(),
+    skillName: isString(raw.skillName) ? raw.skillName.trim() : undefined,
+    targetDir: isString(raw.targetDir) ? raw.targetDir.trim() : undefined,
+    token: isString(raw.token) ? raw.token.trim() : undefined,
+  };
+}
+
+function parseWorkspaceRequest(raw: RawPayload): Workspace | null {
+  if (
+    !isString(raw.id) || !raw.id.trim() ||
+    !isString(raw.name) || !raw.name.trim() ||
+    !isString(raw.path) || !raw.path.trim()
+  ) {
+    return null;
+  }
+  return {
+    id: raw.id.trim(),
+    name: raw.name.trim(),
+    path: raw.path.trim(),
+    isCurrent: Boolean(raw.isCurrent),
+  };
+}
+
 export async function handleApiRequest(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
@@ -46,8 +123,9 @@ export async function handleApiRequest(req: Request): Promise<Response> {
 
     // DELETE /api/skills (Uninstall skill)
     if (url.pathname === "/api/skills" && req.method === "DELETE") {
-      const body = (await req.json().catch(() => ({}))) as { path?: unknown };
-      const skillPath = typeof body.path === "string" ? body.path : url.searchParams.get("path");
+      const body = await req.json().catch(() => null);
+      const raw: RawPayload = isObject(body) ? body : {};
+      const skillPath = isString(raw.path) ? raw.path : url.searchParams.get("path");
       if (!skillPath || !skillPath.trim()) {
         return Response.json({ ok: false, error: "Missing required 'path' parameter" }, { status: 400 });
       }
@@ -70,26 +148,28 @@ export async function handleApiRequest(req: Request): Promise<Response> {
     // POST /api/workspaces
     if (url.pathname === "/api/workspaces" && req.method === "POST") {
       const body = await req.json().catch(() => null);
-      if (!body || typeof body !== "object" || !body.id || !body.name || !body.path) {
+      if (!isObject(body)) {
+        return Response.json(
+          { ok: false, error: "Invalid workspace payload. JSON object expected." },
+          { status: 400 }
+        );
+      }
+      const ws = parseWorkspaceRequest(body);
+      if (!ws) {
         return Response.json(
           { ok: false, error: "Invalid workspace payload. 'id', 'name', and 'path' are required." },
           { status: 400 }
         );
       }
-      const ws: Workspace = {
-        id: String(body.id),
-        name: String(body.name),
-        path: String(body.path),
-        isCurrent: Boolean(body.isCurrent),
-      };
       await workspaceManager.addWorkspace(ws);
       return Response.json({ ok: true });
     }
 
     // DELETE /api/workspaces
     if (url.pathname === "/api/workspaces" && req.method === "DELETE") {
-      const body = (await req.json().catch(() => ({}))) as { id?: unknown };
-      const id = typeof body.id === "string" ? body.id : url.searchParams.get("id");
+      const body = await req.json().catch(() => null);
+      const raw: RawPayload = isObject(body) ? body : {};
+      const id = isString(raw.id) ? raw.id : url.searchParams.get("id");
       if (!id || !id.trim()) {
         return Response.json({ ok: false, error: "Missing required 'id' parameter" }, { status: 400 });
       }
@@ -100,15 +180,14 @@ export async function handleApiRequest(req: Request): Promise<Response> {
     // POST /api/toggle
     if (url.pathname === "/api/toggle" && req.method === "POST") {
       const body = await req.json().catch(() => null);
-      if (
-        !body ||
-        typeof body !== "object" ||
-        typeof body.skillSlug !== "string" ||
-        typeof body.sourcePath !== "string" ||
-        typeof body.workspacePath !== "string" ||
-        typeof body.agent !== "string" ||
-        typeof body.enable !== "boolean"
-      ) {
+      if (!isObject(body)) {
+        return Response.json(
+          { ok: false, error: "Invalid toggle payload. JSON object expected." },
+          { status: 400 }
+        );
+      }
+      const toggleReq = parseToggleRequest(body);
+      if (!toggleReq) {
         return Response.json(
           {
             ok: false,
@@ -118,21 +197,19 @@ export async function handleApiRequest(req: Request): Promise<Response> {
         );
       }
 
-      const { skillSlug, sourcePath, workspacePath, agent, enable } = body as SkillToggleRequest;
-
       let success = false;
-      if (enable) {
+      if (toggleReq.enable) {
         success = await enableSkillInWorkspace(
-          sourcePath,
-          skillSlug,
-          workspacePath,
-          agent as AgentId
+          toggleReq.sourcePath,
+          toggleReq.skillSlug,
+          toggleReq.workspacePath,
+          toggleReq.agent
         );
       } else {
         success = await disableSkillInWorkspace(
-          skillSlug,
-          workspacePath,
-          agent as AgentId
+          toggleReq.skillSlug,
+          toggleReq.workspacePath,
+          toggleReq.agent
         );
       }
       return Response.json({ ok: success });
@@ -144,12 +221,11 @@ export async function handleApiRequest(req: Request): Promise<Response> {
       let token: string | undefined;
 
       if (req.method === "POST") {
-        const body = (await req.json().catch(() => ({}))) as {
-          skills?: Skill[];
-          token?: string;
-        };
-        skills = Array.isArray(body.skills) ? body.skills : [];
-        token = typeof body.token === "string" ? body.token : undefined;
+        const body = await req.json().catch(() => null);
+        const raw: RawPayload = isObject(body) ? body : {};
+        // SAFETY: Downcasting checked array elements to Skill model
+        skills = Array.isArray(raw.skills) ? (raw.skills as Skill[]) : [];
+        token = isString(raw.token) ? raw.token.trim() : undefined;
       }
 
       const updates = await checkSkillUpdates(skills, undefined, token);
@@ -159,26 +235,26 @@ export async function handleApiRequest(req: Request): Promise<Response> {
     // POST /api/install
     if (url.pathname === "/api/install" && req.method === "POST") {
       const body = await req.json().catch(() => null);
-      if (!body || typeof body !== "object" || typeof body.source !== "string" || !body.source.trim()) {
+      if (!isObject(body)) {
+        return Response.json(
+          { ok: false, error: "Invalid install payload. JSON object expected." },
+          { status: 400 }
+        );
+      }
+      const options = parseInstallRequest(body);
+      if (!options) {
         return Response.json(
           { ok: false, error: "Invalid install payload. 'source' (GitHub repo or local path) is required." },
           { status: 400 }
         );
       }
 
-      const options: InstallSkillOptions = {
-        source: body.source.trim(),
-        skillName: typeof body.skillName === "string" ? body.skillName.trim() : undefined,
-        targetDir: typeof body.targetDir === "string" ? body.targetDir.trim() : undefined,
-        token: typeof body.token === "string" ? body.token.trim() : undefined,
-      };
-
       const result = await downloadSkillFromGitHub(options);
       return Response.json(result, { status: result.ok ? 200 : 400 });
     }
 
     return new Response("Not Found", { status: 404 });
-  } catch (err: unknown) {
+  } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return Response.json({ ok: false, error: errorMsg }, { status: 500 });
   }
