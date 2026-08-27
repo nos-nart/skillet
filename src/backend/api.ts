@@ -106,20 +106,37 @@ export async function handleApiRequest(
   try {
     // GET /api/skills
     if (url.pathname === "/api/skills" && req.method === "GET") {
-      const allSkills: Skill[] = [];
-      const seenPaths = new Set<string>();
+      const rawSkills: Skill[] = [];
       const workspaces = await wm.getWorkspaces();
 
       for (const agent of SUPPORTED_AGENTS) {
         const globalPath = getAgentGlobalPath(agent.id, home);
         const agentSkills = await scanDirectoryForSkills(globalPath, "global", agent.id);
-        for (const skill of agentSkills) {
-          if (!seenPaths.has(skill.path)) {
-            seenPaths.add(skill.path);
-            allSkills.push(skill);
-          }
+        rawSkills.push(...agentSkills);
+      }
+
+      // Dedup pass 1: resolve symlinks and dedup by real path
+      const byRealPath = new Map<string, Skill>();
+      for (const skill of rawSkills) {
+        let realPath = skill.path;
+        try { realPath = await Deno.realPath(skill.path); } catch { /* keep original */ }
+        const existing = byRealPath.get(realPath);
+        // Prefer non-symlink entries over symlinks
+        if (!existing || (existing.isSymlink && !skill.isSymlink)) {
+          byRealPath.set(realPath, skill);
         }
       }
+
+      // Dedup pass 2: dedup by slug (same skill in multiple agent dirs)
+      const bySlug = new Map<string, Skill>();
+      for (const skill of byRealPath.values()) {
+        const existing = bySlug.get(skill.slug);
+        if (!existing || (existing.isSymlink && !skill.isSymlink)) {
+          bySlug.set(skill.slug, skill);
+        }
+      }
+
+      const allSkills = [...bySlug.values()];
 
       // Check which workspaces have each skill enabled
       for (const skill of allSkills) {
