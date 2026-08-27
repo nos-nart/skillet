@@ -33,7 +33,8 @@ type DiscoverAction =
   | { type: "INSTALL_START"; payload: string }
   | { type: "INSTALL_END" }
   | { type: "SET_BOOKMARKS"; payload: string[] }
-  | { type: "SET_ITEM_DESCRIPTION"; payload: { name: string; description: string } };
+  | { type: "SET_ITEM_DESCRIPTION"; payload: { name: string; description: string } }
+  | { type: "CLEAR_SEARCH" };
 
 function discoverReducer(state: DiscoverState, action: DiscoverAction): DiscoverState {
   switch (action.type) {
@@ -41,6 +42,8 @@ function discoverReducer(state: DiscoverState, action: DiscoverAction): Discover
       return { ...state, query: action.payload };
     case "SEARCH_START":
       return { ...state, isLoading: true, error: null, items: [], repoInfo: action.payload };
+    case "CLEAR_SEARCH":
+      return { ...state, items: [], repoInfo: undefined, error: null, query: "" };
     case "SEARCH_SUCCESS":
       return { ...state, isLoading: false, items: action.payload };
     case "SEARCH_ERROR":
@@ -202,8 +205,8 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
   };
 
   const handleBack = () => {
-    dispatch({ type: "SEARCH_SUCCESS", payload: [] });
-    dispatch({ type: "SET_QUERY", payload: "" });
+    dispatch({ type: "CLEAR_SEARCH" });
+    
   };
 
   const handleInstall = async (item: GitHubContentItem) => {
@@ -331,7 +334,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
             
             <div className="flex flex-col gap-3">
               {state.items.map((item) => {
-                const isInstalled = installedSkills.some(s => s.packageName === `${state.repoInfo!.owner}/${state.repoInfo!.repo}` && s.slug === item.name);
+                const isInstalled = installedSkills.some(s => (s.packageName === `${state.repoInfo!.owner}/${state.repoInfo!.repo}` || s.packageName === state.repoInfo!.owner) && s.slug === item.name);
                 const isInstalling = state.installingItem === item.name;
 
                 return (

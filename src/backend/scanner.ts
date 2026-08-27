@@ -71,41 +71,53 @@ export async function scanDirectoryForSkills(
   agent: AgentId
 ): Promise<Skill[]> {
   const skills: Skill[] = [];
-  try {
-    for await (const entry of Deno.readDir(dirPath)) {
-      if (entry.isDirectory || entry.isSymlink) {
-        const skillDir = `${dirPath}/${entry.name}`;
-        const skillMdPath = `${skillDir}/SKILL.md`;
-        try {
-          const content = await Deno.readTextFile(skillMdPath);
-          const { metadata, body } = parseSkillMd(content);
-          const stat = await Deno.lstat(skillDir);
-          const isGithub = entry.name.includes("/") || (metadata.sourceUrl?.includes("github.com") ?? false);
 
-          skills.push({
-            id: `${entry.name}`,
-            name: metadata.name,
-            slug: entry.name,
-            packageName: entry.name.includes("/")
-              ? entry.name.split("/")[0]
-              : "Global skills",
-            scope,
-            agent,
-            path: skillDir,
-            skillMdPath,
-            metadata,
-            rawMarkdown: body,
-            isSymlink: stat.isSymlink,
-            provider: isGithub ? "github" : "local",
-            sourceUrl: metadata.sourceUrl || (entry.name.includes("/") ? `https://github.com/${entry.name}` : undefined),
-          });
-        } catch {
-          // No SKILL.md in this directory or read error, skip
+  async function walk(currentDir: string, relativeDir: string, depth: number) {
+    if (depth > 3) return; // Prevent infinite loops or scanning too deep
+    try {
+      for await (const entry of Deno.readDir(currentDir)) {
+        if (entry.name.startsWith(".")) continue; // Skip hidden dirs
+        if (entry.isDirectory || entry.isSymlink) {
+          const nextDir = `${currentDir}/${entry.name}`;
+          const nextRelative = relativeDir ? `${relativeDir}/${entry.name}` : entry.name;
+          const skillMdPath = `${nextDir}/SKILL.md`;
+          try {
+            const content = await Deno.readTextFile(skillMdPath);
+            const { metadata, body } = parseSkillMd(content);
+            const stat = await Deno.lstat(nextDir);
+            
+            // For GitHub installed skills, the relativeDir might be owner/slug or owner/repo/slug
+            const parts = nextRelative.split("/");
+            const isGithub = parts.length > 1 || (metadata.sourceUrl?.includes("github.com") ?? false);
+            const packageName = parts.length > 1 ? parts[0] + (parts.length > 2 ? `/${parts[1]}` : "") : "Global skills";
+            const slug = parts[parts.length - 1];
+
+            skills.push({
+              id: nextRelative,
+              name: metadata.name,
+              slug: slug,
+              packageName,
+              scope,
+              agent,
+              path: nextDir,
+              skillMdPath,
+              metadata,
+              rawMarkdown: body,
+              isSymlink: stat.isSymlink,
+              provider: isGithub ? "github" : "local",
+              sourceUrl: metadata.sourceUrl || (parts.length > 1 ? `https://github.com/${parts[0]}` : undefined),
+            });
+          } catch {
+            // No SKILL.md here, recurse deeper
+            await walk(nextDir, nextRelative, depth + 1);
+          }
         }
       }
+    } catch {
+      // Ignore read errors
     }
-  } catch {
-    // Directory does not exist or unreadable, return empty array
   }
+
+  await walk(dirPath, "", 0);
   return skills;
 }
