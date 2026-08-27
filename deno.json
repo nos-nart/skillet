@@ -1,0 +1,25 @@
+{
+  "tasks": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "desktop": "deno desktop --hmr desktop.ts",
+    "desktop:build": "deno desktop desktop.ts",
+    "test": "deno test -A"
+  },
+  "imports": {
+    "react": "npm:react@19.0.0",
+    "react-dom": "npm:react-dom@19.0.0",
+    "react-dom/client": "npm:react-dom@19.0.0/client",
+    "lucide-react": "npm:lucide-react@0.475.0",
+    "clsx": "npm:clsx@2.1.1",
+    "tailwind-merge": "npm:tailwind-merge@3.0.1",
+    "marked": "npm:marked@15.0.7",
+    "yaml": "npm:yaml@2.7.0"
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "lib": ["deno.window", "dom", "dom.iterable", "esnext"]
+  }
+}
