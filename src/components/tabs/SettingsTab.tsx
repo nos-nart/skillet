@@ -17,7 +17,7 @@ export function SettingsTab() {
   };
 
   return (
-    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto">
+    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
       <div className="max-w-2xl space-y-6">
         <div>
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
@@ -44,7 +44,7 @@ export function SettingsTab() {
                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
                 />
                 <Button size="sm" onClick={handleSaveToken}>
                   {saved ? "Saved!" : "Save"}
@@ -90,7 +90,7 @@ export function SettingsTab() {
                 Application Runtime
               </label>
               <p className="text-xs text-zinc-500">
-                Skillet v1.0.0 (Deno Desktop Runtime · Vite 8 · Rolldown · comark · Shiki · Phosphor Icons)
+                Skillet v1.0.0 (Deno Desktop Runtime · Vite 8 · Rolldown · Space Grotesk · comark · Shiki · Phosphor Icons)
               </p>
             </CardContent>
           </Card>

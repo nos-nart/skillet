@@ -13,7 +13,7 @@ export function AgentsTab() {
   }, []);
 
   return (
-    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto">
+    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
       <div className="max-w-3xl space-y-6">
         <div>
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
@@ -27,7 +27,7 @@ export function AgentsTab() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {agents.map((agent) => (
-            <Card key={agent.id}>
+            <Card key={agent.id} className="hover:-translate-y-0.5 transition-transform duration-150 ease-out">
               <CardContent className="p-5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">

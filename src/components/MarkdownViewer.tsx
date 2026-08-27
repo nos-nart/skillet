@@ -22,31 +22,31 @@ function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { langua
   };
 
   return (
-    <div className="code-block my-4 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800/90 bg-zinc-100/80 dark:bg-zinc-950">
-      <div className="flex items-center justify-between px-3.5 py-1.5 bg-zinc-200/60 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400">
-        <span>{props.language || "code"}</span>
+    <div className="code-block my-5 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800/90 bg-zinc-100/80 dark:bg-zinc-950">
+      <div className="flex items-center justify-between px-4.5 py-2 bg-zinc-200/60 dark:bg-zinc-900/90 border-b border-zinc-200 dark:border-zinc-800 text-[11.5px] font-mono font-medium text-zinc-600 dark:text-zinc-400">
+        <span className="tracking-wide font-semibold uppercase text-[10.5px] text-zinc-500 dark:text-zinc-400">{props.language || "code"}</span>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors cursor-pointer px-2 py-0.5 rounded-md hover:bg-zinc-300/50 dark:hover:bg-zinc-800"
+          className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-150 active:scale-95 cursor-pointer px-2.5 py-1 rounded-md hover:bg-zinc-300/50 dark:hover:bg-zinc-800"
           title="Copy code"
         >
           {copied ? (
             <>
-              <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="text-emerald-600 dark:text-emerald-400 font-sans">Copied!</span>
+              <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-75 duration-150" />
+              <span className="text-emerald-600 dark:text-emerald-400 font-sans font-medium">Copied!</span>
             </>
           ) : (
             <>
               <Copy weight="light" className="w-3.5 h-3.5" />
-              <span className="font-sans">Copy</span>
+              <span className="font-sans font-medium">Copy</span>
             </>
           )}
         </button>
       </div>
       <pre
         ref={preRef}
-        className="p-4 text-xs font-mono overflow-x-auto text-zinc-900 dark:text-zinc-100 leading-relaxed font-normal"
+        className="p-5 text-[12px] font-mono overflow-x-auto text-zinc-900 dark:text-zinc-100 leading-[1.7] font-normal"
         {...props}
       />
     </div>
@@ -118,7 +118,7 @@ const customComponents = {
     <a
       target="_blank"
       rel="noreferrer"
-      className="text-orange-600 dark:text-orange-400 underline hover:text-orange-500"
+      className="text-orange-600 dark:text-orange-400 underline hover:text-orange-500 transition-colors"
       {...props}
     />
   ),

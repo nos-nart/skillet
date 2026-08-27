@@ -47,7 +47,7 @@ export function PromptsTab({ skills }: PromptsTabProps) {
   });
 
   return (
-    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto">
+    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header and Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800/80 pb-5">
@@ -71,7 +71,7 @@ export function PromptsTab({ skills }: PromptsTabProps) {
               placeholder="Filter triggers, tools, agents..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 text-xs h-8.5 bg-zinc-50 dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
+              className="pl-9 text-xs h-8.5 bg-zinc-50 dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 transition-colors"
             />
           </div>
         </div>
@@ -90,18 +90,18 @@ export function PromptsTab({ skills }: PromptsTabProps) {
               return (
                 <Card
                   key={skill.id}
-                  className="bg-zinc-50/80 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 transition-all flex flex-col justify-between group"
+                  className="bg-zinc-50/80 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-zinc-100/90 dark:hover:bg-zinc-900/70 hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-150 ease-out flex flex-col justify-between group"
                 >
                   <CardHeader className="p-4 pb-2 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <button
                         onClick={() => copyToClipboard(trigger)}
                         title="Click to copy trigger"
-                        className="inline-flex items-center gap-1.5 font-mono text-xs text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 font-mono text-xs text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95 cursor-pointer"
                       >
                         <span className="font-semibold">{trigger}</span>
                         {isCopied ? (
-                          <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500" />
+                          <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-75 duration-150" />
                         ) : (
                           <Copy weight="light" className="w-3.5 h-3.5 text-orange-500/80 opacity-60 group-hover:opacity-100 transition-opacity" />
                         )}

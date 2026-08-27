@@ -5,6 +5,19 @@
 @layer base {
   :root {
     color-scheme: light dark;
+    --font-sans: "Space Grotesk", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    letter-spacing: -0.015em;
   }
 
   html.dark {
@@ -13,6 +26,10 @@
 
   html.light {
     color-scheme: light;
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
   }
 
   ::-webkit-scrollbar {
@@ -35,4 +52,27 @@
 html.dark .shiki,
 html.dark .shiki span {
   color: var(--shiki-dark) !important;
+}
+
+/* Micro-interaction Animation Utilities */
+.press-scale {
+  transition: transform 140ms var(--ease-out-strong);
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.985) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-view-in {
+  animation: fadeInScale 180ms var(--ease-out-strong) forwards;
 }

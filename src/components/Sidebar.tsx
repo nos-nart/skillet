@@ -100,9 +100,9 @@ export function Sidebar({
             }}
           />
           <div>
-            <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
+            <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5 font-sans">
               <span>Skillet</span>
-              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 font-mono">
                 v1.0
               </span>
             </h1>
@@ -113,13 +113,13 @@ export function Sidebar({
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
-            className="p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/80 dark:hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/80 dark:hover:bg-zinc-900 rounded-lg transition-transform duration-200 active:rotate-45 active:scale-90 cursor-pointer"
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             {theme === "dark" ? (
-              <Sun weight="light" className="w-5 h-5 text-amber-400" />
+              <Sun weight="light" className="w-5 h-5 text-amber-400 transition-transform duration-200" />
             ) : (
-              <Moon weight="light" className="w-5 h-5 text-sky-500" />
+              <Moon weight="light" className="w-5 h-5 text-sky-500 transition-transform duration-200" />
             )}
           </button>
         )}
@@ -136,7 +136,7 @@ export function Sidebar({
           <button
             onClick={handlePickFolder}
             disabled={isPickingFolder}
-            className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 flex items-center gap-1 transition cursor-pointer font-medium"
+            className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 flex items-center gap-1 transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
             title="Choose workspace folder from Finder"
           >
             <FolderSimplePlus weight="light" className="w-4 h-4" />
@@ -145,13 +145,13 @@ export function Sidebar({
         </div>
 
         {isAddingManually && (
-          <div className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-2">
+          <div className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-2 animate-in fade-in-50 zoom-in-95 duration-150">
             <Input
               type="text"
               placeholder="/path/to/my-repo"
               value={manualPath}
               onChange={(e) => setManualPath(e.target.value)}
-              className="h-8 text-xs"
+              className="h-8 text-xs font-mono"
             />
             <div className="flex justify-end gap-1.5">
               <Button
@@ -180,7 +180,7 @@ export function Sidebar({
               const ws = workspaces.find((w) => w.id === e.target.value);
               if (ws) onSelectWorkspace(ws);
             }}
-            className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 text-xs font-medium rounded-lg px-3 py-2 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-500/50 pr-8 truncate"
+            className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 text-xs font-medium rounded-lg px-3 py-2 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-500/50 pr-8 truncate transition-colors"
           >
             {workspaces.map((ws) => (
               <option key={ws.id} value={ws.id}>
@@ -199,7 +199,7 @@ export function Sidebar({
         <nav className="space-y-1.5">
           <button
             onClick={() => setCurrentTab("skills")}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
               currentTab === "skills"
                 ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -216,7 +216,7 @@ export function Sidebar({
 
           <button
             onClick={() => setCurrentTab("agents")}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
               currentTab === "agents"
                 ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -230,7 +230,7 @@ export function Sidebar({
 
           <button
             onClick={() => setCurrentTab("prompts")}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
               currentTab === "prompts"
                 ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -250,7 +250,7 @@ export function Sidebar({
       <div className="p-2.5">
         <button
           onClick={() => setCurrentTab("settings")}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
             currentTab === "settings"
               ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
               : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"

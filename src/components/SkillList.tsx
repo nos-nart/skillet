@@ -77,7 +77,7 @@ export function SkillList({
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{skills.length} skills</span>
             {updateCount > 0 && (
-              <Badge variant="warning" className="px-2 py-0.5 text-xs rounded-lg">
+              <Badge variant="warning" className="px-2 py-0.5 text-xs rounded-lg animate-in fade-in duration-200">
                 {updateCount} update{updateCount > 1 ? "s" : ""}
               </Badge>
             )}
@@ -105,7 +105,7 @@ export function SkillList({
             >
               <ArrowCircleUp
                 weight="light"
-                className={`w-4 h-4 text-orange-500 ${isCheckingUpdates ? "animate-spin" : ""}`}
+                className={`w-4 h-4 text-orange-500 transition-transform ${isCheckingUpdates ? "animate-spin" : ""}`}
               />
               <span>{isCheckingUpdates ? "Checking..." : "Updates"}</span>
             </Button>
@@ -119,7 +119,7 @@ export function SkillList({
             >
               <ArrowsClockwise
                 weight="light"
-                className={`w-4 h-4 ${isLoading ? "animate-spin text-orange-500" : ""}`}
+                className={`w-4 h-4 text-orange-500 transition-transform ${isLoading ? "animate-spin" : "hover:rotate-45"}`}
               />
             </Button>
           </div>
@@ -136,7 +136,7 @@ export function SkillList({
             placeholder="Search skills and prompts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-xs h-8.5 bg-white dark:bg-zinc-950/80 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
+            className="pl-9 text-xs h-8.5 bg-white dark:bg-zinc-950/80 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 transition-colors"
           />
         </div>
       </div>
@@ -168,7 +168,7 @@ export function SkillList({
                       <button
                         key={skill.id}
                         onClick={() => onSelectSkill(skill)}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between group cursor-pointer ${
+                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-150 active:scale-[0.985] flex items-center justify-between group cursor-pointer ${
                           isSelected
                             ? "bg-orange-500/10 text-orange-600 dark:text-orange-200 border border-orange-500/30"
                             : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -189,8 +189,8 @@ export function SkillList({
                         </div>
                         <CaretRight
                           weight="light"
-                          className={`w-4 h-4 transition-transform shrink-0 ${
-                            isSelected ? "text-orange-500 translate-x-0.5" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
+                          className={`w-4 h-4 transition-transform duration-150 shrink-0 ${
+                            isSelected ? "text-orange-500 translate-x-0.5" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 group-hover:translate-x-0.5"
                           }`}
                         />
                       </button>

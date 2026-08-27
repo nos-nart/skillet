@@ -43,7 +43,7 @@ export function SkillDetail({
 
   if (!skill) {
     return (
-      <main className="w-full h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none">
+      <main className="w-full h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none animate-view-in">
         <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center mb-3 text-zinc-400 dark:text-zinc-600">
           <Sparkle weight="light" className="w-7 h-7" />
         </div>
@@ -91,7 +91,7 @@ export function SkillDetail({
   };
 
   return (
-    <main className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col overflow-y-auto">
+    <main key={skill.id} className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col overflow-y-auto animate-view-in">
       {/* Header Banner */}
       <div className="p-6 border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-900/20 flex items-start justify-between shrink-0">
         <div className="space-y-2 max-w-2xl">
@@ -212,7 +212,7 @@ export function SkillDetail({
                   href={skill.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-orange-600 dark:text-orange-400 hover:text-orange-500 font-mono text-xs truncate flex items-center gap-1"
+                  className="text-orange-600 dark:text-orange-400 hover:text-orange-500 font-mono text-xs truncate flex items-center gap-1 transition-colors"
                 >
                   <span className="truncate">{skill.sourceUrl}</span>
                   <ArrowSquareOut weight="light" className="w-3.5 h-3.5 shrink-0" />
@@ -251,7 +251,7 @@ export function SkillDetail({
               return (
                 <div
                   key={ws.id}
-                  className="px-4 py-3.5 flex items-center justify-between hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60 transition"
+                  className="px-4 py-3.5 flex items-center justify-between hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60 transition-colors"
                 >
                   <div className="flex items-center gap-3.5">
                     <div className={`p-2 rounded-lg ${isGlobal ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-sky-500/10 text-sky-600 dark:text-sky-400"}`}>
