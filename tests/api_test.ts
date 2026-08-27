@@ -137,6 +137,35 @@ Deno.test("handleApiRequest handles POST /api/install", async () => {
   await Deno.remove(tempDir, { recursive: true });
 });
 
+Deno.test("handleApiRequest handles GET /api/agents", async () => {
+  const req = new Request("http://localhost/api/agents");
+  const res = await handleApiRequest(req);
+  assertEquals(res.status, 200);
+  const data = await res.json();
+  assertEquals(Array.isArray(data.agents), true);
+  assertEquals(data.agents.length > 0, true);
+});
+
+Deno.test("handleApiRequest handles DELETE /api/skills", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const skillDir = `${tempDir}/skill-to-delete`;
+  await Deno.mkdir(skillDir, { recursive: true });
+  await Deno.writeTextFile(`${skillDir}/SKILL.md`, "test");
+
+  const req = new Request("http://localhost/api/skills", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path: skillDir }),
+  });
+
+  const res = await handleApiRequest(req);
+  assertEquals(res.status, 200);
+  const data = await res.json();
+  assertEquals(data.success, true);
+
+  await Deno.remove(tempDir, { recursive: true });
+});
+
 Deno.test("handleApiRequest returns 404 for unknown endpoints", async () => {
   const req = new Request("http://localhost/api/unknown-endpoint");
   const res = await handleApiRequest(req);

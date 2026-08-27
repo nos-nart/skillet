@@ -2,12 +2,12 @@ export type AgentId =
   | "claude-code"
   | "cursor"
   | "gemini"
+  | "generic"
   | "antigravity"
   | "windsurf"
   | "opencode"
   | "codex"
-  | "copilot"
-  | "general";
+  | "copilot";
 
 export interface SkillMetadata {
   name: string;
@@ -18,6 +18,7 @@ export interface SkillMetadata {
   tools?: string[];
   agents?: AgentId[];
   license?: string;
+  sourceUrl?: string;
 }
 
 export interface Skill {
@@ -34,6 +35,9 @@ export interface Skill {
   isSymlink: boolean;
   targetPath?: string;
   updateAvailable?: boolean;
+  provider?: "github" | "local";
+  sourceUrl?: string;
+  enabledInWorkspaces?: string[]; // Workspace paths where this skill is currently enabled
 }
 
 export interface SkillPackage {
@@ -48,4 +52,12 @@ export interface Workspace {
   name: string;
   path: string;
   isCurrent?: boolean;
+}
+
+export interface SkillToggleRequest {
+  skillSlug: string;
+  sourcePath: string;
+  workspacePath: string;
+  agent: AgentId;
+  enable?: boolean;
 }

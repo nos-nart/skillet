@@ -4,19 +4,34 @@ import {
   disableSkillInWorkspace,
   isSkillEnabledInWorkspace,
   getAgentRelPath,
+  validateSafeSlug,
 } from "../src/backend/symlinker.ts";
 import { WorkspaceManager } from "../src/backend/workspace.ts";
 
 Deno.test("getAgentRelPath - returns expected relative paths for known agents", () => {
   assertEquals(getAgentRelPath("cursor"), ".cursor/skills");
   assertEquals(getAgentRelPath("claude-code"), ".claude/skills");
-  assertEquals(getAgentRelPath("gemini"), ".gemini/config/skills");
-  assertEquals(getAgentRelPath("antigravity"), ".gemini/config/skills");
+  assertEquals(getAgentRelPath("gemini"), ".gemini/skills");
+  assertEquals(getAgentRelPath("antigravity"), ".gemini/skills");
   assertEquals(getAgentRelPath("windsurf"), ".windsurf/skills");
   assertEquals(getAgentRelPath("copilot"), ".github/skills");
   assertEquals(getAgentRelPath("codex"), ".codex/skills");
   assertEquals(getAgentRelPath("opencode"), ".opencode/skills");
-  assertEquals(getAgentRelPath("general"), ".skills");
+  assertEquals(getAgentRelPath("generic"), ".skills");
+});
+
+Deno.test("validateSafeSlug - validates alphanumeric, hyphens, and blocks path traversal", () => {
+  assertEquals(validateSafeSlug("normal-skill"), true);
+  assertEquals(validateSafeSlug("my_skill.v2"), true);
+  assertEquals(validateSafeSlug("skill123"), true);
+
+  // Attack / traversal cases
+  assertEquals(validateSafeSlug("../escape"), false);
+  assertEquals(validateSafeSlug("/absolute/path"), false);
+  assertEquals(validateSafeSlug("nested/slug"), false);
+  assertEquals(validateSafeSlug(".."), false);
+  assertEquals(validateSafeSlug("."), false);
+  assertEquals(validateSafeSlug(""), false);
 });
 
 Deno.test("enableSkillInWorkspace creates symlink and disable removes it", async () => {
@@ -71,7 +86,7 @@ Deno.test("enableSkillInWorkspace works across different agent directories", asy
   assertEquals(successAntigravity, true);
   assertEquals(await isSkillEnabledInWorkspace("ag-skill", workspaceDir, "antigravity"), true);
 
-  const lstat = await Deno.lstat(`${workspaceDir}/.gemini/config/skills/ag-skill`);
+  const lstat = await Deno.lstat(`${workspaceDir}/.gemini/skills/ag-skill`);
   assertEquals(lstat.isSymlink, true);
 
   // Disable for antigravity

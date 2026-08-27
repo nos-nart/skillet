@@ -4,6 +4,9 @@ import {
   GitBranch,
   ArrowsClockwise,
   Terminal,
+  Trash,
+  ArrowSquareOut,
+  DownloadSimple,
 } from "@phosphor-icons/react";
 import { Skill, Workspace } from "../types/skills.ts";
 import { MarkdownViewer } from "./MarkdownViewer.tsx";
@@ -11,7 +14,6 @@ import { Button } from "./ui/button.tsx";
 import { Badge } from "./ui/badge.tsx";
 import { Switch } from "./ui/switch.tsx";
 import { Card, CardContent } from "./ui/card.tsx";
-import { Separator } from "./ui/separator.tsx";
 
 interface SkillDetailProps {
   skill: Skill | null;
@@ -19,6 +21,8 @@ interface SkillDetailProps {
   selectedWorkspace: Workspace;
   onToggleInRepo: (ws: Workspace, enable: boolean) => Promise<void>;
   onUpdateSkill?: (skill: Skill) => Promise<void>;
+  onUninstallSkill?: (skill: Skill) => Promise<void>;
+  onInstallSkill?: (skill: Skill) => Promise<void>;
 }
 
 export function SkillDetail({
@@ -27,8 +31,12 @@ export function SkillDetail({
   selectedWorkspace: _selectedWorkspace,
   onToggleInRepo,
   onUpdateSkill,
+  onUninstallSkill,
+  onInstallSkill,
 }: SkillDetailProps) {
   const [updating, setUpdating] = useState(false);
+  const [uninstalling, setUninstalling] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [toggleState, setToggleState] = useState<Record<string, boolean>>({});
 
   if (!skill) {
@@ -52,6 +60,27 @@ export function SkillDetail({
       await onUpdateSkill(skill);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleUninstall = async () => {
+    if (!onUninstallSkill) return;
+    if (!confirm(`Are you sure you want to uninstall '${skill.name}' from your system?`)) return;
+    setUninstalling(true);
+    try {
+      await onUninstallSkill(skill);
+    } finally {
+      setUninstalling(false);
+    }
+  };
+
+  const handleInstall = async () => {
+    if (!onInstallSkill) return;
+    setInstalling(true);
+    try {
+      await onInstallSkill(skill);
+    } finally {
+      setInstalling(false);
     }
   };
 
@@ -102,6 +131,32 @@ export function SkillDetail({
               <span>{updating ? "Updating..." : "Update to Latest"}</span>
             </Button>
           )}
+
+          {onInstallSkill && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleInstall}
+              disabled={installing}
+              className="gap-1.5 text-xs"
+            >
+              <DownloadSimple weight="light" className="w-3.5 h-3.5 text-orange-400" />
+              <span>{installing ? "Installing..." : "Install"}</span>
+            </Button>
+          )}
+
+          {onUninstallSkill && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleUninstall}
+              disabled={uninstalling}
+              className="gap-1.5 text-xs"
+            >
+              <Trash weight="light" className="w-3.5 h-3.5" />
+              <span>{uninstalling ? "Removing..." : "Uninstall"}</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -124,6 +179,15 @@ export function SkillDetail({
             </div>
             <div>
               <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+                Provider
+              </span>
+              <Badge variant={skill.provider === "github" ? "accent" : "secondary"} className="capitalize">
+                {skill.provider || "local"}
+              </Badge>
+            </div>
+
+            <div>
+              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Tools Used
               </span>
               <span className="text-zinc-300 text-xs font-mono">
@@ -132,6 +196,26 @@ export function SkillDetail({
                   : "None"}
               </span>
             </div>
+
+            <div className="col-span-2">
+              <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
+                Source Repository / URL
+              </span>
+              {skill.sourceUrl ? (
+                <a
+                  href={skill.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-orange-400 hover:text-orange-300 font-mono text-[11px] truncate flex items-center gap-1"
+                >
+                  <span className="truncate">{skill.sourceUrl}</span>
+                  <ArrowSquareOut weight="light" className="w-3 h-3 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-zinc-500 font-mono text-[11px]">Local Directory</span>
+              )}
+            </div>
+
             <div className="col-span-3 pt-2 border-t border-zinc-800/60">
               <span className="text-zinc-500 block text-[10px] uppercase font-bold tracking-wider mb-0.5">
                 Path on Disk
@@ -156,7 +240,8 @@ export function SkillDetail({
           <div className="border border-zinc-800 rounded-xl overflow-hidden divide-y divide-zinc-800/80 bg-zinc-900/30">
             {workspaces.map((ws) => {
               const isGlobal = ws.id === "global";
-              const isChecked = toggleState[ws.id] ?? (isGlobal || skill.scope === "global");
+              // Check live switchboard status from backend or local overrides
+              const isChecked = toggleState[ws.id] ?? (isGlobal ? true : (skill.enabledInWorkspaces?.includes(ws.id) ?? false));
 
               return (
                 <div
@@ -182,13 +267,17 @@ export function SkillDetail({
                     </div>
                   </div>
 
-                  <Switch
-                    checked={isChecked}
-                    onCheckedChange={(checked) => {
-                      setToggleState((prev) => ({ ...prev, [ws.id]: checked }));
-                      onToggleInRepo(ws, checked);
-                    }}
-                  />
+                  {!isGlobal ? (
+                    <Switch
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        setToggleState((prev) => ({ ...prev, [ws.id]: checked }));
+                        onToggleInRepo(ws, checked);
+                      }}
+                    />
+                  ) : (
+                    <Badge variant="secondary" className="text-[10px]">Active</Badge>
+                  )}
                 </div>
               );
             })}

@@ -1,4 +1,5 @@
-import { Skill, Workspace, AgentId } from "../types/skills.ts";
+import { Skill, Workspace, SkillToggleRequest } from "../types/skills.ts";
+import { AgentConfig } from "../backend/agents.ts";
 
 export const api = {
   async getSkills(): Promise<Skill[]> {
@@ -6,6 +7,13 @@ export const api = {
     if (!res.ok) throw new Error("Failed to fetch skills");
     const data = await res.json();
     return data.skills;
+  },
+
+  async getAgents(): Promise<AgentConfig[]> {
+    const res = await fetch("/api/agents");
+    if (!res.ok) throw new Error("Failed to fetch agents");
+    const data = await res.json();
+    return data.agents;
   },
 
   async getWorkspaces(): Promise<Workspace[]> {
@@ -37,13 +45,7 @@ export const api = {
     return data.success;
   },
 
-  async toggleSkill(params: {
-    skillSlug: string;
-    sourcePath: string;
-    workspacePath: string;
-    agent: AgentId | string;
-    enable: boolean;
-  }): Promise<boolean> {
+  async toggleSkill(params: SkillToggleRequest): Promise<boolean> {
     const res = await fetch("/api/toggle", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,17 +70,11 @@ export const api = {
     return data.updates;
   },
 
-  async checkForUpdates(
-    skills?: Skill[],
-    token?: string
-  ): Promise<Record<string, boolean>> {
-    return this.checkUpdates(skills, token);
-  },
-
   async installSkill(options: {
     source: string;
     skillName?: string;
     targetDir?: string;
+    token?: string;
   }): Promise<{ success: boolean; path?: string; error?: string }> {
     const res = await fetch("/api/install", {
       method: "POST",
@@ -86,6 +82,17 @@ export const api = {
       body: JSON.stringify(options),
     });
     if (!res.ok) throw new Error("Failed to install skill");
+    const data = await res.json();
+    return data;
+  },
+
+  async uninstallSkill(path: string): Promise<{ success: boolean; error?: string }> {
+    const res = await fetch("/api/skills", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    if (!res.ok) throw new Error("Failed to uninstall skill");
     const data = await res.json();
     return data;
   },

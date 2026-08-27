@@ -1,4 +1,5 @@
 import { Workspace } from "../types/skills.ts";
+import { ensureParentDir } from "./fs.ts";
 
 export class WorkspaceManager {
   private configPath: string;
@@ -70,11 +71,7 @@ export class WorkspaceManager {
   private async saveWorkspaces(list: Workspace[]): Promise<void> {
     this.inMemoryList = [...list];
     try {
-      const lastSlash = this.configPath.lastIndexOf("/");
-      if (lastSlash > 0) {
-        const dir = this.configPath.substring(0, lastSlash);
-        await Deno.mkdir(dir, { recursive: true });
-      }
+      await ensureParentDir(this.configPath);
       await Deno.writeTextFile(this.configPath, JSON.stringify(list, null, 2));
     } catch {
       // Retain in-memory list if filesystem is not writable

@@ -5,6 +5,7 @@ import {
   ArrowCircleUp,
   CaretRight,
   Package,
+  Plus,
 } from "@phosphor-icons/react";
 import { Skill } from "../types/skills.ts";
 import { Button } from "./ui/button.tsx";
@@ -19,6 +20,7 @@ interface SkillListProps {
   onSelectSkill: (skill: Skill) => void;
   onCheckUpdates: () => void;
   onRescan: () => void;
+  onNewSkill?: () => void;
   isLoading: boolean;
   isCheckingUpdates?: boolean;
 }
@@ -29,6 +31,7 @@ export function SkillList({
   onSelectSkill,
   onCheckUpdates,
   onRescan,
+  onNewSkill,
   isLoading,
   isCheckingUpdates,
 }: SkillListProps) {
@@ -66,6 +69,18 @@ export function SkillList({
             )}
           </div>
           <div className="flex items-center gap-1.5">
+            {onNewSkill && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onNewSkill}
+                title="Add custom skill from GitHub or local folder"
+                className="h-7 text-[11px] gap-1 px-2"
+              >
+                <Plus weight="light" className="w-3.5 h-3.5 text-orange-400" />
+                <span>New</span>
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"

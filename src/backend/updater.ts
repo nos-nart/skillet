@@ -93,6 +93,8 @@ export async function loadSkillsLock(lockFilePath?: string): Promise<SkillsLock>
   }
 }
 
+import { ensureParentDir } from "./fs.ts";
+
 /**
  * Saves the skills-lock.json file.
  */
@@ -101,10 +103,7 @@ export async function saveSkillsLock(lock: SkillsLock, lockFilePath?: string): P
   const targetPath = lockFilePath || defaultPath;
 
   try {
-    const lastSlash = targetPath.lastIndexOf("/");
-    if (lastSlash > 0) {
-      await Deno.mkdir(targetPath.substring(0, lastSlash), { recursive: true });
-    }
+    await ensureParentDir(targetPath);
     await Deno.writeTextFile(targetPath, JSON.stringify(lock, null, 2));
     return true;
   } catch {

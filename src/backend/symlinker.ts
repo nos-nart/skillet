@@ -1,25 +1,37 @@
 import { AgentId } from "../types/skills.ts";
+import { getAgentRelPath } from "./agents.ts";
+import { ensureDir } from "./fs.ts";
 
-export function getAgentRelPath(agent: AgentId): string {
-  switch (agent) {
-    case "cursor":
-      return ".cursor/skills";
-    case "claude-code":
-      return ".claude/skills";
-    case "gemini":
-    case "antigravity":
-      return ".gemini/config/skills";
-    case "windsurf":
-      return ".windsurf/skills";
-    case "copilot":
-      return ".github/skills";
-    case "codex":
-      return ".codex/skills";
-    case "opencode":
-      return ".opencode/skills";
-    default:
-      return ".skills";
+export { getAgentRelPath };
+
+/**
+ * Validates that a skill slug does not contain directory traversal sequences
+ * or illegal characters that could escape the intended target directory.
+ */
+export function validateSafeSlug(slug: string): boolean {
+  if (!slug || typeof slug !== "string") return false;
+  const trimmed = slug.trim();
+  if (trimmed === "" || trimmed === "." || trimmed === "..") return false;
+  if (trimmed.includes("..") || trimmed.includes("/") || trimmed.includes("\\") || trimmed.includes("\0")) {
+    return false;
   }
+  // Allow letters, numbers, hyphens, underscores, dots
+  return /^[a-zA-Z0-9_\-\.]+$/.test(trimmed);
+}
+
+function resolveSafeTarget(workspacePath: string, agent: AgentId, skillSlug: string): string | null {
+  if (!validateSafeSlug(skillSlug)) {
+    return null;
+  }
+  const relPath = getAgentRelPath(agent);
+  const normalizedWs = workspacePath.replace(/\/+$/, "");
+  const target = `${normalizedWs}/${relPath}/${skillSlug}`;
+
+  // Ensure resolved path doesn't escape workspace
+  if (!target.startsWith(normalizedWs)) {
+    return null;
+  }
+  return target;
 }
 
 export async function isSkillEnabledInWorkspace(
@@ -27,7 +39,9 @@ export async function isSkillEnabledInWorkspace(
   workspacePath: string,
   agent: AgentId
 ): Promise<boolean> {
-  const targetDir = `${workspacePath}/${getAgentRelPath(agent)}/${skillSlug}`;
+  const targetDir = resolveSafeTarget(workspacePath, agent, skillSlug);
+  if (!targetDir) return false;
+
   try {
     const stat = await Deno.lstat(targetDir);
     return stat.isSymlink || stat.isDirectory;
@@ -42,11 +56,16 @@ export async function enableSkillInWorkspace(
   workspacePath: string,
   agent: AgentId
 ): Promise<boolean> {
-  const agentDir = `${workspacePath}/${getAgentRelPath(agent)}`;
-  const targetSymlink = `${agentDir}/${skillSlug}`;
+  const targetSymlink = resolveSafeTarget(workspacePath, agent, skillSlug);
+  if (!targetSymlink) {
+    console.error(`Invalid skill slug or path traversal attempt: ${skillSlug}`);
+    return false;
+  }
+
+  const agentDir = `${workspacePath.replace(/\/+$/, "")}/${getAgentRelPath(agent)}`;
 
   try {
-    await Deno.mkdir(agentDir, { recursive: true });
+    await ensureDir(agentDir);
     // Remove if already exists to ensure clean symlink creation
     try {
       await Deno.remove(targetSymlink, { recursive: true });
@@ -66,7 +85,9 @@ export async function disableSkillInWorkspace(
   workspacePath: string,
   agent: AgentId
 ): Promise<boolean> {
-  const targetSymlink = `${workspacePath}/${getAgentRelPath(agent)}/${skillSlug}`;
+  const targetSymlink = resolveSafeTarget(workspacePath, agent, skillSlug);
+  if (!targetSymlink) return false;
+
   try {
     await Deno.remove(targetSymlink, { recursive: true });
     return true;

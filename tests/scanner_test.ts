@@ -21,7 +21,7 @@ license: MIT
 Follow modern guidelines for layout and typography.
 `;
 
-  const parsed = parseSkillMd(sampleMd, "/dummy/path/SKILL.md");
+  const parsed = parseSkillMd(sampleMd);
   assertEquals(parsed.metadata.name, "web-design-guidelines");
   assertEquals(parsed.metadata.description, "Review UI code for Web Interface Guidelines compliance.");
   assertEquals(parsed.metadata.author, "Jane Doe");

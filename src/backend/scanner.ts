@@ -2,8 +2,7 @@ import { parse as parseYaml } from "npm:yaml@2.7.0";
 import { AgentId, Skill, SkillMetadata } from "../types/skills.ts";
 
 export function parseSkillMd(
-  content: string,
-  _filePath?: string
+  content: string
 ): { metadata: SkillMetadata; body: string } {
   const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
   const match = content.match(frontmatterRegex);
@@ -25,12 +24,13 @@ export function parseSkillMd(
           version: parsed.version ? String(parsed.version) : undefined,
           trigger: parsed.trigger
             ? String(parsed.trigger)
-            : `/${String(parsed.name || "skill").toLowerCase()}`,
+            : `/${String(parsed.name || "skill").toLowerCase().replace(/\s+/g, "-")}`,
           tools: Array.isArray(parsed.tools) ? parsed.tools.map(String) : [],
           agents: Array.isArray(parsed.agents)
             ? parsed.agents.map((a) => String(a) as AgentId)
             : [],
           license: parsed.license ? String(parsed.license) : undefined,
+          sourceUrl: parsed.source_url ? String(parsed.source_url) : undefined,
         };
         body = match[2].trim();
       }
@@ -55,8 +55,9 @@ export async function scanDirectoryForSkills(
         const skillMdPath = `${skillDir}/SKILL.md`;
         try {
           const content = await Deno.readTextFile(skillMdPath);
-          const { metadata, body } = parseSkillMd(content, skillMdPath);
+          const { metadata, body } = parseSkillMd(content);
           const stat = await Deno.lstat(skillDir);
+          const isGithub = entry.name.includes("/") || (metadata.sourceUrl?.includes("github.com") ?? false);
 
           skills.push({
             id: `${entry.name}`,
@@ -72,6 +73,8 @@ export async function scanDirectoryForSkills(
             metadata,
             rawMarkdown: body,
             isSymlink: stat.isSymlink,
+            provider: isGithub ? "github" : "local",
+            sourceUrl: metadata.sourceUrl || (entry.name.includes("/") ? `https://github.com/${entry.name}` : undefined),
           });
         } catch {
           // No SKILL.md in this directory or read error, skip

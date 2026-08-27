@@ -2,11 +2,13 @@ import { scanDirectoryForSkills } from "./scanner.ts";
 import {
   enableSkillInWorkspace,
   disableSkillInWorkspace,
+  isSkillEnabledInWorkspace,
 } from "./symlinker.ts";
 import { checkSkillUpdates } from "./updater.ts";
-import { downloadSkillFromGitHub, InstallSkillOptions } from "./installer.ts";
+import { downloadSkillFromGitHub, uninstallSkill, InstallSkillOptions } from "./installer.ts";
 import { WorkspaceManager } from "./workspace.ts";
-import { Skill, Workspace, AgentId } from "../types/skills.ts";
+import { Skill, Workspace, SkillToggleRequest } from "../types/skills.ts";
+import { SUPPORTED_AGENTS, getAgentGlobalPath } from "./agents.ts";
 
 const homeDir = Deno.env.get("HOME") || "/tmp";
 const workspaceManager = new WorkspaceManager();
@@ -17,34 +19,45 @@ export async function handleApiRequest(req: Request): Promise<Response> {
   try {
     // GET /api/skills
     if (url.pathname === "/api/skills" && req.method === "GET") {
-      const claudeGlobal = await scanDirectoryForSkills(
-        `${homeDir}/.claude/skills`,
-        "global",
-        "claude-code"
-      );
-      const cursorGlobal = await scanDirectoryForSkills(
-        `${homeDir}/.cursor/skills`,
-        "global",
-        "cursor"
-      );
-      const geminiGlobal = await scanDirectoryForSkills(
-        `${homeDir}/.gemini/config/skills`,
-        "global",
-        "gemini"
-      );
-      const genericGlobal = await scanDirectoryForSkills(
-        `${homeDir}/.skills`,
-        "global",
-        "general"
-      );
+      const allSkills: Skill[] = [];
+      const workspaces = await workspaceManager.getWorkspaces();
 
-      const allSkills: Skill[] = [
-        ...claudeGlobal,
-        ...cursorGlobal,
-        ...geminiGlobal,
-        ...genericGlobal,
-      ];
+      for (const agent of SUPPORTED_AGENTS) {
+        const globalPath = getAgentGlobalPath(agent.id, homeDir);
+        const agentSkills = await scanDirectoryForSkills(globalPath, "global", agent.id);
+        allSkills.push(...agentSkills);
+      }
+
+      // Check which workspaces have each skill enabled
+      for (const skill of allSkills) {
+        const enabledWorkspaces: string[] = [];
+        for (const ws of workspaces) {
+          if (ws.id === "global") continue;
+          const enabled = await isSkillEnabledInWorkspace(skill.slug, ws.path, skill.agent);
+          if (enabled) {
+            enabledWorkspaces.push(ws.id);
+          }
+        }
+        skill.enabledInWorkspaces = enabledWorkspaces;
+      }
+
       return Response.json({ skills: allSkills });
+    }
+
+    // DELETE /api/skills (Uninstall skill)
+    if (url.pathname === "/api/skills" && req.method === "DELETE") {
+      const body = (await req.json().catch(() => ({}))) as { path?: string };
+      const skillPath = body.path || url.searchParams.get("path");
+      if (skillPath) {
+        const result = await uninstallSkill(skillPath);
+        return Response.json(result);
+      }
+      return Response.json({ success: false, error: "Missing skill path" }, { status: 400 });
+    }
+
+    // GET /api/agents
+    if (url.pathname === "/api/agents" && req.method === "GET") {
+      return Response.json({ agents: SUPPORTED_AGENTS });
     }
 
     // GET /api/workspaces
@@ -74,13 +87,7 @@ export async function handleApiRequest(req: Request): Promise<Response> {
     // POST /api/toggle
     if (url.pathname === "/api/toggle" && req.method === "POST") {
       const { skillSlug, sourcePath, workspacePath, agent, enable } =
-        (await req.json()) as {
-          skillSlug: string;
-          sourcePath: string;
-          workspacePath: string;
-          agent: AgentId;
-          enable: boolean;
-        };
+        (await req.json()) as SkillToggleRequest;
 
       let success = false;
       if (enable) {
