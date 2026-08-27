@@ -14,6 +14,7 @@ import { Button } from "./ui/button.tsx";
 import { Badge } from "./ui/badge.tsx";
 import { Switch } from "./ui/switch.tsx";
 import { Card, CardContent } from "./ui/card.tsx";
+import { ConfirmDialog } from "./ConfirmDialog.tsx";
 
 interface SkillDetailProps {
   skill: Skill | null;
@@ -37,6 +38,7 @@ export function SkillDetail({
   const [updating, setUpdating] = useState(false);
   const [uninstalling, setUninstalling] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [isConfirmUninstallOpen, setIsConfirmUninstallOpen] = useState(false);
   const [toggleState, setToggleState] = useState<Record<string, boolean>>({});
 
   if (!skill) {
@@ -63,15 +65,19 @@ export function SkillDetail({
     }
   };
 
-  const handleUninstall = async () => {
+  const handleConfirmUninstall = async () => {
     if (!onUninstallSkill) return;
-    if (!confirm(`Are you sure you want to uninstall '${skill.name}' from your system?`)) return;
     setUninstalling(true);
     try {
       await onUninstallSkill(skill);
+      setIsConfirmUninstallOpen(false);
     } finally {
       setUninstalling(false);
     }
+  };
+
+  const handleUninstall = () => {
+    setIsConfirmUninstallOpen(true);
   };
 
   const handleInstall = async () => {
@@ -298,6 +304,17 @@ export function SkillDetail({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isConfirmUninstallOpen}
+        title="Uninstall Skill"
+        description={`Are you sure you want to uninstall '${skill.name}' from your system? This will delete the skill folder and unbind any active workspace symlinks.`}
+        confirmLabel="Uninstall"
+        variant="destructive"
+        isLoading={uninstalling}
+        onConfirm={handleConfirmUninstall}
+        onCancel={() => setIsConfirmUninstallOpen(false)}
+      />
     </main>
   );
 }

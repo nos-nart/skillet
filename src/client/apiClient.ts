@@ -97,4 +97,16 @@ export const api = {
     const data = (await res.json()) as UninstallResult;
     return data;
   },
+
+  async pickFolder(): Promise<{ ok: boolean; path?: string; name?: string; error?: string }> {
+    try {
+      const res = await fetch("/api/pick-folder", { method: "POST" });
+      if (!res.ok) {
+        return { ok: false, error: "Failed to open folder picker" };
+      }
+      return await res.json();
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  },
 };

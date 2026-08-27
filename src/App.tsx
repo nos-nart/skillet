@@ -6,6 +6,11 @@ import { AgentsTab } from "./components/tabs/AgentsTab.tsx";
 import { PromptsTab } from "./components/tabs/PromptsTab.tsx";
 import { SettingsTab } from "./components/tabs/SettingsTab.tsx";
 import { NewSkillDialog } from "./components/NewSkillDialog.tsx";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "./components/ui/resizable.tsx";
 import { useWorkspaces } from "./hooks/useWorkspaces.ts";
 import { api } from "./client/apiClient.ts";
 import { Skill, Workspace } from "./types/skills.ts";
@@ -17,7 +22,27 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [isNewSkillOpen, setIsNewSkillOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    const saved = localStorage.getItem("skillet_theme");
+    return saved === "light" ? "light" : "dark";
+  });
   const { workspaces, selectedWorkspace, setSelectedWorkspace, addWorkspace } = useWorkspaces();
+
+  useEffect(() => {
+    if (theme === "light") {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+      document.documentElement.classList.add("dark");
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("skillet_theme", next);
+  };
 
   const loadSkills = useCallback(async () => {
     setIsLoading(true);
@@ -102,45 +127,76 @@ export function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-row overflow-hidden bg-zinc-950 text-zinc-100 font-sans">
-      <Sidebar
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        skillsCount={skills.length}
-        workspaces={workspaces}
-        selectedWorkspace={selectedWorkspace}
-        onSelectWorkspace={setSelectedWorkspace}
-        onAddWorkspace={addWorkspace}
-      />
+    <div className={`h-screen w-screen flex flex-row overflow-hidden font-sans ${theme === "light" ? "bg-zinc-100 text-zinc-900" : "bg-zinc-950 text-zinc-100"}`}>
+      {currentTab === "skills" ? (
+        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+          <ResizablePanel defaultSize={18} minSize={14} maxSize={26}>
+            <Sidebar
+              currentTab={currentTab}
+              setCurrentTab={setCurrentTab}
+              skillsCount={skills.length}
+              workspaces={workspaces}
+              selectedWorkspace={selectedWorkspace}
+              onSelectWorkspace={setSelectedWorkspace}
+              onAddWorkspace={addWorkspace}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+            />
+          </ResizablePanel>
 
-      {currentTab === "skills" && (
-        <>
-          <SkillList
-            skills={skills}
-            selectedSkill={selectedSkill}
-            onSelectSkill={setSelectedSkill}
-            onCheckUpdates={handleCheckUpdates}
-            onRescan={loadSkills}
-            onNewSkill={() => setIsNewSkillOpen(true)}
-            isLoading={isLoading}
-            isCheckingUpdates={isCheckingUpdates}
-          />
-          <SkillDetail
-            skill={selectedSkill}
-            workspaces={workspaces}
-            selectedWorkspace={selectedWorkspace}
-            onToggleInRepo={handleToggle}
-            onUpdateSkill={handleUpdateSkill}
-            onUninstallSkill={handleUninstallSkill}
-          />
-        </>
+          <ResizableHandle withHandle />
+
+          <ResizablePanel defaultSize={27} minSize={20} maxSize={40}>
+            <SkillList
+              skills={skills}
+              selectedSkill={selectedSkill}
+              onSelectSkill={setSelectedSkill}
+              onCheckUpdates={handleCheckUpdates}
+              onRescan={loadSkills}
+              onNewSkill={() => setIsNewSkillOpen(true)}
+              isLoading={isLoading}
+              isCheckingUpdates={isCheckingUpdates}
+            />
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          <ResizablePanel defaultSize={55} minSize={30}>
+            <SkillDetail
+              skill={selectedSkill}
+              workspaces={workspaces}
+              selectedWorkspace={selectedWorkspace}
+              onToggleInRepo={handleToggle}
+              onUpdateSkill={handleUpdateSkill}
+              onUninstallSkill={handleUninstallSkill}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+          <ResizablePanel defaultSize={18} minSize={14} maxSize={26}>
+            <Sidebar
+              currentTab={currentTab}
+              setCurrentTab={setCurrentTab}
+              skillsCount={skills.length}
+              workspaces={workspaces}
+              selectedWorkspace={selectedWorkspace}
+              onSelectWorkspace={setSelectedWorkspace}
+              onAddWorkspace={addWorkspace}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+            />
+          </ResizablePanel>
+
+          <ResizableHandle />
+
+          <ResizablePanel defaultSize={82} minSize={40}>
+            {currentTab === "agents" && <AgentsTab />}
+            {currentTab === "prompts" && <PromptsTab skills={skills} />}
+            {currentTab === "settings" && <SettingsTab />}
+          </ResizablePanel>
+        </ResizablePanelGroup>
       )}
-
-      {currentTab === "agents" && <AgentsTab />}
-
-      {currentTab === "prompts" && <PromptsTab skills={skills} />}
-
-      {currentTab === "settings" && <SettingsTab />}
 
       <NewSkillDialog
         isOpen={isNewSkillOpen}

@@ -2,13 +2,17 @@ import { Workspace } from "../types/skills.ts";
 import { ensureParentDir } from "./fs.ts";
 
 export class WorkspaceManager {
-  private configPath: string;
+  private customConfigPath?: string;
   private inMemoryList?: Workspace[];
 
   constructor(customConfigPath?: string) {
-    const custom = customConfigPath || Deno.env.get("SKILLET_CONFIG_PATH");
+    this.customConfigPath = customConfigPath;
+  }
+
+  private getConfigPath(): string {
+    const custom = this.customConfigPath || Deno.env.get("SKILLET_CONFIG_PATH");
     const home = Deno.env.get("HOME") || "/tmp";
-    this.configPath = custom || `${home}/.config/skillet/workspaces.json`;
+    return custom || `${home}/.config/skillet/workspaces.json`;
   }
 
   async getWorkspaces(): Promise<Workspace[]> {
@@ -16,7 +20,7 @@ export class WorkspaceManager {
       return this.inMemoryList;
     }
     try {
-      const data = await Deno.readTextFile(this.configPath);
+      const data = await Deno.readTextFile(this.getConfigPath());
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
@@ -71,8 +75,9 @@ export class WorkspaceManager {
   private async saveWorkspaces(list: Workspace[]): Promise<void> {
     this.inMemoryList = [...list];
     try {
-      await ensureParentDir(this.configPath);
-      await Deno.writeTextFile(this.configPath, JSON.stringify(list, null, 2));
+      const targetPath = this.getConfigPath();
+      await ensureParentDir(targetPath);
+      await Deno.writeTextFile(targetPath, JSON.stringify(list, null, 2));
     } catch {
       // Retain in-memory list if filesystem is not writable
     }

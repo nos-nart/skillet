@@ -5,7 +5,9 @@ import {
   Terminal,
   GearSix,
   GitBranch,
-  Plus,
+  FolderSimplePlus,
+  Sun,
+  Moon,
 } from "@phosphor-icons/react";
 import { Workspace } from "../types/skills.ts";
 import { Button } from "./ui/button.tsx";
@@ -13,6 +15,7 @@ import { Input } from "./ui/input.tsx";
 import { Badge } from "./ui/badge.tsx";
 import { ScrollArea } from "./ui/scroll-area.tsx";
 import { Separator } from "./ui/separator.tsx";
+import { api } from "../client/apiClient.ts";
 
 export type NavTab = "skills" | "agents" | "prompts" | "settings";
 
@@ -24,6 +27,8 @@ interface SidebarProps {
   selectedWorkspace: Workspace;
   onSelectWorkspace: (ws: Workspace) => void;
   onAddWorkspace?: (ws: Workspace) => void;
+  theme?: "dark" | "light";
+  onToggleTheme?: () => void;
 }
 
 export function Sidebar({
@@ -34,13 +39,41 @@ export function Sidebar({
   selectedWorkspace,
   onSelectWorkspace,
   onAddWorkspace,
+  theme = "dark",
+  onToggleTheme,
 }: SidebarProps) {
-  const [isAddingWs, setIsAddingWs] = useState(false);
-  const [newWsPath, setNewWsPath] = useState("");
+  const [isAddingManually, setIsAddingManually] = useState(false);
+  const [manualPath, setManualPath] = useState("");
+  const [isPickingFolder, setIsPickingFolder] = useState(false);
 
-  const handleAddWorkspace = () => {
-    if (!newWsPath.trim()) return;
-    const path = newWsPath.trim();
+  const handlePickFolder = async () => {
+    setIsPickingFolder(true);
+    try {
+      const res = await api.pickFolder();
+      if (res.ok && res.path) {
+        const name = res.name || res.path.split("/").filter(Boolean).pop() || "Workspace";
+        if (onAddWorkspace) {
+          onAddWorkspace({
+            id: `ws-${Date.now()}`,
+            name,
+            path: res.path,
+            isCurrent: false,
+          });
+        }
+      } else {
+        // Fallback to manual text input if dialog was cancelled or unsupported
+        setIsAddingManually(true);
+      }
+    } catch {
+      setIsAddingManually(true);
+    } finally {
+      setIsPickingFolder(false);
+    }
+  };
+
+  const handleSaveManual = () => {
+    if (!manualPath.trim()) return;
+    const path = manualPath.trim();
     const name = path.split("/").filter(Boolean).pop() || path;
     if (onAddWorkspace) {
       onAddWorkspace({
@@ -50,21 +83,47 @@ export function Sidebar({
         isCurrent: false,
       });
     }
-    setNewWsPath("");
-    setIsAddingWs(false);
+    setManualPath("");
+    setIsAddingManually(false);
   };
 
   return (
-    <aside className="w-64 bg-zinc-950/90 backdrop-blur-xl border-r border-zinc-800/80 flex flex-col h-full select-none shrink-0">
+    <aside className="w-full h-full bg-zinc-950/90 dark:bg-zinc-950/90 light:bg-zinc-50 border-r border-zinc-800/80 flex flex-col select-none shrink-0 overflow-hidden">
       {/* App Header */}
-      <div className="p-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center shadow-lg shadow-orange-500/20">
-          <Sparkle weight="light" className="w-4 h-4 text-zinc-950 font-black" />
+      <div className="p-3.5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/icon.png"
+            alt="Skillet Icon"
+            className="w-8 h-8 rounded-lg shadow-md object-cover border border-zinc-800"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+          <div>
+            <h1 className="text-xs font-bold text-zinc-100 tracking-tight flex items-center gap-1.5">
+              <span>Skillet</span>
+              <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                v1.0
+              </span>
+            </h1>
+            <p className="text-[10px] text-zinc-500">Universal Skills & Prompts</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-sm font-semibold text-zinc-100 tracking-tight">Skillet</h1>
-          <p className="text-[11px] text-zinc-500">Skills & Prompts</p>
-        </div>
+
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 rounded-md transition-colors cursor-pointer"
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? (
+              <Sun weight="light" className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon weight="light" className="w-4 h-4 text-sky-400" />
+            )}
+          </button>
+        )}
       </div>
 
       <Separator />
@@ -76,36 +135,37 @@ export function Sidebar({
             Scope / Workspace
           </label>
           <button
-            onClick={() => setIsAddingWs(!isAddingWs)}
-            className="text-[10px] text-orange-400 hover:text-orange-300 flex items-center gap-0.5 transition cursor-pointer"
-            title="Add local Git repository"
+            onClick={handlePickFolder}
+            disabled={isPickingFolder}
+            className="text-[10px] text-orange-400 hover:text-orange-300 flex items-center gap-1 transition cursor-pointer font-medium"
+            title="Choose workspace folder from Finder"
           >
-            <Plus weight="light" className="w-3 h-3" />
-            <span>Add</span>
+            <FolderSimplePlus weight="light" className="w-3.5 h-3.5" />
+            <span>{isPickingFolder ? "Opening..." : "Add Folder"}</span>
           </button>
         </div>
 
-        {isAddingWs && (
+        {isAddingManually && (
           <div className="mb-2 p-2 bg-zinc-900 border border-zinc-800 rounded-md space-y-2">
             <Input
               type="text"
               placeholder="/path/to/my-repo"
-              value={newWsPath}
-              onChange={(e) => setNewWsPath(e.target.value)}
+              value={manualPath}
+              onChange={(e) => setManualPath(e.target.value)}
               className="h-7 text-xs"
             />
             <div className="flex justify-end gap-1.5">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsAddingWs(false)}
+                onClick={() => setIsAddingManually(false)}
                 className="h-6 px-2 text-[11px]"
               >
                 Cancel
               </Button>
               <Button
                 size="sm"
-                onClick={handleAddWorkspace}
+                onClick={handleSaveManual}
                 className="h-6 px-2 text-[11px]"
               >
                 Save

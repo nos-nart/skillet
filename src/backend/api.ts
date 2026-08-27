@@ -253,6 +253,31 @@ export async function handleApiRequest(req: Request): Promise<Response> {
       return Response.json(result, { status: result.ok ? 200 : 400 });
     }
 
+    // POST /api/pick-folder (Native macOS folder picker)
+    if (url.pathname === "/api/pick-folder" && req.method === "POST") {
+      try {
+        const command = new Deno.Command("osascript", {
+          args: ["-e", 'POSIX path of (choose folder with prompt "Select Project Folder")'],
+        });
+        const output = await command.output();
+        if (output.success) {
+          const rawPath = new TextDecoder().decode(output.stdout).trim().replace(/\/+$/, "");
+          if (rawPath) {
+            const folderName = rawPath.split("/").pop() || "Workspace";
+            return Response.json({
+              ok: true,
+              path: rawPath,
+              name: folderName,
+            });
+          }
+        }
+        return Response.json({ ok: false, error: "Folder selection was cancelled" });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return Response.json({ ok: false, error: msg }, { status: 500 });
+      }
+    }
+
     return new Response("Not Found", { status: 404 });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);

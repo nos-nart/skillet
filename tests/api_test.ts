@@ -3,6 +3,9 @@ import { handleApiRequest } from "../src/backend/api.ts";
 import { api } from "../src/client/apiClient.ts";
 import { Workspace } from "../src/types/skills.ts";
 
+const testConfigDir = await Deno.makeTempDir();
+Deno.env.set("SKILLET_CONFIG_PATH", `${testConfigDir}/workspaces.json`);
+
 Deno.test("handleApiRequest handles GET /api/skills", async () => {
   const req = new Request("http://localhost/api/skills");
   const res = await handleApiRequest(req);
