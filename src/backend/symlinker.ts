@@ -19,14 +19,12 @@ export function validateSafeSlug(slug: string): boolean {
   return /^[a-zA-Z0-9_.-]+$/.test(trimmed);
 }
 
-const WORKSPACE_SKILLS_REL = ".agents/skills";
-
-function resolveSafeTarget(workspacePath: string, _agent: AgentId, skillSlug: string): string | null {
+function resolveSafeTarget(workspacePath: string, agent: AgentId, skillSlug: string): string | null {
   if (!validateSafeSlug(skillSlug)) {
     return null;
   }
   const normalizedWs = workspacePath.replace(/\/+$/, "");
-  const target = `${normalizedWs}/${WORKSPACE_SKILLS_REL}/${skillSlug}`;
+  const target = `${normalizedWs}/${getAgentRelPath(agent)}/${skillSlug}`;
 
   // Ensure resolved path doesn't escape workspace
   if (!target.startsWith(normalizedWs)) {
@@ -63,7 +61,7 @@ export async function enableSkillInWorkspace(
     return false;
   }
 
-  const skillsDir = `${workspacePath.replace(/\/+$/, "")}/${WORKSPACE_SKILLS_REL}`;
+  const skillsDir = `${workspacePath.replace(/\/+$/, "")}/${getAgentRelPath(agent)}`;
 
   try {
     await ensureDir(skillsDir);
