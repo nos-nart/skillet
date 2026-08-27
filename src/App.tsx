@@ -5,7 +5,10 @@ import { SkillDetail } from "./components/SkillDetail.tsx";
 import { useWorkspaces } from "./hooks/useWorkspaces.ts";
 import { api } from "./client/apiClient.ts";
 import { Skill, Workspace } from "./types/skills.ts";
-import { Bot, Terminal, Settings } from "lucide-react";
+import { Robot, Terminal, GearSix } from "@phosphor-icons/react";
+import { Badge } from "./components/ui/badge.tsx";
+import { Card, CardContent } from "./components/ui/card.tsx";
+import { Input } from "./components/ui/input.tsx";
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>("skills");
@@ -112,7 +115,7 @@ export function App() {
           <div className="max-w-3xl space-y-6">
             <div>
               <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
-                <Bot className="w-5 h-5 text-sky-400" />
+                <Robot weight="light" className="w-5 h-5 text-sky-400" />
                 Detected Coding Agents
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
@@ -129,18 +132,20 @@ export function App() {
                 { name: "Windsurf", path: "~/.codeium/windsurf/skills", status: "Ready", icon: "🌊" },
                 { name: "OpenCode", path: "~/.opencode/skills", status: "Ready", icon: "🔓" },
               ].map((agent) => (
-                <div key={agent.name} className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{agent.icon}</span>
-                      <span className="text-sm font-semibold text-zinc-200">{agent.name}</span>
+                <Card key={agent.name} className="bg-zinc-900/50">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{agent.icon}</span>
+                        <span className="text-sm font-semibold text-zinc-200">{agent.name}</span>
+                      </div>
+                      <Badge variant="success">
+                        {agent.status}
+                      </Badge>
                     </div>
-                    <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                      {agent.status}
-                    </span>
-                  </div>
-                  <p className="text-[11px] font-mono text-zinc-500 truncate">{agent.path}</p>
-                </div>
+                    <p className="text-[11px] font-mono text-zinc-500 truncate">{agent.path}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
@@ -152,7 +157,7 @@ export function App() {
           <div className="max-w-3xl space-y-4">
             <div>
               <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
-                <Terminal className="w-5 h-5 text-emerald-400" />
+                <Terminal weight="light" className="w-5 h-5 text-emerald-400" />
                 Prompt & Trigger Catalog
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
@@ -185,7 +190,7 @@ export function App() {
           <div className="max-w-2xl space-y-6">
             <div>
               <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-zinc-400" />
+                <GearSix weight="light" className="w-5 h-5 text-zinc-400" />
                 Settings & Preferences
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
@@ -194,20 +199,23 @@ export function App() {
             </div>
 
             <div className="space-y-4 text-xs">
-              <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
-                <label className="text-xs font-semibold text-zinc-200 block">GitHub API Token (Optional)</label>
-                <p className="text-[11px] text-zinc-500">Increases rate limits for discovering remote skills and private repositories.</p>
-                <input
-                  type="password"
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                  className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
-                />
-              </div>
+              <Card className="bg-zinc-900/50">
+                <CardContent className="p-4 space-y-2">
+                  <label className="text-xs font-semibold text-zinc-200 block">GitHub API Token (Optional)</label>
+                  <p className="text-[11px] text-zinc-500">Increases rate limits for discovering remote skills and private repositories.</p>
+                  <Input
+                    type="password"
+                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  />
+                </CardContent>
+              </Card>
 
-              <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-2">
-                <label className="text-xs font-semibold text-zinc-200 block">Application Version</label>
-                <p className="text-[11px] text-zinc-500">Skillet v1.0.0 (Deno Desktop Runtime)</p>
-              </div>
+              <Card className="bg-zinc-900/50">
+                <CardContent className="p-4 space-y-2">
+                  <label className="text-xs font-semibold text-zinc-200 block">Application Version</label>
+                  <p className="text-[11px] text-zinc-500">Skillet v1.0.0 (Deno Desktop Runtime · Vite 8 · comark)</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </main>
