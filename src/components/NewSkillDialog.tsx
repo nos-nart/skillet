@@ -43,7 +43,7 @@ export function NewSkillDialog({ isOpen, onClose, onInstall }: NewSkillDialogPro
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
-                <Plus weight="light" className="w-4 h-4 text-orange-500" />
+                <Plus weight="light" className="w-4 h-4 text-primary" />
                 Add New Skill
               </CardTitle>
               <CardDescription className="text-xs mt-1 text-zinc-600 dark:text-zinc-400">
@@ -68,7 +68,7 @@ export function NewSkillDialog({ isOpen, onClose, onInstall }: NewSkillDialogPro
 
             <div className="space-y-1.5">
               <label className="text-zinc-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
-                <GitBranch weight="light" className="w-3.5 h-3.5 text-orange-500" />
+                <GitBranch weight="light" className="w-3.5 h-3.5 text-primary" />
                 GitHub Repository or Local Path
               </label>
               <Input

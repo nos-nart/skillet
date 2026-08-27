@@ -37,7 +37,7 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-3 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
           <div className="flex items-center gap-2">
-            <BookmarkSimple className="w-5 h-5 text-orange-500" weight="bold" />
+            <BookmarkSimple className="w-5 h-5 text-primary" weight="bold" />
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Add Bookmarks</h3>
           </div>
           <button
@@ -61,7 +61,7 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="e.g. https://skills.sh/dmmulroy/anti-slop&#10;cursor/plugins/deslop"
-              className="w-full min-h-[160px] p-3 text-sm rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all resize-y"
+              className="w-full min-h-[160px] p-3 text-sm rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-border focus:border-primary transition-all resize-y"
             />
           </div>
           

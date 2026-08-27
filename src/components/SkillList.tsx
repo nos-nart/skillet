@@ -91,7 +91,7 @@ export function SkillList({
                 title="Add custom skill from GitHub or local folder"
                 className="h-8 text-xs gap-1 px-2.5"
               >
-                <Plus weight="light" className="w-4 h-4 text-orange-500" />
+                <Plus weight="light" className="w-4 h-4 text-primary" />
                 <span>New</span>
               </Button>
             )}
@@ -105,7 +105,7 @@ export function SkillList({
             >
               <ArrowCircleUp
                 weight="light"
-                className={`w-4 h-4 text-orange-500 transition-transform ${isCheckingUpdates ? "animate-spin" : ""}`}
+                className={`w-4 h-4 text-primary transition-transform ${isCheckingUpdates ? "animate-spin" : ""}`}
               />
               <span>{isCheckingUpdates ? "Checking..." : "Updates"}</span>
             </Button>
@@ -119,7 +119,7 @@ export function SkillList({
             >
               <ArrowsClockwise
                 weight="light"
-                className={`w-4 h-4 text-orange-500 transition-transform ${isLoading ? "animate-spin" : "hover:rotate-45"}`}
+                className={`w-4 h-4 text-primary transition-transform ${isLoading ? "animate-spin" : "hover:rotate-45"}`}
               />
             </Button>
           </div>
@@ -170,7 +170,7 @@ export function SkillList({
                         onClick={() => onSelectSkill(skill)}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-100 flex items-center justify-between group cursor-pointer active:scale-[0.98] ${
                           isSelected
-                            ? "bg-orange-500 text-white shadow-sm"
+                            ? "bg-primary text-white shadow-sm"
                             : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 border border-transparent"
                         }`}
                       >
@@ -183,7 +183,7 @@ export function SkillList({
                               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                             )}
                           </div>
-                          <p className={`text-[11px] truncate mt-0.5 ${isSelected ? "text-orange-100" : "text-zinc-500"}`}>
+                          <p className={`text-[11px] truncate mt-0.5 ${isSelected ? "text-primary-50" : "text-zinc-500"}`}>
                             {skill.metadata?.description || skill.name}
                           </p>
                         </div>

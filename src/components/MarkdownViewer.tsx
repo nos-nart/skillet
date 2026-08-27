@@ -106,7 +106,7 @@ const customComponents = {
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
-      className="border-l-2 border-orange-500/80 bg-orange-500/5 dark:bg-orange-500/10 pl-3.5 py-1.5 my-3.5 text-xs italic text-zinc-700 dark:text-zinc-300 rounded-r-lg"
+      className="border-l-2 border-primary/80 bg-primary/5 dark:bg-primary-soft pl-3.5 py-1.5 my-3.5 text-xs italic text-zinc-700 dark:text-zinc-300 rounded-r-lg"
       {...props}
     />
   ),
@@ -114,7 +114,7 @@ const customComponents = {
   code: (props: React.HTMLAttributes<HTMLElement>) => {
     return (
       <code
-        className="font-mono text-xs px-1.5 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-800/90 text-orange-600 dark:text-orange-300 border border-zinc-300 dark:border-zinc-700/50"
+        className="font-mono text-xs px-1.5 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-800/90 text-primary-hover dark:text-orange-300 border border-zinc-300 dark:border-zinc-700/50"
         {...props}
       />
     );
@@ -123,7 +123,7 @@ const customComponents = {
     <a
       target="_blank"
       rel="noreferrer"
-      className="text-orange-600 dark:text-orange-400 underline hover:text-orange-500 transition-colors"
+      className="text-primary-hover dark:text-primary-light underline hover:text-primary transition-colors"
       {...props}
     />
   ),

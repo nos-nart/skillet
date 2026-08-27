@@ -103,7 +103,7 @@ export function Sidebar({
           <div>
             <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5 font-sans">
               <span>Skillet</span>
-              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 font-mono">
+              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-lg bg-primary-soft text-primary-hover dark:text-primary-light border border-primary-border font-mono">
                 v1.0
               </span>
             </h1>
@@ -138,7 +138,7 @@ export function Sidebar({
             type="button"
             onClick={handlePickFolder}
             disabled={isPickingFolder}
-            className="text-xs text-orange-600 dark:text-orange-400 hover: flex items-center gap-1.5 leading-none transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
+            className="text-xs text-primary-hover dark:text-primary-light hover: flex items-center gap-1.5 leading-none transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
             title="Choose workspace folder from Finder"
           >
             <FolderSimplePlus weight="light" className="w-4 h-4 shrink-0" />
@@ -182,7 +182,7 @@ export function Sidebar({
               const ws = workspaces.find((w) => w.id === e.target.value);
               if (ws) onSelectWorkspace(ws);
             }}
-            className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 text-xs font-medium rounded-lg px-3 py-2 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-500/50 pr-8 truncate transition-colors"
+            className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 text-xs font-medium rounded-lg px-3 py-2 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50 pr-8 truncate transition-colors"
           >
             {workspaces.map((ws) => (
               <option key={ws.id} value={ws.id}>

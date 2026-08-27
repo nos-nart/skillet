@@ -97,13 +97,13 @@ export function PromptsTab({ skills }: PromptsTabProps) {
                       <button
                         onClick={() => copyToClipboard(trigger)}
                         title="Click to copy trigger"
-                        className="inline-flex items-center gap-1.5 font-mono text-xs text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 font-mono text-xs text-primary-hover dark:text-primary-light bg-primary-soft hover:bg-primary-border border border-primary-border px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95 cursor-pointer"
                       >
                         <span className="font-semibold">{trigger}</span>
                         {isCopied ? (
                           <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-75 duration-150" />
                         ) : (
-                          <Copy weight="light" className="w-3.5 h-3.5 text-orange-500/80 opacity-60 group-hover:opacity-100 transition-opacity" />
+                          <Copy weight="light" className="w-3.5 h-3.5 text-primary/80 opacity-60 group-hover:opacity-100 transition-opacity" />
                         )}
                       </button>
 

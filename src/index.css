@@ -87,3 +87,12 @@ html.dark .shiki span {
 .animate-view-in {
   animation: fadeInScale 180ms var(--ease-out-strong) forwards;
 }
+
+@theme {
+  --color-primary: var(--color-orange-500);
+  --color-primary-hover: var(--color-orange-600);
+  --color-primary-active: var(--color-orange-700);
+  --color-primary-light: var(--color-orange-400);
+  --color-primary-soft: var(--color-orange-500\/10);
+  --color-primary-border: var(--color-orange-500\/20);
+}

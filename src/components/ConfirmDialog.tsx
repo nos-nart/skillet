@@ -31,7 +31,7 @@ export function ConfirmDialog({
         <div className="p-5 space-y-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${variant === "destructive" ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-orange-500/10 text-orange-600 dark:text-orange-400"}`}>
+              <div className={`p-2 rounded-lg ${variant === "destructive" ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-primary-soft text-primary-hover dark:text-primary-light"}`}>
                 {variant === "destructive" ? (
                   <Trash weight="light" className="w-5 h-5" />
                 ) : (

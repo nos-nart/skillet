@@ -139,7 +139,7 @@ export function SkillDetail({
               disabled={installing}
               className="gap-1.5 text-xs"
             >
-              <DownloadSimple weight="light" className="w-4 h-4 text-orange-500" />
+              <DownloadSimple weight="light" className="w-4 h-4 text-primary" />
               <span>{installing ? "Installing..." : "Install"}</span>
             </Button>
           )}
@@ -206,7 +206,7 @@ export function SkillDetail({
                   href={skill.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-orange-600 dark:text-orange-400 hover:text-orange-500 font-mono text-xs truncate flex items-center gap-1 transition-colors"
+                  className="text-primary-hover dark:text-primary-light hover:text-primary font-mono text-xs truncate flex items-center gap-1 transition-colors"
                 >
                   <span className="truncate">{skill.sourceUrl}</span>
                   <ArrowSquareOut weight="light" className="w-3.5 h-3.5 shrink-0" />
@@ -231,7 +231,7 @@ export function SkillDetail({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-              <GitBranch weight="light" className="w-4 h-4 text-orange-500" />
+              <GitBranch weight="light" className="w-4 h-4 text-primary" />
               Per-Repository Activation Switchboard
             </h3>
             <span className="text-xs text-zinc-500">Symlinks managed automatically</span>

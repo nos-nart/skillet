@@ -279,14 +279,14 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
             {state.bookmarks.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                  <BookmarkSimple className="text-orange-500" weight="fill" /> Your Bookmarks
+                  <BookmarkSimple className="text-primary" weight="fill" /> Your Bookmarks
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
                   {state.bookmarks.map(bm => {
                     const info = parseRepo(bm);
                     const displayName = info ? `${info.owner}/${info.repo}${info.path ? `/${info.path}` : ""}` : bm;
                     return (
-                      <div key={bm} onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, bm); }} className="flex items-center justify-between p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group">
+                      <div key={bm} onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, bm); }} className="flex items-center justify-between p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group">
                         <div className="flex items-center gap-2 truncate">
                           <BookmarkSimple className="w-4 h-4 text-zinc-400" />
                           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</span>
@@ -304,12 +304,12 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Popular Repositories</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "cursor/plugins"); }}>
-                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-orange-500 transition-colors">cursor/plugins</h3>
+                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "cursor/plugins"); }}>
+                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-primary transition-colors">cursor/plugins</h3>
                   <p className="text-xs text-zinc-500 mt-1">Official Cursor community skills repository.</p>
                 </div>
-                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "vercel-labs/skills"); }}>
-                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-orange-500 transition-colors">vercel-labs/skills</h3>
+                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "vercel-labs/skills"); }}>
+                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-primary transition-colors">vercel-labs/skills</h3>
                   <p className="text-xs text-zinc-500 mt-1">Foundational skills and examples from Vercel.</p>
                 </div>
               </div>
@@ -335,13 +335,13 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                 const isInstalling = state.installingItem === item.name;
 
                 return (
-                  <div key={item.path} className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 hover:border-orange-500/30 transition-all duration-200">
+                  <div key={item.path} className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 hover:border-primary/30 transition-all duration-200">
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate" title={item.name}>
                           {item.name}
                         </h3>
-                        <a href={item.html_url} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-orange-500 transition-colors">
+                        <a href={item.html_url} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-primary transition-colors">
                           <ArrowSquareOut className="w-4 h-4" />
                         </a>
                       </div>
