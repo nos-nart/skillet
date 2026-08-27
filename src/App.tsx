@@ -12,6 +12,7 @@ import {
   ResizableHandle,
 } from "./components/ui/resizable.tsx";
 import { useWorkspaces } from "./hooks/useWorkspaces.ts";
+import { useTheme } from "./hooks/useTheme.ts";
 import { api } from "./client/apiClient.ts";
 import { Skill, Workspace } from "./types/skills.ts";
 
@@ -22,27 +23,8 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [isNewSkillOpen, setIsNewSkillOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    const saved = localStorage.getItem("skillet_theme");
-    return saved === "light" ? "light" : "dark";
-  });
+  const { theme, toggleTheme } = useTheme();
   const { workspaces, selectedWorkspace, setSelectedWorkspace, addWorkspace } = useWorkspaces();
-
-  useEffect(() => {
-    if (theme === "light") {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-      document.documentElement.classList.add("dark");
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("skillet_theme", next);
-  };
 
   const loadSkills = useCallback(async () => {
     setIsLoading(true);
@@ -188,7 +170,7 @@ export function App() {
             />
           </ResizablePanel>
 
-          <ResizableHandle />
+          <ResizableHandle withHandle />
 
           <ResizablePanel defaultSize={82} minSize={40}>
             {currentTab === "agents" && <AgentsTab />}

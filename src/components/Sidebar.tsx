@@ -90,36 +90,36 @@ export function Sidebar({
     <aside className="w-full h-full bg-zinc-100/90 dark:bg-zinc-950 flex flex-col select-none shrink-0 overflow-hidden">
       {/* App Header */}
       <div className="p-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <img
             src="/icon.png"
             alt="Skillet Icon"
-            className="w-8 h-8 rounded-lg shadow-xs object-cover border border-zinc-200 dark:border-zinc-800"
+            className="w-9 h-9 rounded-lg object-cover border border-zinc-200 dark:border-zinc-800"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
           />
           <div>
-            <h1 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
+            <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5">
               <span>Skillet</span>
-              <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
                 v1.0
               </span>
             </h1>
-            <p className="text-[10px] text-zinc-500">Universal Skills & Prompts</p>
+            <p className="text-xs text-zinc-500">Universal Skills & Prompts</p>
           </div>
         </div>
 
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
-            className="p-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-900 rounded-md transition-colors cursor-pointer"
+            className="p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/80 dark:hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer"
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             {theme === "dark" ? (
-              <Sun weight="light" className="w-4 h-4 text-amber-400" />
+              <Sun weight="light" className="w-5 h-5 text-amber-400" />
             ) : (
-              <Moon weight="light" className="w-4 h-4 text-sky-500" />
+              <Moon weight="light" className="w-5 h-5 text-sky-500" />
             )}
           </button>
         )}
@@ -128,44 +128,44 @@ export function Sidebar({
       <Separator />
 
       {/* Workspace Selector */}
-      <div className="p-3">
-        <div className="flex items-center justify-between px-1 mb-1.5">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 block">
+      <div className="p-3.5 space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <label className="text-xs uppercase font-bold tracking-wider text-zinc-500 block">
             Scope / Workspace
           </label>
           <button
             onClick={handlePickFolder}
             disabled={isPickingFolder}
-            className="text-[10px] text-orange-600 dark:text-orange-400 hover:text-orange-500 flex items-center gap-1 transition cursor-pointer font-medium"
+            className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 flex items-center gap-1 transition cursor-pointer font-medium"
             title="Choose workspace folder from Finder"
           >
-            <FolderSimplePlus weight="light" className="w-3.5 h-3.5" />
+            <FolderSimplePlus weight="light" className="w-4 h-4" />
             <span>{isPickingFolder ? "Opening..." : "Add Folder"}</span>
           </button>
         </div>
 
         {isAddingManually && (
-          <div className="mb-2 p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md space-y-2">
+          <div className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-2">
             <Input
               type="text"
               placeholder="/path/to/my-repo"
               value={manualPath}
               onChange={(e) => setManualPath(e.target.value)}
-              className="h-7 text-xs"
+              className="h-8 text-xs"
             />
             <div className="flex justify-end gap-1.5">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsAddingManually(false)}
-                className="h-6 px-2 text-[11px]"
+                className="h-7 px-2.5 text-xs"
               >
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={handleSaveManual}
-                className="h-6 px-2 text-[11px]"
+                className="h-7 px-2.5 text-xs"
               >
                 Save
               </Button>
@@ -180,7 +180,7 @@ export function Sidebar({
               const ws = workspaces.find((w) => w.id === e.target.value);
               if (ws) onSelectWorkspace(ws);
             }}
-            className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 text-xs rounded-md px-3 py-2 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-500/50 pr-8 truncate"
+            className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 text-xs font-medium rounded-lg px-3 py-2 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-500/50 pr-8 truncate"
           >
             {workspaces.map((ws) => (
               <option key={ws.id} value={ws.id}>
@@ -188,56 +188,56 @@ export function Sidebar({
               </option>
             ))}
           </select>
-          <GitBranch weight="light" className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-2.5 pointer-events-none" />
+          <GitBranch weight="light" className="w-4 h-4 text-zinc-400 absolute right-2.5 top-2.5 pointer-events-none" />
         </div>
       </div>
 
       <Separator />
 
       {/* Navigation items */}
-      <ScrollArea className="flex-1 p-2">
-        <nav className="space-y-1">
+      <ScrollArea className="flex-1 p-2.5">
+        <nav className="space-y-1.5">
           <button
             onClick={() => setCurrentTab("skills")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
               currentTab === "skills"
-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 shadow-xs border border-zinc-300 dark:border-zinc-700/40"
+                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Sparkle weight="light" className="w-4 h-4 text-orange-500" />
+            <div className="flex items-center gap-3">
+              <Sparkle weight="light" className="w-4.5 h-4.5 text-orange-500" />
               <span>Skills</span>
             </div>
-            <Badge variant="secondary" className="font-mono px-1.5 py-0 text-[10px]">
+            <Badge variant="secondary" className="font-mono px-2 py-0.5 text-xs rounded-lg">
               {skillsCount}
             </Badge>
           </button>
 
           <button
             onClick={() => setCurrentTab("agents")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
               currentTab === "agents"
-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 shadow-xs border border-zinc-300 dark:border-zinc-700/40"
+                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Robot weight="light" className="w-4 h-4 text-sky-500" />
+            <div className="flex items-center gap-3">
+              <Robot weight="light" className="w-4.5 h-4.5 text-sky-500" />
               <span>Agents</span>
             </div>
           </button>
 
           <button
             onClick={() => setCurrentTab("prompts")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
               currentTab === "prompts"
-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 shadow-xs border border-zinc-300 dark:border-zinc-700/40"
+                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Terminal weight="light" className="w-4 h-4 text-emerald-500" />
+            <div className="flex items-center gap-3">
+              <Terminal weight="light" className="w-4.5 h-4.5 text-emerald-500" />
               <span>Prompts</span>
             </div>
           </button>
@@ -247,16 +247,16 @@ export function Sidebar({
       <Separator />
 
       {/* Settings at bottom */}
-      <div className="p-2">
+      <div className="p-2.5">
         <button
           onClick={() => setCurrentTab("settings")}
-          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-all cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
             currentTab === "settings"
               ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
               : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
           }`}
         >
-          <GearSix weight="light" className="w-4 h-4 text-zinc-500" />
+          <GearSix weight="light" className="w-4.5 h-4.5 text-zinc-500" />
           <span>Settings</span>
         </button>
       </div>

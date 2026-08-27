@@ -58,12 +58,12 @@ export function SkillList({
   return (
     <section className="w-full h-full bg-zinc-50 dark:bg-zinc-900/60 flex flex-col select-none overflow-hidden">
       {/* Top action toolbar */}
-      <div className="p-3 space-y-2.5">
+      <div className="p-3.5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">{skills.length} skills</span>
+            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{skills.length} skills</span>
             {updateCount > 0 && (
-              <Badge variant="warning" className="px-1.5 py-0.2 text-[10px]">
+              <Badge variant="warning" className="px-2 py-0.5 text-xs rounded-lg">
                 {updateCount} update{updateCount > 1 ? "s" : ""}
               </Badge>
             )}
@@ -75,9 +75,9 @@ export function SkillList({
                 size="sm"
                 onClick={onNewSkill}
                 title="Add custom skill from GitHub or local folder"
-                className="h-7 text-[11px] gap-1 px-2"
+                className="h-8 text-xs gap-1 px-2.5"
               >
-                <Plus weight="light" className="w-3.5 h-3.5 text-orange-400" />
+                <Plus weight="light" className="w-4 h-4 text-orange-500" />
                 <span>New</span>
               </Button>
             )}
@@ -87,11 +87,11 @@ export function SkillList({
               onClick={onCheckUpdates}
               disabled={isCheckingUpdates}
               title="Check for updates"
-              className="h-7 text-[11px] gap-1 px-2"
+              className="h-8 text-xs gap-1 px-2.5"
             >
               <ArrowCircleUp
                 weight="light"
-                className={`w-3.5 h-3.5 text-orange-400 ${isCheckingUpdates ? "animate-spin" : ""}`}
+                className={`w-4 h-4 text-orange-500 ${isCheckingUpdates ? "animate-spin" : ""}`}
               />
               <span>{isCheckingUpdates ? "Checking..." : "Updates"}</span>
             </Button>
@@ -101,11 +101,11 @@ export function SkillList({
               onClick={onRescan}
               disabled={isLoading}
               title="Rescan local directories"
-              className="h-7 w-7"
+              className="h-8 w-8"
             >
               <ArrowsClockwise
                 weight="light"
-                className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-orange-400" : ""}`}
+                className={`w-4 h-4 ${isLoading ? "animate-spin text-orange-500" : ""}`}
               />
             </Button>
           </div>
@@ -115,14 +115,14 @@ export function SkillList({
         <div className="relative">
           <MagnifyingGlass
             weight="light"
-            className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 absolute left-2.5 top-2.5 pointer-events-none"
+            className="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-2.5 pointer-events-none"
           />
           <Input
             type="text"
             placeholder="Search skills and prompts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 text-xs bg-white dark:bg-zinc-950/80 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
+            className="pl-9 text-xs h-8.5 bg-white dark:bg-zinc-950/80 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
           />
         </div>
       </div>
@@ -130,7 +130,7 @@ export function SkillList({
       <Separator />
 
       {/* Grouped Skills List */}
-      <ScrollArea className="flex-1 p-2">
+      <ScrollArea className="flex-1 p-2.5">
         <div className="space-y-4">
           {Object.keys(grouped).length === 0 ? (
             <div className="p-6 text-center text-zinc-400 dark:text-zinc-500 text-xs">
@@ -138,44 +138,44 @@ export function SkillList({
             </div>
           ) : (
             Object.entries(grouped).map(([pkgName, pkgSkills]) => (
-              <div key={pkgName} className="space-y-1">
-                <div className="px-2 py-1 flex items-center justify-between text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
+              <div key={pkgName} className="space-y-1.5">
+                <div className="px-2.5 py-1 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
                   <div className="flex items-center gap-1.5 truncate">
-                    <Package weight="light" className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                    <Package weight="light" className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
                     <span className="truncate">{pkgName}</span>
                   </div>
-                  <span className="text-zinc-400 dark:text-zinc-600 font-mono text-[10px] shrink-0 ml-1">{pkgSkills.length}</span>
+                  <span className="text-zinc-400 dark:text-zinc-600 font-mono text-xs shrink-0 ml-1">{pkgSkills.length}</span>
                 </div>
 
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {pkgSkills.map((skill) => {
                     const isSelected = selectedSkill?.id === skill.id;
                     return (
                       <button
                         key={skill.id}
                         onClick={() => onSelectSkill(skill)}
-                        className={`w-full text-left px-2.5 py-2 rounded-md transition-all flex items-center justify-between group cursor-pointer ${
+                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center justify-between group cursor-pointer ${
                           isSelected
-                            ? "bg-orange-500/10 text-orange-600 dark:text-orange-200 border border-orange-500/30 shadow-xs"
+                            ? "bg-orange-500/10 text-orange-600 dark:text-orange-200 border border-orange-500/30"
                             : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
                         }`}
                       >
                         <div className="min-w-0 flex-1 pr-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-mono font-medium truncate">
+                            <span className="text-xs font-mono font-semibold truncate">
                               {skill.metadata?.trigger || `/${skill.slug}`}
                             </span>
                             {skill.updateAvailable && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                             )}
                           </div>
-                          <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                          <p className="text-xs text-zinc-500 truncate mt-0.5">
                             {skill.metadata?.description || skill.name}
                           </p>
                         </div>
                         <CaretRight
                           weight="light"
-                          className={`w-3.5 h-3.5 transition-transform shrink-0 ${
+                          className={`w-4 h-4 transition-transform shrink-0 ${
                             isSelected ? "text-orange-500 translate-x-0.5" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
                           }`}
                         />

@@ -26,41 +26,41 @@ export function ConfirmDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
         <div className="p-5 space-y-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${variant === "destructive" ? "bg-red-500/10 text-red-400" : "bg-orange-500/10 text-orange-400"}`}>
+              <div className={`p-2 rounded-lg ${variant === "destructive" ? "bg-red-500/10 text-red-600 dark:text-red-400" : "bg-orange-500/10 text-orange-600 dark:text-orange-400"}`}>
                 {variant === "destructive" ? (
                   <Trash weight="light" className="w-5 h-5" />
                 ) : (
                   <Warning weight="light" className="w-5 h-5" />
                 )}
               </div>
-              <h3 className="text-sm font-bold text-zinc-100">{title}</h3>
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
             </div>
             <button
               onClick={onCancel}
-              className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-md hover:bg-zinc-800"
+              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
             >
               <X weight="light" className="w-4 h-4" />
             </button>
           </div>
 
-          <p className="text-xs text-zinc-400 leading-relaxed pl-10">
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed pl-10">
             {description}
           </p>
         </div>
 
-        <div className="px-5 py-3.5 bg-zinc-950/60 border-t border-zinc-800/80 flex items-center justify-end gap-2">
+        <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950/60 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={onCancel}
             disabled={isLoading}
-            className="text-xs h-8"
+            className="text-xs"
           >
             Cancel
           </Button>
@@ -70,7 +70,7 @@ export function ConfirmDialog({
             size="sm"
             onClick={onConfirm}
             disabled={isLoading}
-            className="text-xs h-8 gap-1.5"
+            className="text-xs gap-1.5"
           >
             {variant === "destructive" && <Trash weight="light" className="w-3.5 h-3.5" />}
             <span>{isLoading ? "Processing..." : confirmLabel}</span>
