@@ -168,10 +168,10 @@ export function SkillList({
                       <button
                         key={skill.id}
                         onClick={() => onSelectSkill(skill)}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-100 flex items-center justify-between group cursor-pointer active:scale-[0.98] ${
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-100 flex items-center justify-between group cursor-pointer active:scale-[0.98] border border-transparent ${
                           isSelected
                             ? "bg-primary text-white shadow-sm"
-                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 border border-transparent"
+                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80"
                         }`}
                       >
                         <div className="min-w-0 flex-1 pr-2">
