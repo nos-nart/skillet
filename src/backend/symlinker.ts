@@ -19,13 +19,14 @@ export function validateSafeSlug(slug: string): boolean {
   return /^[a-zA-Z0-9_.-]+$/.test(trimmed);
 }
 
-function resolveSafeTarget(workspacePath: string, agent: AgentId, skillSlug: string): string | null {
+const WORKSPACE_SKILLS_REL = ".agents/skills";
+
+function resolveSafeTarget(workspacePath: string, _agent: AgentId, skillSlug: string): string | null {
   if (!validateSafeSlug(skillSlug)) {
     return null;
   }
-  const relPath = getAgentRelPath(agent);
   const normalizedWs = workspacePath.replace(/\/+$/, "");
-  const target = `${normalizedWs}/${relPath}/${skillSlug}`;
+  const target = `${normalizedWs}/${WORKSPACE_SKILLS_REL}/${skillSlug}`;
 
   // Ensure resolved path doesn't escape workspace
   if (!target.startsWith(normalizedWs)) {
@@ -62,10 +63,10 @@ export async function enableSkillInWorkspace(
     return false;
   }
 
-  const agentDir = `${workspacePath.replace(/\/+$/, "")}/${getAgentRelPath(agent)}`;
+  const skillsDir = `${workspacePath.replace(/\/+$/, "")}/${WORKSPACE_SKILLS_REL}`;
 
   try {
-    await ensureDir(agentDir);
+    await ensureDir(skillsDir);
     // Remove if already exists to ensure clean symlink creation
     try {
       await Deno.remove(targetSymlink, { recursive: true });

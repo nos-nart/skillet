@@ -52,7 +52,7 @@ Deno.test("enableSkillInWorkspace creates symlink and disable removes it", async
   assertEquals(await isSkillEnabledInWorkspace("test-skill", workspaceDir, "cursor"), true);
 
   // Verify symlink is valid and points to sourceSkillDir
-  const symlinkPath = `${workspaceDir}/.cursor/skills/test-skill`;
+  const symlinkPath = `${workspaceDir}/.agents/skills/test-skill`;
   const lstat = await Deno.lstat(symlinkPath);
   assertEquals(lstat.isSymlink, true);
 
@@ -86,7 +86,7 @@ Deno.test("enableSkillInWorkspace works across different agent directories", asy
   assertEquals(successAntigravity, true);
   assertEquals(await isSkillEnabledInWorkspace("ag-skill", workspaceDir, "antigravity"), true);
 
-  const lstat = await Deno.lstat(`${workspaceDir}/.gemini/skills/ag-skill`);
+  const lstat = await Deno.lstat(`${workspaceDir}/.agents/skills/ag-skill`);
   assertEquals(lstat.isSymlink, true);
 
   // Disable for antigravity
