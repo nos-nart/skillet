@@ -96,3 +96,29 @@ html.dark .shiki span {
   --color-primary-soft: var(--color-orange-500\/10);
   --color-primary-border: var(--color-orange-500\/20);
 }
+
+@theme {
+  --color-success: var(--color-emerald-500);
+  --color-success-hover: var(--color-emerald-600);
+  --color-success-light: var(--color-emerald-400);
+  --color-success-soft: var(--color-emerald-500\/10);
+  --color-success-border: var(--color-emerald-500\/20);
+
+  --color-destructive: var(--color-red-500);
+  --color-destructive-hover: var(--color-red-600);
+  --color-destructive-light: var(--color-red-400);
+  --color-destructive-soft: var(--color-red-500\/10);
+  --color-destructive-border: var(--color-red-500\/20);
+
+  --color-warning: var(--color-amber-500);
+  --color-warning-hover: var(--color-amber-600);
+  --color-warning-light: var(--color-amber-400);
+  --color-warning-soft: var(--color-amber-500\/15);
+  --color-warning-border: var(--color-amber-500\/30);
+
+  --color-info: var(--color-sky-500);
+  --color-info-hover: var(--color-sky-600);
+  --color-info-light: var(--color-sky-400);
+  --color-info-soft: var(--color-sky-500\/15);
+  --color-info-border: var(--color-sky-500\/30);
+}

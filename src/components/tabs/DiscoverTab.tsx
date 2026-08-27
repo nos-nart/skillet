@@ -269,7 +269,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
 
       <ScrollArea className="flex-1 p-5">
         {state.error && (
-          <div className="p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-sm">
+          <div className="p-4 mb-4 rounded-lg bg-destructive-soft text-destructive-hover dark:text-destructive-light border border-destructive-border text-sm">
             {state.error}
           </div>
         )}
@@ -291,7 +291,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                           <BookmarkSimple className="w-4 h-4 text-zinc-400" />
                           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</span>
                         </div>
-                        <button onClick={(e) => handleRemoveBookmark(e, bm)} className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-red-500 transition-all">
+                        <button onClick={(e) => handleRemoveBookmark(e, bm)} className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-destructive transition-all">
                           &times;
                         </button>
                       </div>
@@ -361,7 +361,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                         {isInstalling ? (
                           "Installing..."
                         ) : isInstalled ? (
-                          <span className="flex items-center justify-center gap-1"><CheckCircle weight="fill" className="text-emerald-500" /> Installed</span>
+                          <span className="flex items-center justify-center gap-1"><CheckCircle weight="fill" className="text-success" /> Installed</span>
                         ) : (
                           <span className="flex items-center justify-center gap-1"><DownloadSimple /> Install</span>
                         )}

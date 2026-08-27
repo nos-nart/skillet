@@ -35,8 +35,8 @@ function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { langua
         >
           {copied ? (
             <>
-              <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-75 duration-150" />
-              <span className="text-emerald-600 dark:text-emerald-400 font-sans font-medium">Copied!</span>
+              <Check weight="bold" className="w-3.5 h-3.5 text-success animate-in zoom-in-75 duration-150" />
+              <span className="text-success-hover dark:text-success-light font-sans font-medium">Copied!</span>
             </>
           ) : (
             <>
@@ -165,7 +165,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
 
   if (error) {
     return (
-      <div className="text-xs text-red-500 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+      <div className="text-xs text-destructive p-4 bg-destructive-soft rounded-lg border border-destructive-border">
         <p className="font-semibold mb-1">Markdown Render Error:</p>
         <pre className="text-xs font-mono whitespace-pre-wrap">{content}</pre>
       </div>

@@ -180,7 +180,7 @@ export function SkillList({
                               {skill.metadata?.trigger || `/${skill.slug}`}
                             </span>
                             {skill.updateAvailable && (
-                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-warning-light animate-pulse shrink-0" />
                             )}
                           </div>
                           <p className={`text-[11px] truncate mt-0.5 ${isSelected ? "text-primary-50" : "text-zinc-500"}`}>

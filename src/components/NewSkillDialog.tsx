@@ -61,7 +61,7 @@ export function NewSkillDialog({ isOpen, onClose, onInstall }: NewSkillDialogPro
 
           <CardContent className="space-y-4 text-xs">
             {error && (
-              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
+              <div className="p-2.5 rounded-lg bg-destructive-soft border border-destructive-border text-destructive-hover dark:text-destructive-light text-xs">
                 {error}
               </div>
             )}
@@ -85,7 +85,7 @@ export function NewSkillDialog({ isOpen, onClose, onInstall }: NewSkillDialogPro
 
             <div className="space-y-1.5">
               <label className="text-zinc-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
-                <Folder weight="light" className="w-3.5 h-3.5 text-sky-500" />
+                <Folder weight="light" className="w-3.5 h-3.5 text-primary" />
                 Custom Skill Name (Optional)
               </label>
               <Input

@@ -121,7 +121,7 @@ export function SkillDetail({
             <Button
               onClick={handleUpdate}
               disabled={updating}
-              className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold gap-1.5"
+              className="bg-warning hover:bg-warning-light text-zinc-950 font-semibold gap-1.5"
             >
               <ArrowsClockwise
                 weight="light"
@@ -248,7 +248,7 @@ export function SkillDetail({
                   className="px-4 py-3.5 flex items-center justify-between hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60 transition-colors"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className={`p-2 rounded-lg ${isGlobal ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-sky-500/10 text-sky-600 dark:text-sky-400"}`}>
+                    <div className={`p-2 rounded-lg ${isGlobal ? "bg-warning-soft text-warning-hover dark:text-warning-light" : "bg-info-soft text-info-hover dark:text-info-light"}`}>
                       <GitBranch weight="light" className="w-4.5 h-4.5" />
                     </div>
                     <div>
@@ -287,7 +287,7 @@ export function SkillDetail({
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-              <Terminal weight="light" className="w-4 h-4 text-emerald-500" />
+              <Terminal weight="light" className="w-4 h-4 text-primary" />
               SKILL.md Documentation & Prompts
             </h3>
             <span className="text-xs font-mono text-zinc-400 dark:text-zinc-500">Live Preview</span>

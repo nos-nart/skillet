@@ -53,7 +53,7 @@ export function PromptsTab({ skills }: PromptsTabProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800/80 pb-5">
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-              <Terminal weight="light" className="w-6 h-6 text-emerald-500" />
+              <Terminal weight="light" className="w-6 h-6 text-primary" />
               Prompt & Slash Command Catalog
             </h2>
             <p className="text-xs text-zinc-500 mt-1">
@@ -101,7 +101,7 @@ export function PromptsTab({ skills }: PromptsTabProps) {
                       >
                         <span className="font-semibold">{trigger}</span>
                         {isCopied ? (
-                          <Check weight="bold" className="w-3.5 h-3.5 text-emerald-500 animate-in zoom-in-75 duration-150" />
+                          <Check weight="bold" className="w-3.5 h-3.5 text-primary animate-in zoom-in-75 duration-150" />
                         ) : (
                           <Copy weight="light" className="w-3.5 h-3.5 text-primary/80 opacity-60 group-hover:opacity-100 transition-opacity" />
                         )}
