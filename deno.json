@@ -7,15 +7,16 @@
     "desktop": "deno desktop --hmr desktop.ts",
     "desktop:build": "deno desktop desktop.ts",
     "lint": "deno run -A npm:oxlint@1.80.0",
-    "test": "deno test -A"
+    "test": "deno test -A",
+    "check": "deno check src/main.tsx src/App.tsx tests/*_test.ts"
   },
   "imports": {
+    "@types/react": "npm:@types/react@19.0.0",
+    "@types/react-dom": "npm:@types/react-dom@19.0.0",
     "oxlint": "npm:oxlint@1.80.0",
     "@oxlint/plugins": "npm:@oxlint/plugins@1.80.0",
     "react": "npm:react@19.0.0",
-    "react/": "npm:react@19.0.0/",
     "react-dom": "npm:react-dom@19.0.0",
-    "react-dom/": "npm:react-dom@19.0.0/",
     "react-dom/client": "npm:react-dom@19.0.0/client",
     "@phosphor-icons/react": "npm:@phosphor-icons/react@2.1.10",
     "clsx": "npm:clsx@2.1.1",
@@ -35,6 +36,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
+    "jsxImportSourceTypes": "npm:@types/react@19.0.0",
     "lib": ["deno.window", "dom", "dom.iterable", "esnext"]
   }
 }
