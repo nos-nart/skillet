@@ -2,13 +2,18 @@ import { Workspace } from "../types/skills.ts";
 
 export class WorkspaceManager {
   private configPath: string;
+  private inMemoryList?: Workspace[];
 
   constructor(customConfigPath?: string) {
+    const custom = customConfigPath || Deno.env.get("SKILLET_CONFIG_PATH");
     const home = Deno.env.get("HOME") || "/tmp";
-    this.configPath = customConfigPath || `${home}/.config/skillet/workspaces.json`;
+    this.configPath = custom || `${home}/.config/skillet/workspaces.json`;
   }
 
   async getWorkspaces(): Promise<Workspace[]> {
+    if (this.inMemoryList) {
+      return this.inMemoryList;
+    }
     try {
       const data = await Deno.readTextFile(this.configPath);
       const parsed = JSON.parse(data);
@@ -63,11 +68,16 @@ export class WorkspaceManager {
   }
 
   private async saveWorkspaces(list: Workspace[]): Promise<void> {
-    const lastSlash = this.configPath.lastIndexOf("/");
-    if (lastSlash > 0) {
-      const dir = this.configPath.substring(0, lastSlash);
-      await Deno.mkdir(dir, { recursive: true });
+    this.inMemoryList = [...list];
+    try {
+      const lastSlash = this.configPath.lastIndexOf("/");
+      if (lastSlash > 0) {
+        const dir = this.configPath.substring(0, lastSlash);
+        await Deno.mkdir(dir, { recursive: true });
+      }
+      await Deno.writeTextFile(this.configPath, JSON.stringify(list, null, 2));
+    } catch {
+      // Retain in-memory list if filesystem is not writable
     }
-    await Deno.writeTextFile(this.configPath, JSON.stringify(list, null, 2));
   }
 }
