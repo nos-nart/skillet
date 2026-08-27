@@ -95,32 +95,25 @@ export function SkillDetail({
       {/* Header Banner */}
       <div className="p-6 border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-900/20 flex items-start justify-between shrink-0">
         <div className="space-y-2 max-w-2xl">
-          <div className="flex items-center gap-3.5">
-            <div className="p-3 rounded-lg bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 border border-zinc-300 dark:border-zinc-700/50">
-              <Sparkle weight="light" className="w-7 h-7 text-orange-500" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{skill.name}</h2>
-                <Badge variant={skill.scope === "global" ? "secondary" : "default"} className="rounded-lg">
-                  {skill.scope === "global" ? "Global" : "Project"}
-                </Badge>
-                {skill.metadata.trigger && (
-                  <Badge variant="accent" className="font-mono text-xs rounded-lg">
-                    {skill.metadata.trigger}
-                  </Badge>
-                )}
-                {skill.isSymlink && (
-                  <Badge variant="info" className="rounded-lg">
-                    Symlinked
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
-                {skill.metadata.description || "No description provided."}
-              </p>
-            </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{skill.name}</h2>
+            <Badge variant={skill.scope === "global" ? "secondary" : "default"} className="rounded-lg">
+              {skill.scope === "global" ? "Global" : "Project"}
+            </Badge>
+            {skill.metadata.trigger && (
+              <Badge variant="accent" className="font-mono text-xs rounded-lg">
+                {skill.metadata.trigger}
+              </Badge>
+            )}
+            {skill.isSymlink && (
+              <Badge variant="info" className="rounded-lg">
+                Symlinked
+              </Badge>
+            )}
           </div>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            {skill.metadata.description || "No description provided."}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">

@@ -26,20 +26,22 @@ export function App() {
   const { theme, toggleTheme } = useTheme();
   const { workspaces, selectedWorkspace, setSelectedWorkspace, addWorkspace } = useWorkspaces();
 
+  // Track skill IDs that were just uninstalled so loadSkills won't re-select them
+  const deletedSkillIds = React.useRef<Set<string>>(new Set());
+
   const loadSkills = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await api.getSkills();
+      const raw = await api.getSkills();
+      // Filter out any skills that were just uninstalled (filesystem may lag)
+      const data = raw.filter((s) => !deletedSkillIds.current.has(s.id));
       setSkills(data);
-      if (data.length > 0) {
-        setSelectedSkill((prev) => {
-          if (!prev) return data[0];
-          const match = data.find((s) => s.id === prev.id || s.path === prev.path);
-          return match || data[0];
-        });
-      } else {
-        setSelectedSkill(null);
-      }
+      setSelectedSkill((prev) => {
+        if (prev && deletedSkillIds.current.has(prev.id)) return data[0] ?? null;
+        if (!prev) return data[0] ?? null;
+        const match = data.find((s) => s.id === prev.id || s.path === prev.path);
+        return match || data[0] || null;
+      });
     } catch (err) {
       console.error("Failed to load skills:", err);
     } finally {
@@ -91,15 +93,30 @@ export function App() {
   };
 
   const handleUninstallSkill = async (skill: Skill) => {
+    // Optimistic removal: immediately remove from UI state
+    const removedId = skill.id;
+    const removedPath = skill.path;
+    deletedSkillIds.current.add(removedId);
+
+    setSkills((prev) => prev.filter((s) => s.id !== removedId));
+    setSelectedSkill((prev) => {
+      if (prev?.id === removedId) return null;
+      return prev;
+    });
+
     try {
-      const res = await api.uninstallSkill(skill.path);
-      if (res.ok) {
-        setSelectedSkill(null);
+      const res = await api.uninstallSkill(removedPath);
+      if (!res.ok) {
+        console.error("Uninstall failed:", res.error);
       }
-      await loadSkills();
     } catch (err) {
       console.error("Uninstall failed:", err);
     }
+
+    // Small delay to let filesystem settle, then rescan to reconcile
+    await new Promise((r) => setTimeout(r, 300));
+    await loadSkills();
+    deletedSkillIds.current.delete(removedId);
   };
 
   const handleInstallNewSkill = async (source: string, skillName?: string) => {
