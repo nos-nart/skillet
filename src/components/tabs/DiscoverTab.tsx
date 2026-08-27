@@ -95,15 +95,25 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
     return null;
   };
 
-  const fetchDescription = async (owner: string, repo: string, itemPath: string, name: string) => {
+  const fetchDescription = async (owner: string, repo: string, itemPath: string, name: string, branch: string = "main") => {
     try {
-      const url = `https://raw.githubusercontent.com/${owner}/${repo}/main/${itemPath}/SKILL.md`;
-      const res = await fetch(url);
+      // Try to fetch SKILL.md first
+      let url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${itemPath ? `${itemPath}/` : ""}SKILL.md`;
+      let res = await fetch(url);
+      
+      // Fallback to README.md if SKILL.md is missing or doesn't have a description
+      if (!res.ok) {
+        url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${itemPath ? `${itemPath}/` : ""}README.md`;
+        res = await fetch(url);
+      }
+      
       if (res.ok) {
         const text = await res.text();
-        const descMatch = text.match(/description:\s*(.+)/i);
+        const descMatch = text.match(/description:\s*(.+)/i) || text.match(/^#\s+.*?\n+(.+?)(?=\n|$)/m);
         if (descMatch && descMatch[1]) {
-          dispatch({ type: "SET_ITEM_DESCRIPTION", payload: { name, description: descMatch[1].trim() } });
+          let desc = descMatch[1].trim();
+          if (desc.startsWith(">")) desc = desc.substring(1).trim();
+          dispatch({ type: "SET_ITEM_DESCRIPTION", payload: { name, description: desc } });
         }
       }
     } catch {
@@ -129,35 +139,63 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
     dispatch({ type: "SEARCH_START", payload: info });
 
     try {
-      const url = `https://api.github.com/repos/${info.owner}/${info.repo}/contents${info.path ? `/${info.path}` : ""}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Repository or path not found");
-      const data = await res.json();
-      
-      if (!Array.isArray(data)) {
-        if (data.name === "SKILL.md") {
-          const item = { name: info.path?.split("/").pop() || info.repo, path: info.path || "", type: "dir", html_url: data.html_url.replace(/\/SKILL\.md$/, "") };
-          dispatch({ type: "SEARCH_SUCCESS", payload: [item] });
-          fetchDescription(info.owner, info.repo, item.path, item.name);
-        } else {
+      // 1. Get default branch
+      const repoRes = await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}`);
+      if (!repoRes.ok) throw new Error("Repository not found");
+      const repoData = await repoRes.json();
+      const branch = repoData.default_branch;
+
+      // 2. Get recursive tree
+      const treeRes = await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`);
+      if (!treeRes.ok) throw new Error("Failed to fetch repository tree");
+      const treeData = await treeRes.json();
+
+      // 3. Find SKILL.md or .cursorrules
+      const skillFiles = treeData.tree.filter((t: any) => 
+        t.type === "blob" && 
+        (t.path.endsWith("SKILL.md") || t.path.endsWith(".cursorrules") || t.path.endsWith("cursorrules"))
+      );
+
+      // 4. If a specific path was searched, filter to that path or its subdirectories
+      let targetFiles = skillFiles;
+      if (info.path) {
+        targetFiles = skillFiles.filter((t: any) => 
+          t.path === info.path || t.path.startsWith(`${info.path}/`)
+        );
+        if (targetFiles.length === 0) {
           throw new Error("No skills found at this path");
         }
-      } else {
-        // If the directory contains SKILL.md, it is a skill itself!
-        if (data.some((d: any) => d.name === "SKILL.md")) {
-          const item = { name: info.path?.split("/").pop() || info.repo, path: info.path || "", type: "dir", html_url: `https://github.com/${info.owner}/${info.repo}${info.path ? `/tree/main/${info.path}` : ""}` };
-          dispatch({ type: "SEARCH_SUCCESS", payload: [item] });
-          fetchDescription(info.owner, info.repo, item.path, item.name);
-        } else {
-          const dirs = data.filter((item: any) => item.type === "dir");
-          dispatch({ type: "SEARCH_SUCCESS", payload: dirs });
-          
-          // Fetch descriptions async
-          dirs.forEach((d: any) => {
-            fetchDescription(info.owner, info.repo, d.path, d.name);
-          });
-        }
       }
+
+      if (targetFiles.length === 0) {
+        throw new Error("No skills found in this repository");
+      }
+
+      // 5. Convert to GitHubContentItem
+      const items: GitHubContentItem[] = targetFiles.map((file: any) => {
+        const parts = file.path.split("/");
+        parts.pop(); // remove file name
+        const skillPath = parts.join("/");
+        const skillName = parts.length > 0 ? parts[parts.length - 1] : info.repo;
+
+        return {
+          name: skillName,
+          path: skillPath,
+          type: "dir",
+          html_url: `https://github.com/${info.owner}/${info.repo}/tree/${branch}/${skillPath}`
+        };
+      });
+
+      // Deduplicate by path
+      const uniqueItems = Array.from(new Map(items.map(item => [item.path, item])).values());
+
+      dispatch({ type: "SEARCH_SUCCESS", payload: uniqueItems });
+
+      // Fetch descriptions async
+      uniqueItems.forEach(item => {
+        fetchDescription(info.owner, info.repo, item.path, item.name, branch);
+      });
+
     } catch (err: any) {
       dispatch({ type: "SEARCH_ERROR", payload: err.message || "Failed to fetch repository" });
     }
@@ -204,10 +242,10 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
 
   return (
     <div className="flex flex-col h-full w-full bg-white dark:bg-zinc-950">
-      <div className="p-6 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="p-5 pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Discover Skills</h2>
-          <Button variant="ghost" size="sm" onClick={() => setIsBookmarkDialogOpen(true)} className="h-8 gap-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+          <Button variant="ghost" size="sm" onClick={() => setIsBookmarkDialogOpen(true)} className="h-7 gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
             <Plus weight="bold" /> Bookmark
           </Button>
         </div>
@@ -220,16 +258,16 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
               value={state.query}
               onChange={(e) => dispatch({ type: "SET_QUERY", payload: e.target.value })}
               placeholder="e.g. cursor/plugins or https://www.skills.sh/cursor/plugins"
-              className="pl-9 h-10 w-full"
+              className="pl-9 h-9 w-full"
             />
           </div>
-          <Button type="submit" disabled={state.isLoading} className="h-10 px-5">
+          <Button type="submit" disabled={state.isLoading} className="h-9 px-4">
             {state.isLoading ? "Searching..." : "Browse"}
           </Button>
         </form>
       </div>
 
-      <ScrollArea className="flex-1 p-6">
+      <ScrollArea className="flex-1 p-5">
         {state.error && (
           <div className="p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-sm">
             {state.error}
@@ -248,7 +286,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                     const info = parseRepo(bm);
                     const displayName = info ? `${info.owner}/${info.repo}${info.path ? `/${info.path}` : ""}` : bm;
                     return (
-                      <div key={bm} onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, bm); }} className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group">
+                      <div key={bm} onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, bm); }} className="flex items-center justify-between p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group">
                         <div className="flex items-center gap-2 truncate">
                           <BookmarkSimple className="w-4 h-4 text-zinc-400" />
                           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</span>
@@ -266,11 +304,11 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Popular Repositories</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "cursor/plugins"); }}>
+                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "cursor/plugins"); }}>
                   <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-orange-500 transition-colors">cursor/plugins</h3>
                   <p className="text-xs text-zinc-500 mt-1">Official Cursor community skills repository.</p>
                 </div>
-                <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "vercel-labs/skills"); }}>
+                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-orange-500/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "vercel-labs/skills"); }}>
                   <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-orange-500 transition-colors">vercel-labs/skills</h3>
                   <p className="text-xs text-zinc-500 mt-1">Foundational skills and examples from Vercel.</p>
                 </div>
@@ -297,7 +335,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                 const isInstalling = state.installingItem === item.name;
 
                 return (
-                  <div key={item.path} className="flex items-center p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 hover:border-orange-500/30 transition-all duration-200">
+                  <div key={item.path} className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 hover:border-orange-500/30 transition-all duration-200">
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate" title={item.name}>

@@ -45,7 +45,7 @@ export function AgentsTab() {
       <div className="max-w-3xl space-y-6">
         <div>
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-            <Robot weight="light" className="w-6 h-6 text-sky-500" />
+            <Robot weight="light" className="w-6 h-6 text-zinc-900 dark:text-zinc-100" />
             Detected Coding Agents
           </h2>
           <p className="text-xs text-zinc-500 mt-1">

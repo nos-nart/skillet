@@ -35,7 +35,7 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+        <div className="flex items-center justify-between p-3 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
           <div className="flex items-center gap-2">
             <BookmarkSimple className="w-5 h-5 text-orange-500" weight="bold" />
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Add Bookmarks</h3>
@@ -48,7 +48,7 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
               Paste URLs or Text

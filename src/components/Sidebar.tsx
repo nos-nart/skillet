@@ -118,9 +118,9 @@ export function Sidebar({
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             {theme === "dark" ? (
-              <Sun weight="light" className="w-5 h-5 text-amber-400 transition-transform duration-200" />
+              <Sun weight="light" className="w-5 h-5  transition-transform duration-200" />
             ) : (
-              <Moon weight="light" className="w-5 h-5 text-sky-500 transition-transform duration-200" />
+              <Moon weight="light" className="w-5 h-5  transition-transform duration-200" />
             )}
           </button>
         )}
@@ -138,7 +138,7 @@ export function Sidebar({
             type="button"
             onClick={handlePickFolder}
             disabled={isPickingFolder}
-            className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-500 flex items-center gap-1.5 leading-none transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
+            className="text-xs text-orange-600 dark:text-orange-400 hover: flex items-center gap-1.5 leading-none transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
             title="Choose workspace folder from Finder"
           >
             <FolderSimplePlus weight="light" className="w-4 h-4 shrink-0" />
@@ -208,7 +208,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Sparkle weight="light" className="w-4.5 h-4.5 text-orange-500" />
+              <Sparkle weight="light" className="w-4.5 h-4.5 " />
               <span>Skills</span>
             </div>
             <Badge variant="secondary" className="font-mono px-2 py-0.5 text-xs rounded-lg">
@@ -225,7 +225,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Compass weight="light" className="w-4.5 h-4.5 text-fuchsia-500" />
+              <Compass weight="light" className="w-4.5 h-4.5 " />
               <span>Discover</span>
             </div>
           </button>
@@ -239,7 +239,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Robot weight="light" className="w-4.5 h-4.5 text-sky-500" />
+              <Robot weight="light" className="w-4.5 h-4.5 " />
               <span>Agents</span>
             </div>
           </button>
@@ -253,7 +253,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Terminal weight="light" className="w-4.5 h-4.5 text-emerald-500" />
+              <Terminal weight="light" className="w-4.5 h-4.5 " />
               <span>Prompts</span>
             </div>
           </button>
