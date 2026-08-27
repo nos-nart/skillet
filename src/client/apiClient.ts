@@ -109,4 +109,22 @@ export const api = {
       return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
   },
+
+  async getBookmarks(): Promise<string[]> {
+    const res = await fetch("/api/bookmarks");
+    if (!res.ok) throw new Error("Failed to fetch bookmarks");
+    const data = await res.json();
+    return data.bookmarks || [];
+  },
+
+  async saveBookmarks(bookmarks: string[]): Promise<boolean> {
+    const res = await fetch("/api/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookmarks }),
+    });
+    if (!res.ok) throw new Error("Failed to save bookmarks");
+    const data = await res.json();
+    return data.ok ?? false;
+  },
 };

@@ -5,7 +5,6 @@ export interface AgentConfig {
   name: string;
   globalDirName: string; // e.g. ".claude/skills"
   localRelPath: string;  // e.g. ".claude/skills"
-  icon: string;          // emoji icon
   status: "Active" | "Ready";
 }
 
@@ -15,7 +14,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "Claude Code",
     globalDirName: ".claude/skills",
     localRelPath: ".claude/skills",
-    icon: "🧠",
     status: "Active",
   },
   {
@@ -23,7 +21,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "Cursor",
     globalDirName: ".cursor/skills",
     localRelPath: ".cursor/skills",
-    icon: "⚡",
     status: "Active",
   },
   {
@@ -31,7 +28,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "Gemini",
     globalDirName: ".gemini/config/skills",
     localRelPath: ".gemini/skills",
-    icon: "✨",
     status: "Active",
   },
   {
@@ -39,7 +35,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "Antigravity",
     globalDirName: ".gemini/config/skills",
     localRelPath: ".gemini/skills",
-    icon: "✨",
     status: "Active",
   },
   {
@@ -47,7 +42,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "Generic Open Skills",
     globalDirName: ".skills",
     localRelPath: ".skills",
-    icon: "📦",
     status: "Active",
   },
   {
@@ -55,7 +49,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "Windsurf",
     globalDirName: ".codeium/windsurf/skills",
     localRelPath: ".windsurf/skills",
-    icon: "🌊",
     status: "Ready",
   },
   {
@@ -63,15 +56,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "GitHub Copilot",
     globalDirName: ".github/skills",
     localRelPath: ".github/skills",
-    icon: "🤖",
-    status: "Ready",
-  },
-  {
-    id: "codex",
-    name: "Codex",
-    globalDirName: ".codex/skills",
-    localRelPath: ".codex/skills",
-    icon: "💻",
     status: "Ready",
   },
   {
@@ -79,7 +63,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
     name: "OpenCode",
     globalDirName: ".opencode/skills",
     localRelPath: ".opencode/skills",
-    icon: "🔓",
     status: "Ready",
   },
 ];

@@ -6,6 +6,7 @@ import {
 } from "./symlinker.ts";
 import { checkSkillUpdates } from "./updater.ts";
 import { downloadSkillFromGitHub, uninstallSkill, InstallSkillOptions } from "./installer.ts";
+import { ensureParentDir } from "./fs.ts";
 import { WorkspaceManager } from "./workspace.ts";
 import { Skill, Workspace, SkillToggleRequest, AgentId } from "../types/skills.ts";
 import { SUPPORTED_AGENTS, getAgentGlobalPath } from "./agents.ts";
@@ -165,6 +166,32 @@ export async function handleApiRequest(
 
       const result = await uninstallSkill(skillPath.trim());
       return Response.json(result, { status: result.ok ? 200 : 500 });
+    }
+
+    // GET /api/bookmarks
+    if (url.pathname === "/api/bookmarks" && req.method === "GET") {
+      try {
+        const bookmarksFile = `${home}/.skills/bookmarks.json`;
+        const content = await Deno.readTextFile(bookmarksFile);
+        return Response.json({ bookmarks: JSON.parse(content) });
+      } catch {
+        return Response.json({ bookmarks: [] });
+      }
+    }
+
+    // POST /api/bookmarks
+    if (url.pathname === "/api/bookmarks" && req.method === "POST") {
+      try {
+        const body = await req.json().catch(() => null);
+        const bookmarks = Array.isArray(body?.bookmarks) ? body.bookmarks : [];
+        const bookmarksFile = `${home}/.skills/bookmarks.json`;
+        await ensureParentDir(bookmarksFile);
+        await Deno.writeTextFile(bookmarksFile, JSON.stringify(bookmarks, null, 2));
+        return Response.json({ ok: true });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return Response.json({ ok: false, error: msg }, { status: 500 });
+      }
     }
 
     // GET /api/agents

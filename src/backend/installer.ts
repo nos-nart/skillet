@@ -43,8 +43,12 @@ export async function downloadSkillFromGitHub(
     return { ok: false, error: "Invalid GitHub repository format" };
   }
 
-  const skillSlug = options.skillName || repoInfo.repo;
+  // Use explicit skillName, or the subdirectory name, or the repo name
+  const pathParts = repoInfo.path?.split("/").filter(Boolean) || [];
+  const skillSlug = options.skillName || pathParts.pop() || repoInfo.repo;
   const targetDir = options.targetDir || `${home}/.skills/${repoInfo.owner}/${skillSlug}`;
+  
+  const repoUrl = `${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/tree/main/${repoInfo.path}` : ""}`;
 
   try {
     await ensureDir(targetDir);
@@ -65,7 +69,9 @@ export async function downloadSkillFromGitHub(
 
     for (const branch of branches) {
       try {
-        const rawUrl = `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/${branch}/SKILL.md`;
+        // Build URL, appending path if present
+        const subpath = repoInfo.path ? `/${repoInfo.path}` : "";
+        const rawUrl = `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/${branch}${subpath}/SKILL.md`;
         const res = await fetch(rawUrl, { headers });
         if (res.ok) {
           skillContent = await res.text();
@@ -85,13 +91,13 @@ export async function downloadSkillFromGitHub(
       // Create a default SKILL.md template so the skill is discoverable
       const defaultSkillMd = `---
 name: ${skillSlug}
-description: Skill installed from ${repoInfo.owner}/${repoInfo.repo}
-source_url: https://github.com/${repoInfo.owner}/${repoInfo.repo}
+description: Skill installed from ${repoUrl}
+source_url: https://github.com/${repoUrl}
 ---
 
 # ${skillSlug}
 
-Installed from https://github.com/${repoInfo.owner}/${repoInfo.repo}
+Installed from https://github.com/${repoUrl}
 `;
       const skillMdPath = `${targetDir}/SKILL.md`;
       await ensureParentDir(skillMdPath);

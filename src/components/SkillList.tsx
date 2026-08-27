@@ -168,29 +168,29 @@ export function SkillList({
                       <button
                         key={skill.id}
                         onClick={() => onSelectSkill(skill)}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors duration-100 flex items-center justify-between group cursor-pointer ${
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-100 flex items-center justify-between group cursor-pointer active:scale-[0.98] ${
                           isSelected
-                            ? "bg-orange-500/10 text-orange-600 dark:text-orange-200 border border-orange-500/30"
-                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
+                            ? "bg-orange-500 text-white shadow-sm"
+                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 border border-transparent"
                         }`}
                       >
                         <div className="min-w-0 flex-1 pr-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-mono font-semibold truncate">
+                            <span className={`text-xs font-mono font-semibold truncate ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-100"}`}>
                               {skill.metadata?.trigger || `/${skill.slug}`}
                             </span>
                             {skill.updateAvailable && (
                               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                             )}
                           </div>
-                          <p className="text-xs text-zinc-500 truncate mt-0.5">
+                          <p className={`text-[11px] truncate mt-0.5 ${isSelected ? "text-orange-100" : "text-zinc-500"}`}>
                             {skill.metadata?.description || skill.name}
                           </p>
                         </div>
                         <CaretRight
-                          weight="light"
-                          className={`w-4 h-4 shrink-0 transition-colors ${
-                            isSelected ? "text-orange-500" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
+                          weight="bold"
+                          className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                            isSelected ? "text-white" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
                           }`}
                         />
                       </button>

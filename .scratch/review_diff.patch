@@ -1,0 +1,811 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index 6c72305..54141a3 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,8 +1,9 @@
+-import React, { useState, useEffect, useCallback } from "react";
++import React, { useEffect, useCallback, useReducer } from "react";
+ import { Sidebar, NavTab } from "./components/Sidebar.tsx";
+ import { SkillList } from "./components/SkillList.tsx";
+ import { SkillDetail } from "./components/SkillDetail.tsx";
+ import { AgentsTab } from "./components/tabs/AgentsTab.tsx";
++import { DiscoverTab } from "./components/tabs/DiscoverTab.tsx";
+ import { PromptsTab } from "./components/tabs/PromptsTab.tsx";
+ import { SettingsTab } from "./components/tabs/SettingsTab.tsx";
+ import { NewSkillDialog } from "./components/NewSkillDialog.tsx";
+@@ -13,39 +14,101 @@ import {
+ } from "./components/ui/resizable.tsx";
+ import { useWorkspaces } from "./hooks/useWorkspaces.ts";
+ import { useTheme } from "./hooks/useTheme.ts";
++import { useMediaQuery } from "./hooks/useMediaQuery.ts";
+ import { api } from "./client/apiClient.ts";
+ import { Skill, Workspace } from "./types/skills.ts";
+ 
++interface AppState {
++  currentTab: NavTab;
++  skills: Skill[];
++  selectedSkill: Skill | null;
++  isLoading: boolean;
++  isCheckingUpdates: boolean;
++  isNewSkillOpen: boolean;
++  mobileView: "sidebar" | "list" | "detail";
++}
++
++type AppAction =
++  | { type: "SET_TAB"; payload: NavTab }
++  | { type: "SET_MOBILE_VIEW"; payload: "sidebar" | "list" | "detail" }
++  | { type: "LOAD_SKILLS_START" }
++  | { type: "LOAD_SKILLS_SUCCESS"; payload: { skills: Skill[], deletedIds: Set<string> } }
++  | { type: "LOAD_SKILLS_ERROR" }
++  | { type: "SELECT_SKILL"; payload: Skill | null }
++  | { type: "UNINSTALL_SKILL"; payload: string }
++  | { type: "SET_CHECKING_UPDATES"; payload: boolean }
++  | { type: "SET_NEW_SKILL_OPEN"; payload: boolean };
++
++function appReducer(state: AppState, action: AppAction): AppState {
++  switch (action.type) {
++    case "SET_TAB":
++      return { 
++        ...state, 
++        currentTab: action.payload,
++        mobileView: action.payload === "skills" ? (state.selectedSkill ? "detail" : "list") : state.mobileView
++      };
++    case "SET_MOBILE_VIEW":
++      return { ...state, mobileView: action.payload };
++    case "LOAD_SKILLS_START":
++      return { ...state, isLoading: true };
++    case "LOAD_SKILLS_SUCCESS": {
++      const { skills: newSkills, deletedIds } = action.payload;
++      const filtered = newSkills.filter(s => !deletedIds.has(s.id));
++      
++      let nextSelected = state.selectedSkill;
++      if (nextSelected && deletedIds.has(nextSelected.id)) nextSelected = filtered[0] ?? null;
++      else if (!nextSelected) nextSelected = filtered[0] ?? null;
++      else {
++        nextSelected = filtered.find(s => s.id === nextSelected!.id || s.path === nextSelected!.path) || filtered[0] || null;
++      }
++      
++      return { ...state, isLoading: false, skills: filtered, selectedSkill: nextSelected };
++    }
++    case "LOAD_SKILLS_ERROR":
++      return { ...state, isLoading: false };
++    case "SELECT_SKILL":
++      return { ...state, selectedSkill: action.payload, mobileView: action.payload ? "detail" : state.mobileView };
++    case "UNINSTALL_SKILL": {
++      const removedId = action.payload;
++      const nextSkills = state.skills.filter(s => s.id !== removedId);
++      const nextSelected = state.selectedSkill?.id === removedId ? null : state.selectedSkill;
++      return { ...state, skills: nextSkills, selectedSkill: nextSelected, mobileView: nextSelected ? state.mobileView : "list" };
++    }
++    case "SET_CHECKING_UPDATES":
++      return { ...state, isCheckingUpdates: action.payload };
++    case "SET_NEW_SKILL_OPEN":
++      return { ...state, isNewSkillOpen: action.payload };
++    default:
++      return state;
++  }
++}
++
++const initialAppState: AppState = {
++  currentTab: "skills",
++  skills: [],
++  selectedSkill: null,
++  isLoading: false,
++  isCheckingUpdates: false,
++  isNewSkillOpen: false,
++  mobileView: "sidebar"
++};
++
+ export function App() {
+-  const [currentTab, setCurrentTab] = useState<NavTab>("skills");
+-  const [skills, setSkills] = useState<Skill[]>([]);
+-  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+-  const [isLoading, setIsLoading] = useState(false);
+-  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
+-  const [isNewSkillOpen, setIsNewSkillOpen] = useState(false);
++  const [state, dispatch] = useReducer(appReducer, initialAppState);
++  
+   const { theme, toggleTheme } = useTheme();
+   const { workspaces, selectedWorkspace, setSelectedWorkspace, addWorkspace } = useWorkspaces();
+-
+-  // Track skill IDs that were just uninstalled so loadSkills won't re-select them
+   const deletedSkillIds = React.useRef<Set<string>>(new Set());
++  const isMobile = useMediaQuery("(max-width: 950px)");
+ 
+   const loadSkills = useCallback(async () => {
+-    setIsLoading(true);
++    dispatch({ type: "LOAD_SKILLS_START" });
+     try {
+       const raw = await api.getSkills();
+-      // Filter out any skills that were just uninstalled (filesystem may lag)
+-      const data = raw.filter((s) => !deletedSkillIds.current.has(s.id));
+-      setSkills(data);
+-      setSelectedSkill((prev) => {
+-        if (prev && deletedSkillIds.current.has(prev.id)) return data[0] ?? null;
+-        if (!prev) return data[0] ?? null;
+-        const match = data.find((s) => s.id === prev.id || s.path === prev.path);
+-        return match || data[0] || null;
+-      });
++      dispatch({ type: "LOAD_SKILLS_SUCCESS", payload: { skills: raw, deletedIds: deletedSkillIds.current } });
+     } catch (err) {
+       console.error("Failed to load skills:", err);
+-    } finally {
+-      setIsLoading(false);
++      dispatch({ type: "LOAD_SKILLS_ERROR" });
+     }
+   }, []);
+ 
+@@ -53,14 +116,21 @@ export function App() {
+     loadSkills();
+   }, [loadSkills]);
+ 
++  useEffect(() => {
++    if (isMobile) {
++      if (state.selectedSkill && state.mobileView !== "detail") dispatch({ type: "SET_MOBILE_VIEW", payload: "detail" });
++      else if (state.currentTab === "skills" && state.mobileView === "detail" && !state.selectedSkill) dispatch({ type: "SET_MOBILE_VIEW", payload: "list" });
++    }
++  }, [isMobile, state.selectedSkill, state.currentTab, state.mobileView]);
++
+   const handleToggle = async (ws: Workspace, enable: boolean) => {
+-    if (!selectedSkill) return;
++    if (!state.selectedSkill) return;
+     try {
+       await api.toggleSkill({
+-        skillSlug: selectedSkill.slug,
+-        sourcePath: selectedSkill.path,
++        skillSlug: state.selectedSkill.slug,
++        sourcePath: state.selectedSkill.path,
+         workspacePath: ws.path,
+-        agent: selectedSkill.agent,
++        agent: state.selectedSkill.agent,
+         enable,
+       });
+       await loadSkills();
+@@ -70,15 +140,15 @@ export function App() {
+   };
+ 
+   const handleCheckUpdates = async () => {
+-    setIsCheckingUpdates(true);
++    dispatch({ type: "SET_CHECKING_UPDATES", payload: true });
+     try {
+       const token = localStorage.getItem("github_token") || undefined;
+-      await api.checkUpdates(skills, token);
++      await api.checkUpdates(state.skills, token);
+       await loadSkills();
+     } catch (err) {
+       console.error("Update check failed:", err);
+     } finally {
+-      setIsCheckingUpdates(false);
++      dispatch({ type: "SET_CHECKING_UPDATES", payload: false });
+     }
+   };
+ 
+@@ -93,30 +163,19 @@ export function App() {
+   };
+ 
+   const handleUninstallSkill = async (skill: Skill) => {
+-    // Optimistic removal: immediately remove from UI state
+-    const removedId = skill.id;
+-    const removedPath = skill.path;
+-    deletedSkillIds.current.add(removedId);
+-
+-    setSkills((prev) => prev.filter((s) => s.id !== removedId));
+-    setSelectedSkill((prev) => {
+-      if (prev?.id === removedId) return null;
+-      return prev;
+-    });
++    deletedSkillIds.current.add(skill.id);
++    dispatch({ type: "UNINSTALL_SKILL", payload: skill.id });
+ 
+     try {
+-      const res = await api.uninstallSkill(removedPath);
+-      if (!res.ok) {
+-        console.error("Uninstall failed:", res.error);
+-      }
++      const res = await api.uninstallSkill(skill.path);
++      if (!res.ok) console.error("Uninstall failed:", res.error);
+     } catch (err) {
+       console.error("Uninstall failed:", err);
+     }
+ 
+-    // Small delay to let filesystem settle, then rescan to reconcile
+     await new Promise((r) => setTimeout(r, 300));
+     await loadSkills();
+-    deletedSkillIds.current.delete(removedId);
++    deletedSkillIds.current.delete(skill.id);
+   };
+ 
+   const handleInstallNewSkill = async (source: string, skillName?: string) => {
+@@ -128,15 +187,85 @@ export function App() {
+     await loadSkills();
+   };
+ 
++  if (isMobile) {
++    return (
++      <div className={`h-screen w-screen overflow-hidden font-sans ${theme === "light" ? "bg-zinc-100 text-zinc-900" : "bg-zinc-950 text-zinc-100"}`}>
++        {state.mobileView === "sidebar" && (
++          <div className="h-full w-full animate-in slide-in-from-left-4 fade-in duration-300">
++            <Sidebar
++              currentTab={state.currentTab}
++              setCurrentTab={(t) => dispatch({ type: "SET_TAB", payload: t })}
++              skillsCount={state.skills.length}
++              workspaces={workspaces}
++              selectedWorkspace={selectedWorkspace}
++              onSelectWorkspace={setSelectedWorkspace}
++              onAddWorkspace={addWorkspace}
++              theme={theme}
++              onToggleTheme={toggleTheme}
++            />
++          </div>
++        )}
++        {state.mobileView === "list" && state.currentTab === "skills" && (
++          <div className="h-full w-full animate-in slide-in-from-right-4 fade-in duration-300 relative">
++            <div className="absolute top-2 right-2 z-50">
++              <button onClick={() => dispatch({ type: "SET_MOBILE_VIEW", payload: "sidebar" })} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">Done</button>
++            </div>
++            <SkillList
++              skills={state.skills}
++              selectedSkill={state.selectedSkill}
++              onSelectSkill={(s) => dispatch({ type: "SELECT_SKILL", payload: s })}
++              onCheckUpdates={handleCheckUpdates}
++              onRescan={loadSkills}
++              onNewSkill={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: true })}
++              isLoading={state.isLoading}
++              isCheckingUpdates={state.isCheckingUpdates}
++            />
++          </div>
++        )}
++        {state.mobileView === "detail" && state.currentTab === "skills" && (
++          <div className="h-full w-full animate-in slide-in-from-bottom-4 fade-in duration-300 relative">
++             <div className="absolute top-2 left-2 z-50">
++              <button onClick={() => dispatch({ type: "SELECT_SKILL", payload: null })} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">← Back</button>
++            </div>
++            <SkillDetail
++              skill={state.selectedSkill}
++              workspaces={workspaces}
++              selectedWorkspace={selectedWorkspace}
++              onToggleInRepo={handleToggle}
++              onUpdateSkill={handleUpdateSkill}
++              onUninstallSkill={handleUninstallSkill}
++            />
++          </div>
++        )}
++        {state.currentTab !== "skills" && state.mobileView !== "sidebar" && (
++          <div className="h-full w-full animate-in slide-in-from-right-4 fade-in duration-300 relative">
++             <div className="absolute top-2 left-2 z-50">
++              <button onClick={() => dispatch({ type: "SET_MOBILE_VIEW", payload: "sidebar" })} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">← Menu</button>
++            </div>
++            {state.currentTab === "discover" && <DiscoverTab installedSkills={state.skills} onInstall={handleInstallNewSkill} />}
++            {state.currentTab === "agents" && <AgentsTab />}
++            {state.currentTab === "prompts" && <PromptsTab skills={state.skills} />}
++            {state.currentTab === "settings" && <SettingsTab />}
++          </div>
++        )}
++        <NewSkillDialog
++          isOpen={state.isNewSkillOpen}
++          onClose={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: false })}
++          onInstall={handleInstallNewSkill}
++        />
++      </div>
++    );
++  }
++
+   return (
+     <div className={`h-screen w-screen flex flex-row overflow-hidden font-sans ${theme === "light" ? "bg-zinc-100 text-zinc-900" : "bg-zinc-950 text-zinc-100"}`}>
+-      {currentTab === "skills" ? (
++      {state.currentTab === "skills" ? (
+         <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+           <ResizablePanel defaultSize={18} minSize={14} maxSize={26}>
+             <Sidebar
+-              currentTab={currentTab}
+-              setCurrentTab={setCurrentTab}
+-              skillsCount={skills.length}
++              currentTab={state.currentTab}
++              setCurrentTab={(t) => dispatch({ type: "SET_TAB", payload: t })}
++              skillsCount={state.skills.length}
+               workspaces={workspaces}
+               selectedWorkspace={selectedWorkspace}
+               onSelectWorkspace={setSelectedWorkspace}
+@@ -150,14 +279,14 @@ export function App() {
+ 
+           <ResizablePanel defaultSize={27} minSize={20} maxSize={40}>
+             <SkillList
+-              skills={skills}
+-              selectedSkill={selectedSkill}
+-              onSelectSkill={setSelectedSkill}
++              skills={state.skills}
++              selectedSkill={state.selectedSkill}
++              onSelectSkill={(s) => dispatch({ type: "SELECT_SKILL", payload: s })}
+               onCheckUpdates={handleCheckUpdates}
+               onRescan={loadSkills}
+-              onNewSkill={() => setIsNewSkillOpen(true)}
+-              isLoading={isLoading}
+-              isCheckingUpdates={isCheckingUpdates}
++              onNewSkill={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: true })}
++              isLoading={state.isLoading}
++              isCheckingUpdates={state.isCheckingUpdates}
+             />
+           </ResizablePanel>
+ 
+@@ -165,7 +294,7 @@ export function App() {
+ 
+           <ResizablePanel defaultSize={55} minSize={30}>
+             <SkillDetail
+-              skill={selectedSkill}
++              skill={state.selectedSkill}
+               workspaces={workspaces}
+               selectedWorkspace={selectedWorkspace}
+               onToggleInRepo={handleToggle}
+@@ -178,9 +307,9 @@ export function App() {
+         <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+           <ResizablePanel defaultSize={18} minSize={14} maxSize={26}>
+             <Sidebar
+-              currentTab={currentTab}
+-              setCurrentTab={setCurrentTab}
+-              skillsCount={skills.length}
++              currentTab={state.currentTab}
++              setCurrentTab={(t) => dispatch({ type: "SET_TAB", payload: t })}
++              skillsCount={state.skills.length}
+               workspaces={workspaces}
+               selectedWorkspace={selectedWorkspace}
+               onSelectWorkspace={setSelectedWorkspace}
+@@ -193,16 +322,17 @@ export function App() {
+           <ResizableHandle withHandle />
+ 
+           <ResizablePanel defaultSize={82} minSize={40}>
+-            {currentTab === "agents" && <AgentsTab />}
+-            {currentTab === "prompts" && <PromptsTab skills={skills} />}
+-            {currentTab === "settings" && <SettingsTab />}
++            {state.currentTab === "discover" && <DiscoverTab installedSkills={state.skills} onInstall={handleInstallNewSkill} />}
++            {state.currentTab === "agents" && <AgentsTab />}
++            {state.currentTab === "prompts" && <PromptsTab skills={state.skills} />}
++            {state.currentTab === "settings" && <SettingsTab />}
+           </ResizablePanel>
+         </ResizablePanelGroup>
+       )}
+ 
+       <NewSkillDialog
+-        isOpen={isNewSkillOpen}
+-        onClose={() => setIsNewSkillOpen(false)}
++        isOpen={state.isNewSkillOpen}
++        onClose={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: false })}
+         onInstall={handleInstallNewSkill}
+       />
+     </div>
+diff --git a/src/backend/agents.ts b/src/backend/agents.ts
+index ab0ed92..a115e28 100644
+--- a/src/backend/agents.ts
++++ b/src/backend/agents.ts
+@@ -5,7 +5,6 @@ export interface AgentConfig {
+   name: string;
+   globalDirName: string; // e.g. ".claude/skills"
+   localRelPath: string;  // e.g. ".claude/skills"
+-  icon: string;          // emoji icon
+   status: "Active" | "Ready";
+ }
+ 
+@@ -15,7 +14,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "Claude Code",
+     globalDirName: ".claude/skills",
+     localRelPath: ".claude/skills",
+-    icon: "🧠",
+     status: "Active",
+   },
+   {
+@@ -23,7 +21,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "Cursor",
+     globalDirName: ".cursor/skills",
+     localRelPath: ".cursor/skills",
+-    icon: "⚡",
+     status: "Active",
+   },
+   {
+@@ -31,7 +28,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "Gemini",
+     globalDirName: ".gemini/config/skills",
+     localRelPath: ".gemini/skills",
+-    icon: "✨",
+     status: "Active",
+   },
+   {
+@@ -39,7 +35,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "Antigravity",
+     globalDirName: ".gemini/config/skills",
+     localRelPath: ".gemini/skills",
+-    icon: "✨",
+     status: "Active",
+   },
+   {
+@@ -47,7 +42,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "Generic Open Skills",
+     globalDirName: ".skills",
+     localRelPath: ".skills",
+-    icon: "📦",
+     status: "Active",
+   },
+   {
+@@ -55,7 +49,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "Windsurf",
+     globalDirName: ".codeium/windsurf/skills",
+     localRelPath: ".windsurf/skills",
+-    icon: "🌊",
+     status: "Ready",
+   },
+   {
+@@ -63,15 +56,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "GitHub Copilot",
+     globalDirName: ".github/skills",
+     localRelPath: ".github/skills",
+-    icon: "🤖",
+-    status: "Ready",
+-  },
+-  {
+-    id: "codex",
+-    name: "Codex",
+-    globalDirName: ".codex/skills",
+-    localRelPath: ".codex/skills",
+-    icon: "💻",
+     status: "Ready",
+   },
+   {
+@@ -79,7 +63,6 @@ export const SUPPORTED_AGENTS: AgentConfig[] = [
+     name: "OpenCode",
+     globalDirName: ".opencode/skills",
+     localRelPath: ".opencode/skills",
+-    icon: "🔓",
+     status: "Ready",
+   },
+ ];
+diff --git a/src/backend/installer.ts b/src/backend/installer.ts
+index f13f2e8..fd7550c 100644
+--- a/src/backend/installer.ts
++++ b/src/backend/installer.ts
+@@ -43,7 +43,8 @@ export async function downloadSkillFromGitHub(
+     return { ok: false, error: "Invalid GitHub repository format" };
+   }
+ 
+-  const skillSlug = options.skillName || repoInfo.repo;
++  // Use explicit skillName, or the subdirectory name, or the repo name
++  const skillSlug = options.skillName || (repoInfo.path ? (repoInfo.path.split("/").filter(Boolean).pop() || repoInfo.repo) : repoInfo.repo);
+   const targetDir = options.targetDir || `${home}/.skills/${repoInfo.owner}/${skillSlug}`;
+ 
+   try {
+@@ -65,7 +66,9 @@ export async function downloadSkillFromGitHub(
+ 
+     for (const branch of branches) {
+       try {
+-        const rawUrl = `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/${branch}/SKILL.md`;
++        // Build URL, appending path if present
++        const subpath = repoInfo.path ? `/${repoInfo.path}` : "";
++        const rawUrl = `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/${branch}${subpath}/SKILL.md`;
+         const res = await fetch(rawUrl, { headers });
+         if (res.ok) {
+           skillContent = await res.text();
+@@ -85,13 +88,13 @@ export async function downloadSkillFromGitHub(
+       // Create a default SKILL.md template so the skill is discoverable
+       const defaultSkillMd = `---
+ name: ${skillSlug}
+-description: Skill installed from ${repoInfo.owner}/${repoInfo.repo}
+-source_url: https://github.com/${repoInfo.owner}/${repoInfo.repo}
++description: Skill installed from ${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/${repoInfo.path}` : ""}
++source_url: https://github.com/${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/tree/main/${repoInfo.path}` : ""}
+ ---
+ 
+ # ${skillSlug}
+ 
+-Installed from https://github.com/${repoInfo.owner}/${repoInfo.repo}
++Installed from https://github.com/${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/tree/main/${repoInfo.path}` : ""}
+ `;
+       const skillMdPath = `${targetDir}/SKILL.md`;
+       await ensureParentDir(skillMdPath);
+diff --git a/src/backend/updater.ts b/src/backend/updater.ts
+index c4221cf..713d700 100644
+--- a/src/backend/updater.ts
++++ b/src/backend/updater.ts
+@@ -10,31 +10,46 @@ export interface LockFileEntry {
+ 
+ export type SkillsLock = Record<string, LockFileEntry>;
+ 
++export interface GitHubRepoInfo {
++  owner: string;
++  repo: string;
++  path?: string; // Subdirectory path within the repo
++}
++
+ /**
+- * Parses a GitHub repository string into owner and repo components.
+- * Supports shorthand (owner/repo), HTTPS URLs, and SSH URLs.
++ * Parses a GitHub repository string into owner, repo, and optional path components.
++ * Supports shorthand (owner/repo/path), HTTPS GitHub URLs, and skills.sh URLs.
+  */
+-export function parseGitHubRepo(input: string): { owner: string; repo: string } | null {
++export function parseGitHubRepo(input: string): GitHubRepoInfo | null {
+   if (!input) return null;
+ 
+-  const cleaned = input.trim().replace(/\.git$/, "");
++  let cleaned = input.trim().replace(/\.git$/, "");
++  
++  // Strip trailing slashes
++  cleaned = cleaned.replace(/\/$/, "");
++
++  // 1. skills.sh URLs: https://www.skills.sh/owner/repo/path
++  const skillsShMatch = cleaned.match(/^https?:\/\/(?:www\.)?skills\.sh\/([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
++  if (skillsShMatch) {
++    return { owner: skillsShMatch[1], repo: skillsShMatch[2], path: skillsShMatch[3] || undefined };
++  }
+ 
+-  // HTTPS GitHub URL format: https://github.com/owner/repo...
+-  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/);
++  // 2. HTTPS GitHub URL format: https://github.com/owner/repo[/tree/main/path]
++  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(?:tree|blob)\/[^/]+\/(.*))?$/);
+   if (httpsMatch) {
+-    return { owner: httpsMatch[1], repo: httpsMatch[2] };
++    return { owner: httpsMatch[1], repo: httpsMatch[2], path: httpsMatch[3] || undefined };
+   }
+ 
+-  // SSH GitHub URL format: git@github.com:owner/repo
+-  const sshMatch = cleaned.match(/^git@github\.com:([\w.-]+)\/([\w.-]+)/);
++  // 3. SSH GitHub URL format: git@github.com:owner/repo
++  const sshMatch = cleaned.match(/^git@github\.com:([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
+   if (sshMatch) {
+-    return { owner: sshMatch[1], repo: sshMatch[2] };
++    return { owner: sshMatch[1], repo: sshMatch[2], path: sshMatch[3] || undefined };
+   }
+ 
+-  // Shorthand format: owner/repo
+-  const shortMatch = cleaned.match(/^([\w.-]+)\/([\w.-]+)$/);
++  // 4. Shorthand format: owner/repo[/path]
++  const shortMatch = cleaned.match(/^([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
+   if (shortMatch) {
+-    return { owner: shortMatch[1], repo: shortMatch[2] };
++    return { owner: shortMatch[1], repo: shortMatch[2], path: shortMatch[3] || undefined };
+   }
+ 
+   return null;
+diff --git a/src/components/Sidebar.tsx b/src/components/Sidebar.tsx
+index f7673f3..40b1bb7 100644
+--- a/src/components/Sidebar.tsx
++++ b/src/components/Sidebar.tsx
+@@ -8,6 +8,7 @@ import {
+   FolderSimplePlus,
+   Sun,
+   Moon,
++  Compass,
+ } from "@phosphor-icons/react";
+ import { Workspace } from "../types/skills.ts";
+ import { Button } from "./ui/button.tsx";
+@@ -17,7 +18,7 @@ import { ScrollArea } from "./ui/scroll-area.tsx";
+ import { Separator } from "./ui/separator.tsx";
+ import { api } from "../client/apiClient.ts";
+ 
+-export type NavTab = "skills" | "agents" | "prompts" | "settings";
++export type NavTab = "skills" | "discover" | "agents" | "prompts" | "settings";
+ 
+ interface SidebarProps {
+   currentTab: NavTab;
+@@ -200,10 +201,10 @@ export function Sidebar({
+         <nav className="space-y-1.5">
+           <button
+             onClick={() => setCurrentTab("skills")}
+-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
++            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+               currentTab === "skills"
+-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
+-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
++                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
++                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
+             }`}
+           >
+             <div className="flex items-center gap-3">
+@@ -215,12 +216,26 @@ export function Sidebar({
+             </Badge>
+           </button>
+ 
++          <button
++            onClick={() => setCurrentTab("discover")}
++            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
++              currentTab === "discover"
++                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
++                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
++            }`}
++          >
++            <div className="flex items-center gap-3">
++              <Compass weight="light" className="w-4.5 h-4.5 text-fuchsia-500" />
++              <span>Discover</span>
++            </div>
++          </button>
++
+           <button
+             onClick={() => setCurrentTab("agents")}
+-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
++            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+               currentTab === "agents"
+-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
+-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
++                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
++                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
+             }`}
+           >
+             <div className="flex items-center gap-3">
+@@ -231,10 +246,10 @@ export function Sidebar({
+ 
+           <button
+             onClick={() => setCurrentTab("prompts")}
+-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
++            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+               currentTab === "prompts"
+-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
+-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
++                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
++                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
+             }`}
+           >
+             <div className="flex items-center gap-3">
+@@ -251,10 +266,10 @@ export function Sidebar({
+       <div className="p-2.5">
+         <button
+           onClick={() => setCurrentTab("settings")}
+-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
++          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+             currentTab === "settings"
+-              ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
+-              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
++              ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
++              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
+           }`}
+         >
+           <GearSix weight="light" className="w-4.5 h-4.5 text-zinc-500" />
+diff --git a/src/components/SkillDetail.tsx b/src/components/SkillDetail.tsx
+index 1a03cd8..e1c4a1a 100644
+--- a/src/components/SkillDetail.tsx
++++ b/src/components/SkillDetail.tsx
+@@ -44,12 +44,12 @@ export function SkillDetail({
+   if (!skill) {
+     return (
+       <main className="w-full h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none animate-view-in">
+-        <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center mb-3 text-zinc-400 dark:text-zinc-600">
+-          <Sparkle weight="light" className="w-7 h-7" />
++        <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm flex items-center justify-center mb-4 text-zinc-400 dark:text-zinc-500">
++          <Sparkle weight="light" className="w-8 h-8" />
+         </div>
+-        <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-400">No skill selected</h3>
+-        <p className="text-xs text-zinc-500 dark:text-zinc-600 mt-1 max-w-xs leading-relaxed">
+-          Select a skill from the center list to view instructions, tools, and toggle per-repository activation.
++        <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-300 tracking-tight">No skill selected</h3>
++        <p className="text-[13px] text-zinc-500 dark:text-zinc-500 mt-1.5 max-w-[260px] leading-relaxed">
++          Select a skill from the list to view instructions, tools, and manage workspace activation.
+         </p>
+       </main>
+     );
+@@ -91,9 +91,9 @@ export function SkillDetail({
+   };
+ 
+   return (
+-    <main key={skill.id} className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col overflow-y-auto animate-view-in">
+-      {/* Header Banner */}
+-      <div className="p-6 border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-900/20 flex items-start justify-between shrink-0">
++    <main key={skill.id} className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col relative overflow-hidden animate-view-in">
++      {/* Header Banner - Sticky & Translucent */}
++      <div className="sticky top-0 z-20 p-6 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-2xl flex items-start justify-between shrink-0 transition-colors">
+         <div className="space-y-2 max-w-2xl">
+           <div className="flex items-center gap-2 flex-wrap">
+             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{skill.name}</h2>
+@@ -158,9 +158,10 @@ export function SkillDetail({
+           )}
+         </div>
+       </div>
+-
+-      {/* Content Area */}
+-      <div className="p-6 space-y-6 flex-1 max-w-4xl">
++      
++      {/* Scrollable Content Area */}
++      <div className="flex-1 overflow-y-auto">
++        <div className="p-6 space-y-6 max-w-4xl mx-auto">
+         {/* Metadata Grid */}
+         <Card>
+           <CardContent className="p-5 grid grid-cols-3 gap-4 text-xs">
+@@ -296,7 +297,7 @@ export function SkillDetail({
+           </div>
+         </div>
+       </div>
+-
++      </div>
+       <ConfirmDialog
+         isOpen={isConfirmUninstallOpen}
+         title="Uninstall Skill"
+diff --git a/src/components/SkillList.tsx b/src/components/SkillList.tsx
+index e79d8a4..9b2dc2c 100644
+--- a/src/components/SkillList.tsx
++++ b/src/components/SkillList.tsx
+@@ -168,29 +168,29 @@ export function SkillList({
+                       <button
+                         key={skill.id}
+                         onClick={() => onSelectSkill(skill)}
+-                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors duration-100 flex items-center justify-between group cursor-pointer ${
++                        className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-100 flex items-center justify-between group cursor-pointer active:scale-[0.98] ${
+                           isSelected
+-                            ? "bg-orange-500/10 text-orange-600 dark:text-orange-200 border border-orange-500/30"
+-                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
++                            ? "bg-orange-500 text-white shadow-sm"
++                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 border border-transparent"
+                         }`}
+                       >
+                         <div className="min-w-0 flex-1 pr-2">
+                           <div className="flex items-center gap-1.5">
+-                            <span className="text-xs font-mono font-semibold truncate">
++                            <span className={`text-xs font-mono font-semibold truncate ${isSelected ? "text-white" : "text-zinc-900 dark:text-zinc-100"}`}>
+                               {skill.metadata?.trigger || `/${skill.slug}`}
+                             </span>
+                             {skill.updateAvailable && (
+                               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                             )}
+                           </div>
+-                          <p className="text-xs text-zinc-500 truncate mt-0.5">
++                          <p className={`text-[11px] truncate mt-0.5 ${isSelected ? "text-orange-100" : "text-zinc-500"}`}>
+                             {skill.metadata?.description || skill.name}
+                           </p>
+                         </div>
+                         <CaretRight
+-                          weight="light"
+-                          className={`w-4 h-4 shrink-0 transition-colors ${
+-                            isSelected ? "text-orange-500" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
++                          weight="bold"
++                          className={`w-3.5 h-3.5 shrink-0 transition-colors ${
++                            isSelected ? "text-white" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
+                           }`}
+                         />
+                       </button>
+diff --git a/src/components/tabs/AgentsTab.tsx b/src/components/tabs/AgentsTab.tsx
+index f7c730c..91ceac6 100644
+--- a/src/components/tabs/AgentsTab.tsx
++++ b/src/components/tabs/AgentsTab.tsx
+@@ -1,9 +1,37 @@
+ import React, { useState, useEffect } from "react";
+-import { Robot } from "@phosphor-icons/react";
++import { Robot, Package, TerminalWindow } from "@phosphor-icons/react";
+ import { Badge } from "../ui/badge.tsx";
+ import { Card, CardContent } from "../ui/card.tsx";
+ import { SUPPORTED_AGENTS, AgentConfig } from "../../backend/agents.ts";
+ import { api } from "../../client/apiClient.ts";
++import {
++  CursorLogo,
++  AnthropicLogo,
++  GeminiLogo,
++  CopilotLogo,
++  WindsurfLogo
++} from "../AgentLogos.tsx";
++
++function getAgentLogo(id: string) {
++  const className = "w-6 h-6 shrink-0";
++  switch (id) {
++    case "claude-code":
++      return <AnthropicLogo className={`${className} text-[#D97757]`} />;
++    case "cursor":
++      return <CursorLogo className={`${className} text-zinc-900 dark:text-zinc-100`} />;
++    case "gemini":
++    case "antigravity":
++      return <GeminiLogo className={`${className} text-[#4285F4]`} />;
++    case "copilot":
++      return <CopilotLogo className={`${className} text-zinc-900 dark:text-zinc-100`} />;
++    case "windsurf":
++      return <WindsurfLogo className={`${className} text-teal-500`} />;
++    case "opencode":
++      return <TerminalWindow weight="light" className={`${className} text-zinc-900 dark:text-zinc-100`} />;
++    default:
++      return <Package weight="light" className={`${className} text-zinc-400`} />;
++  }
++}
+ 
+ export function AgentsTab() {
+   const [agents, setAgents] = useState<AgentConfig[]>(SUPPORTED_AGENTS);
+@@ -30,8 +58,8 @@ export function AgentsTab() {
+             <Card key={agent.id} className="hover:-translate-y-0.5 transition-transform duration-150 ease-out">
+               <CardContent className="p-5 space-y-2.5">
+                 <div className="flex items-center justify-between">
+-                  <div className="flex items-center gap-2.5">
+-                    <span className="text-lg">{agent.icon}</span>
++                  <div className="flex items-center gap-3">
++                    {getAgentLogo(agent.id)}
+                     <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">{agent.name}</span>
+                   </div>
+                   <Badge variant={agent.status === "Active" ? "success" : "secondary"} className="rounded-lg text-xs">

@@ -44,12 +44,12 @@ export function SkillDetail({
   if (!skill) {
     return (
       <main className="w-full h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none animate-view-in">
-        <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center mb-3 text-zinc-400 dark:text-zinc-600">
-          <Sparkle weight="light" className="w-7 h-7" />
+        <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm flex items-center justify-center mb-4 text-zinc-400 dark:text-zinc-500">
+          <Sparkle weight="light" className="w-8 h-8" />
         </div>
-        <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-400">No skill selected</h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-600 mt-1 max-w-xs leading-relaxed">
-          Select a skill from the center list to view instructions, tools, and toggle per-repository activation.
+        <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-300 tracking-tight">No skill selected</h3>
+        <p className="text-[13px] text-zinc-500 dark:text-zinc-500 mt-1.5 max-w-[260px] leading-relaxed">
+          Select a skill from the list to view instructions, tools, and manage workspace activation.
         </p>
       </main>
     );
@@ -91,9 +91,9 @@ export function SkillDetail({
   };
 
   return (
-    <main key={skill.id} className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col overflow-y-auto animate-view-in">
-      {/* Header Banner */}
-      <div className="p-6 border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-900/20 flex items-start justify-between shrink-0">
+    <main key={skill.id} className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col relative overflow-hidden animate-view-in">
+      {/* Header Banner - Sticky & Translucent */}
+      <div className="sticky top-0 z-20 p-6 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-2xl flex items-start justify-between shrink-0 transition-colors">
         <div className="space-y-2 max-w-2xl">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{skill.name}</h2>
@@ -158,9 +158,10 @@ export function SkillDetail({
           )}
         </div>
       </div>
-
-      {/* Content Area */}
-      <div className="p-6 space-y-6 flex-1 max-w-4xl">
+      
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6 max-w-4xl mx-auto">
         {/* Metadata Grid */}
         <Card>
           <CardContent className="p-5 grid grid-cols-3 gap-4 text-xs">
@@ -296,7 +297,7 @@ export function SkillDetail({
           </div>
         </div>
       </div>
-
+      </div>
       <ConfirmDialog
         isOpen={isConfirmUninstallOpen}
         title="Uninstall Skill"

@@ -10,31 +10,46 @@ export interface LockFileEntry {
 
 export type SkillsLock = Record<string, LockFileEntry>;
 
+export interface GitHubRepoInfo {
+  owner: string;
+  repo: string;
+  path?: string; // Subdirectory path within the repo
+}
+
 /**
- * Parses a GitHub repository string into owner and repo components.
- * Supports shorthand (owner/repo), HTTPS URLs, and SSH URLs.
+ * Parses a GitHub repository string into owner, repo, and optional path components.
+ * Supports shorthand (owner/repo/path), HTTPS GitHub URLs, and skills.sh URLs.
  */
-export function parseGitHubRepo(input: string): { owner: string; repo: string } | null {
+export function parseGitHubRepo(input: string): GitHubRepoInfo | null {
   if (!input) return null;
 
-  const cleaned = input.trim().replace(/\.git$/, "");
+  let cleaned = input.trim().replace(/\.git$/, "");
+  
+  // Strip trailing slashes
+  cleaned = cleaned.replace(/\/$/, "");
 
-  // HTTPS GitHub URL format: https://github.com/owner/repo...
-  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)/);
+  // 1. skills.sh URLs: https://www.skills.sh/owner/repo/path
+  const skillsShMatch = cleaned.match(/^https?:\/\/(?:www\.)?skills\.sh\/([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
+  if (skillsShMatch) {
+    return { owner: skillsShMatch[1], repo: skillsShMatch[2], path: skillsShMatch[3] || undefined };
+  }
+
+  // 2. HTTPS GitHub URL format: https://github.com/owner/repo[/tree/main/path]
+  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(?:tree|blob)\/[^/]+\/(.*))?$/);
   if (httpsMatch) {
-    return { owner: httpsMatch[1], repo: httpsMatch[2] };
+    return { owner: httpsMatch[1], repo: httpsMatch[2], path: httpsMatch[3] || undefined };
   }
 
-  // SSH GitHub URL format: git@github.com:owner/repo
-  const sshMatch = cleaned.match(/^git@github\.com:([\w.-]+)\/([\w.-]+)/);
+  // 3. SSH GitHub URL format: git@github.com:owner/repo
+  const sshMatch = cleaned.match(/^git@github\.com:([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
   if (sshMatch) {
-    return { owner: sshMatch[1], repo: sshMatch[2] };
+    return { owner: sshMatch[1], repo: sshMatch[2], path: sshMatch[3] || undefined };
   }
 
-  // Shorthand format: owner/repo
-  const shortMatch = cleaned.match(/^([\w.-]+)\/([\w.-]+)$/);
+  // 4. Shorthand format: owner/repo[/path]
+  const shortMatch = cleaned.match(/^([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
   if (shortMatch) {
-    return { owner: shortMatch[1], repo: shortMatch[2] };
+    return { owner: shortMatch[1], repo: shortMatch[2], path: shortMatch[3] || undefined };
   }
 
   return null;

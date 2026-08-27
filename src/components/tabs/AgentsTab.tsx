@@ -1,9 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { Robot } from "@phosphor-icons/react";
+import { Robot, Package, TerminalWindow } from "@phosphor-icons/react";
 import { Badge } from "../ui/badge.tsx";
 import { Card, CardContent } from "../ui/card.tsx";
 import { SUPPORTED_AGENTS, AgentConfig } from "../../backend/agents.ts";
 import { api } from "../../client/apiClient.ts";
+import {
+  CursorLogo,
+  AnthropicLogo,
+  GeminiLogo,
+  CopilotLogo,
+  WindsurfLogo
+} from "../AgentLogos.tsx";
+
+function getAgentLogo(id: string) {
+  const className = "w-6 h-6 shrink-0";
+  switch (id) {
+    case "claude-code":
+      return <AnthropicLogo className={`${className} text-[#D97757]`} />;
+    case "cursor":
+      return <CursorLogo className={`${className} text-zinc-900 dark:text-zinc-100`} />;
+    case "gemini":
+    case "antigravity":
+      return <GeminiLogo className={`${className} text-[#4285F4]`} />;
+    case "copilot":
+      return <CopilotLogo className={`${className} text-zinc-900 dark:text-zinc-100`} />;
+    case "windsurf":
+      return <WindsurfLogo className={`${className} text-teal-500`} />;
+    case "opencode":
+      return <TerminalWindow weight="light" className={`${className} text-zinc-900 dark:text-zinc-100`} />;
+    default:
+      return <Package weight="light" className={`${className} text-zinc-400`} />;
+  }
+}
 
 export function AgentsTab() {
   const [agents, setAgents] = useState<AgentConfig[]>(SUPPORTED_AGENTS);
@@ -30,8 +58,8 @@ export function AgentsTab() {
             <Card key={agent.id} className="hover:-translate-y-0.5 transition-transform duration-150 ease-out">
               <CardContent className="p-5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-lg">{agent.icon}</span>
+                  <div className="flex items-center gap-3">
+                    {getAgentLogo(agent.id)}
                     <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">{agent.name}</span>
                   </div>
                   <Badge variant={agent.status === "Active" ? "success" : "secondary"} className="rounded-lg text-xs">

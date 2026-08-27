@@ -8,6 +8,7 @@ import {
   FolderSimplePlus,
   Sun,
   Moon,
+  Compass,
 } from "@phosphor-icons/react";
 import { Workspace } from "../types/skills.ts";
 import { Button } from "./ui/button.tsx";
@@ -17,7 +18,7 @@ import { ScrollArea } from "./ui/scroll-area.tsx";
 import { Separator } from "./ui/separator.tsx";
 import { api } from "../client/apiClient.ts";
 
-export type NavTab = "skills" | "agents" | "prompts" | "settings";
+export type NavTab = "skills" | "discover" | "agents" | "prompts" | "settings";
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -200,10 +201,10 @@ export function Sidebar({
         <nav className="space-y-1.5">
           <button
             onClick={() => setCurrentTab("skills")}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
               currentTab === "skills"
-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
             }`}
           >
             <div className="flex items-center gap-3">
@@ -216,11 +217,25 @@ export function Sidebar({
           </button>
 
           <button
+            onClick={() => setCurrentTab("discover")}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+              currentTab === "discover"
+                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Compass weight="light" className="w-4.5 h-4.5 text-fuchsia-500" />
+              <span>Discover</span>
+            </div>
+          </button>
+
+          <button
             onClick={() => setCurrentTab("agents")}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
               currentTab === "agents"
-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
             }`}
           >
             <div className="flex items-center gap-3">
@@ -231,10 +246,10 @@ export function Sidebar({
 
           <button
             onClick={() => setCurrentTab("prompts")}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
               currentTab === "prompts"
-                ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
             }`}
           >
             <div className="flex items-center gap-3">
@@ -251,10 +266,10 @@ export function Sidebar({
       <div className="p-2.5">
         <button
           onClick={() => setCurrentTab("settings")}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
             currentTab === "settings"
-              ? "bg-zinc-200/80 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700/40"
-              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+              ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
+              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
           }`}
         >
           <GearSix weight="light" className="w-4.5 h-4.5 text-zinc-500" />
