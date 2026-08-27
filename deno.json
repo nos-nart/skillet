@@ -11,13 +11,13 @@
     "check": "deno check src/main.tsx src/App.tsx tests/*_test.ts"
   },
   "imports": {
-    "@types/react": "npm:@types/react@19.0.0",
-    "@types/react-dom": "npm:@types/react-dom@19.0.0",
+    "@types/react": "npm:@types/react@19.2.18",
+    "@types/react-dom": "npm:@types/react-dom@19.2.5",
     "oxlint": "npm:oxlint@1.80.0",
     "@oxlint/plugins": "npm:@oxlint/plugins@1.80.0",
-    "react": "npm:react@19.0.0",
-    "react-dom": "npm:react-dom@19.0.0",
-    "react-dom/client": "npm:react-dom@19.0.0/client",
+    "react": "npm:react@19.2.8",
+    "react-dom": "npm:react-dom@19.2.8",
+    "react-dom/client": "npm:react-dom@19.2.8/client",
     "@phosphor-icons/react": "npm:@phosphor-icons/react@2.1.10",
     "clsx": "npm:clsx@2.1.1",
     "tailwind-merge": "npm:tailwind-merge@3.0.1",
@@ -36,7 +36,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "jsxImportSourceTypes": "npm:@types/react@19.0.0",
+    "jsxImportSourceTypes": "npm:@types/react@19.2.18",
     "lib": ["deno.window", "dom", "dom.iterable", "esnext"]
   }
 }
