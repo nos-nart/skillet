@@ -7,7 +7,7 @@ import {
 import { checkSkillUpdates } from "./updater.ts";
 import { downloadSkillFromGitHub, uninstallSkill, InstallSkillOptions } from "./installer.ts";
 import { WorkspaceManager } from "./workspace.ts";
-import { Skill, Workspace, SkillToggleRequest } from "../types/skills.ts";
+import { Skill, Workspace, SkillToggleRequest, AgentId } from "../types/skills.ts";
 import { SUPPORTED_AGENTS, getAgentGlobalPath } from "./agents.ts";
 
 const homeDir = Deno.env.get("HOME") || "/tmp";
@@ -46,13 +46,14 @@ export async function handleApiRequest(req: Request): Promise<Response> {
 
     // DELETE /api/skills (Uninstall skill)
     if (url.pathname === "/api/skills" && req.method === "DELETE") {
-      const body = (await req.json().catch(() => ({}))) as { path?: string };
-      const skillPath = body.path || url.searchParams.get("path");
-      if (skillPath) {
-        const result = await uninstallSkill(skillPath);
-        return Response.json(result);
+      const body = (await req.json().catch(() => ({}))) as { path?: unknown };
+      const skillPath = typeof body.path === "string" ? body.path : url.searchParams.get("path");
+      if (!skillPath || !skillPath.trim()) {
+        return Response.json({ ok: false, error: "Missing required 'path' parameter" }, { status: 400 });
       }
-      return Response.json({ success: false, error: "Missing skill path" }, { status: 400 });
+
+      const result = await uninstallSkill(skillPath.trim());
+      return Response.json(result, { status: result.ok ? 200 : 500 });
     }
 
     // GET /api/agents
@@ -68,26 +69,56 @@ export async function handleApiRequest(req: Request): Promise<Response> {
 
     // POST /api/workspaces
     if (url.pathname === "/api/workspaces" && req.method === "POST") {
-      const ws = (await req.json()) as Workspace;
+      const body = await req.json().catch(() => null);
+      if (!body || typeof body !== "object" || !body.id || !body.name || !body.path) {
+        return Response.json(
+          { ok: false, error: "Invalid workspace payload. 'id', 'name', and 'path' are required." },
+          { status: 400 }
+        );
+      }
+      const ws: Workspace = {
+        id: String(body.id),
+        name: String(body.name),
+        path: String(body.path),
+        isCurrent: Boolean(body.isCurrent),
+      };
       await workspaceManager.addWorkspace(ws);
-      return Response.json({ success: true });
+      return Response.json({ ok: true });
     }
 
     // DELETE /api/workspaces
     if (url.pathname === "/api/workspaces" && req.method === "DELETE") {
-      const body = (await req.json().catch(() => ({}))) as { id?: string };
-      const id = body.id || url.searchParams.get("id");
-      if (id) {
-        await workspaceManager.removeWorkspace(id);
-        return Response.json({ success: true });
+      const body = (await req.json().catch(() => ({}))) as { id?: unknown };
+      const id = typeof body.id === "string" ? body.id : url.searchParams.get("id");
+      if (!id || !id.trim()) {
+        return Response.json({ ok: false, error: "Missing required 'id' parameter" }, { status: 400 });
       }
-      return Response.json({ success: false, error: "Missing workspace id" }, { status: 400 });
+      await workspaceManager.removeWorkspace(id.trim());
+      return Response.json({ ok: true });
     }
 
     // POST /api/toggle
     if (url.pathname === "/api/toggle" && req.method === "POST") {
-      const { skillSlug, sourcePath, workspacePath, agent, enable } =
-        (await req.json()) as SkillToggleRequest;
+      const body = await req.json().catch(() => null);
+      if (
+        !body ||
+        typeof body !== "object" ||
+        typeof body.skillSlug !== "string" ||
+        typeof body.sourcePath !== "string" ||
+        typeof body.workspacePath !== "string" ||
+        typeof body.agent !== "string" ||
+        typeof body.enable !== "boolean"
+      ) {
+        return Response.json(
+          {
+            ok: false,
+            error: "Invalid toggle payload. 'skillSlug', 'sourcePath', 'workspacePath', 'agent', and 'enable' (boolean) are required.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const { skillSlug, sourcePath, workspacePath, agent, enable } = body as SkillToggleRequest;
 
       let success = false;
       if (enable) {
@@ -95,16 +126,16 @@ export async function handleApiRequest(req: Request): Promise<Response> {
           sourcePath,
           skillSlug,
           workspacePath,
-          agent
+          agent as AgentId
         );
       } else {
         success = await disableSkillInWorkspace(
           skillSlug,
           workspacePath,
-          agent
+          agent as AgentId
         );
       }
-      return Response.json({ success });
+      return Response.json({ ok: success });
     }
 
     // POST /api/check-updates
@@ -117,8 +148,8 @@ export async function handleApiRequest(req: Request): Promise<Response> {
           skills?: Skill[];
           token?: string;
         };
-        skills = body.skills || [];
-        token = body.token;
+        skills = Array.isArray(body.skills) ? body.skills : [];
+        token = typeof body.token === "string" ? body.token : undefined;
       }
 
       const updates = await checkSkillUpdates(skills, undefined, token);
@@ -127,14 +158,28 @@ export async function handleApiRequest(req: Request): Promise<Response> {
 
     // POST /api/install
     if (url.pathname === "/api/install" && req.method === "POST") {
-      const options = (await req.json()) as InstallSkillOptions;
+      const body = await req.json().catch(() => null);
+      if (!body || typeof body !== "object" || typeof body.source !== "string" || !body.source.trim()) {
+        return Response.json(
+          { ok: false, error: "Invalid install payload. 'source' (GitHub repo or local path) is required." },
+          { status: 400 }
+        );
+      }
+
+      const options: InstallSkillOptions = {
+        source: body.source.trim(),
+        skillName: typeof body.skillName === "string" ? body.skillName.trim() : undefined,
+        targetDir: typeof body.targetDir === "string" ? body.targetDir.trim() : undefined,
+        token: typeof body.token === "string" ? body.token.trim() : undefined,
+      };
+
       const result = await downloadSkillFromGitHub(options);
-      return Response.json(result);
+      return Response.json(result, { status: result.ok ? 200 : 400 });
     }
 
     return new Response("Not Found", { status: 404 });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    return Response.json({ error: errorMsg }, { status: 500 });
+    return Response.json({ ok: false, error: errorMsg }, { status: 500 });
   }
 }

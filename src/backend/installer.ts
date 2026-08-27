@@ -8,13 +8,21 @@ export interface InstallSkillOptions {
   token?: string;
 }
 
+export type InstallResult =
+  | { ok: true; path: string }
+  | { ok: false; error: string };
+
+export type UninstallResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
 /**
  * Downloads and installs a skill from a GitHub repository or local path,
  * writing the SKILL.md file and updating the skills-lock.json.
  */
 export async function downloadSkillFromGitHub(
   options: InstallSkillOptions
-): Promise<{ success: boolean; path?: string; error?: string }> {
+): Promise<InstallResult> {
   const home = Deno.env.get("HOME") || "/tmp";
 
   // Check if source is a local directory
@@ -23,16 +31,16 @@ export async function downloadSkillFromGitHub(
     try {
       const stat = await Deno.stat(resolvedPath);
       if (stat.isDirectory) {
-        return { success: true, path: resolvedPath };
+        return { ok: true, path: resolvedPath };
       }
     } catch {
-      return { success: false, error: `Local path does not exist: ${options.source}` };
+      return { ok: false, error: `Local path does not exist: ${options.source}` };
     }
   }
 
   const repoInfo = parseGitHubRepo(options.source);
   if (!repoInfo) {
-    return { success: false, error: "Invalid GitHub repository format" };
+    return { ok: false, error: "Invalid GitHub repository format" };
   }
 
   const skillSlug = options.skillName || repoInfo.repo;
@@ -105,10 +113,10 @@ Installed from https://github.com/${repoInfo.owner}/${repoInfo.repo}
       // Non-fatal lockfile update error
     }
 
-    return { success: true, path: targetDir };
+    return { ok: true, path: targetDir };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return { success: false, error: message };
+    return { ok: false, error: message };
   }
 }
 
@@ -117,12 +125,12 @@ Installed from https://github.com/${repoInfo.owner}/${repoInfo.repo}
  */
 export async function uninstallSkill(
   skillPath: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<UninstallResult> {
   try {
     await Deno.remove(skillPath, { recursive: true });
-    return { success: true };
+    return { ok: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return { success: false, error: message };
+    return { ok: false, error: message };
   }
 }

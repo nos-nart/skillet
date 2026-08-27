@@ -37,7 +37,7 @@ export interface Skill {
   updateAvailable?: boolean;
   provider?: "github" | "local";
   sourceUrl?: string;
-  enabledInWorkspaces?: string[]; // Workspace paths where this skill is currently enabled
+  enabledInWorkspaces?: string[]; // Workspace IDs where this skill is currently enabled
 }
 
 export interface SkillPackage {
@@ -59,5 +59,5 @@ export interface SkillToggleRequest {
   sourcePath: string;
   workspacePath: string;
   agent: AgentId;
-  enable?: boolean;
+  enable: boolean;
 }

@@ -101,16 +101,20 @@ Deno.test("downloadSkillFromGitHub validates input and creates target directory"
   const targetDir = `${tempDir}/downloaded-skill`;
 
   const invalidRes = await downloadSkillFromGitHub({ source: "invalid-source" });
-  assertEquals(invalidRes.success, false);
-  assertEquals(invalidRes.error, "Invalid GitHub repository format");
+  assertEquals(invalidRes.ok, false);
+  if (!invalidRes.ok) {
+    assertEquals(invalidRes.error, "Invalid GitHub repository format");
+  }
 
   const validRes = await downloadSkillFromGitHub({
     source: "cursor/plugins",
     targetDir,
   });
 
-  assertEquals(validRes.success, true);
-  assertEquals(validRes.path, targetDir);
+  assertEquals(validRes.ok, true);
+  if (validRes.ok) {
+    assertEquals(validRes.path, targetDir);
+  }
 
   const dirStat = await Deno.stat(targetDir);
   assertEquals(dirStat.isDirectory, true);

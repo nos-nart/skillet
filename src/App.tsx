@@ -95,7 +95,7 @@ export function App() {
   const handleInstallNewSkill = async (source: string, skillName?: string) => {
     const token = localStorage.getItem("github_token") || undefined;
     const result = await api.installSkill({ source, skillName, token });
-    if (!result.success) {
+    if (!result.ok) {
       throw new Error(result.error || "Installation failed");
     }
     await loadSkills();

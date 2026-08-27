@@ -37,7 +37,7 @@ Deno.test("handleApiRequest handles POST /api/workspaces", async () => {
   const res = await handleApiRequest(req);
   assertEquals(res.status, 200);
   const data = await res.json();
-  assertEquals(data.success, true);
+  assertEquals(data.ok, true);
 
   // Verify it appears in GET /api/workspaces
   const getRes = await handleApiRequest(new Request("http://localhost/api/workspaces"));
@@ -71,7 +71,7 @@ Deno.test("handleApiRequest handles POST /api/toggle", async () => {
   const enableRes = await handleApiRequest(enableReq);
   assertEquals(enableRes.status, 200);
   const enableData = await enableRes.json();
-  assertEquals(enableData.success, true);
+  assertEquals(enableData.ok, true);
 
   // 2. Disable
   const disableReq = new Request("http://localhost/api/toggle", {
@@ -89,7 +89,7 @@ Deno.test("handleApiRequest handles POST /api/toggle", async () => {
   const disableRes = await handleApiRequest(disableReq);
   assertEquals(disableRes.status, 200);
   const disableData = await disableRes.json();
-  assertEquals(disableData.success, true);
+  assertEquals(disableData.ok, true);
 
   await Deno.remove(tempDir, { recursive: true });
 });
@@ -115,9 +115,9 @@ Deno.test("handleApiRequest handles POST /api/install", async () => {
     body: JSON.stringify({ source: "invalid-source" }),
   });
   const badRes = await handleApiRequest(badReq);
-  assertEquals(badRes.status, 200);
+  assertEquals(badRes.status, 400);
   const badData = await badRes.json();
-  assertEquals(badData.success, false);
+  assertEquals(badData.ok, false);
 
   // Test valid repo format
   const tempDir = await Deno.makeTempDir();
@@ -132,7 +132,7 @@ Deno.test("handleApiRequest handles POST /api/install", async () => {
   const goodRes = await handleApiRequest(goodReq);
   assertEquals(goodRes.status, 200);
   const goodData = await goodRes.json();
-  assertEquals(goodData.success, true);
+  assertEquals(goodData.ok, true);
 
   await Deno.remove(tempDir, { recursive: true });
 });
@@ -161,7 +161,7 @@ Deno.test("handleApiRequest handles DELETE /api/skills", async () => {
   const res = await handleApiRequest(req);
   assertEquals(res.status, 200);
   const data = await res.json();
-  assertEquals(data.success, true);
+  assertEquals(data.ok, true);
 
   await Deno.remove(tempDir, { recursive: true });
 });
@@ -224,7 +224,7 @@ Deno.test("api client methods interact with backend correctly", async () => {
 
     // Test installSkill
     const installRes = await api.installSkill({ source: "invalid" });
-    assertEquals(installRes.success, false);
+    assertEquals(installRes.ok, false);
   } finally {
     globalThis.fetch = originalFetch;
   }

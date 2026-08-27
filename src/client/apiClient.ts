@@ -1,5 +1,6 @@
 import { Skill, Workspace, SkillToggleRequest } from "../types/skills.ts";
 import { AgentConfig } from "../backend/agents.ts";
+import { InstallResult, UninstallResult } from "../backend/installer.ts";
 
 export const api = {
   async getSkills(): Promise<Skill[]> {
@@ -31,7 +32,7 @@ export const api = {
     });
     if (!res.ok) throw new Error("Failed to add workspace");
     const data = await res.json();
-    return data.success;
+    return data.ok ?? false;
   },
 
   async removeWorkspace(id: string): Promise<boolean> {
@@ -42,7 +43,7 @@ export const api = {
     });
     if (!res.ok) throw new Error("Failed to remove workspace");
     const data = await res.json();
-    return data.success;
+    return data.ok ?? false;
   },
 
   async toggleSkill(params: SkillToggleRequest): Promise<boolean> {
@@ -53,7 +54,7 @@ export const api = {
     });
     if (!res.ok) throw new Error("Failed to toggle skill");
     const data = await res.json();
-    return data.success;
+    return data.ok ?? false;
   },
 
   async checkUpdates(
@@ -75,25 +76,23 @@ export const api = {
     skillName?: string;
     targetDir?: string;
     token?: string;
-  }): Promise<{ success: boolean; path?: string; error?: string }> {
+  }): Promise<InstallResult> {
     const res = await fetch("/api/install", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(options),
     });
-    if (!res.ok) throw new Error("Failed to install skill");
-    const data = await res.json();
+    const data = (await res.json()) as InstallResult;
     return data;
   },
 
-  async uninstallSkill(path: string): Promise<{ success: boolean; error?: string }> {
+  async uninstallSkill(path: string): Promise<UninstallResult> {
     const res = await fetch("/api/skills", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path }),
     });
-    if (!res.ok) throw new Error("Failed to uninstall skill");
-    const data = await res.json();
+    const data = (await res.json()) as UninstallResult;
     return data;
   },
 };
