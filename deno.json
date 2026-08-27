@@ -4,8 +4,8 @@
     "dev": "deno run -A npm:vite@8.2.2",
     "build": "deno run -A npm:vite@8.2.2 build",
     "preview": "deno run -A npm:vite@8.2.2 preview",
-    "desktop": "deno task build && deno desktop --hmr desktop.ts",
-    "desktop:build": "deno task build && deno desktop desktop.ts",
+    "desktop": "deno task build && deno desktop -A --hmr desktop.ts",
+    "desktop:build": "deno task build && deno desktop -A desktop.ts",
     "lint": "deno run -A npm:oxlint@1.80.0",
     "test": "deno test -A",
     "check": "deno check src/main.tsx src/App.tsx tests/*_test.ts"
