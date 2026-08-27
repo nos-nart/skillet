@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { parse as parseMarkdown } from "npm:marked@15.0.7";
+import { parse as parseMarkdown } from "marked";
 
 interface MarkdownViewerProps {
   content: string;

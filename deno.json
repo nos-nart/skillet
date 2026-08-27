@@ -1,19 +1,24 @@
 {
+  "nodeModulesDir": "auto",
   "tasks": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "deno run -A npm:vite@6.1.0",
+    "build": "deno run -A npm:vite@6.1.0 build",
+    "preview": "deno run -A npm:vite@6.1.0 preview",
     "desktop": "deno desktop --hmr desktop.ts",
     "desktop:build": "deno desktop desktop.ts",
     "test": "deno test -A"
   },
   "imports": {
     "react": "npm:react@19.0.0",
+    "react/": "npm:react@19.0.0/",
     "react-dom": "npm:react-dom@19.0.0",
+    "react-dom/": "npm:react-dom@19.0.0/",
     "react-dom/client": "npm:react-dom@19.0.0/client",
     "lucide-react": "npm:lucide-react@0.475.0",
     "clsx": "npm:clsx@2.1.1",
     "tailwind-merge": "npm:tailwind-merge@3.0.1",
+    "tailwindcss": "npm:tailwindcss@4.0.6",
+    "@tailwindcss/vite": "npm:@tailwindcss/vite@4.0.6",
     "marked": "npm:marked@15.0.7",
     "yaml": "npm:yaml@2.7.0"
   },

@@ -68,6 +68,13 @@ export const api = {
     return data.updates;
   },
 
+  async checkForUpdates(
+    skills?: Skill[],
+    token?: string
+  ): Promise<Record<string, boolean>> {
+    return this.checkUpdates(skills, token);
+  },
+
   async installSkill(options: {
     source: string;
     skillName?: string;
