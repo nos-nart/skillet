@@ -118,7 +118,7 @@ export async function handleApiRequest(
         const home = Deno.env.get("HOME") || "/tmp";
         // Sanitize name to be safe for directory
         const safeName = body.name.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
-        const targetDir = `${home}/.gemini/config/skills/${safeName}`;
+        const targetDir = `${home}/.skills/${safeName}`;
         
         // Write the SKILL.md
         const skillMdPath = `${targetDir}/SKILL.md`;
