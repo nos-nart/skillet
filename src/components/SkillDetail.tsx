@@ -42,7 +42,7 @@ export function SkillDetail({
   if (!skill) {
     return (
       <main className="size-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none animate-view-in">
-        <div className="size-166 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm flex items-center justify-center mb-4 text-zinc-400 dark:text-zinc-500">
+        <div className="size-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm flex items-center justify-center mb-4 text-zinc-400 dark:text-zinc-500">
           <SparkleIcon weight="light" className="size-8" />
         </div>
         <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-300 tracking-tight">No skill selected</h3>
