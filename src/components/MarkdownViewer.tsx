@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { parseMarkdown, type MarkdownDocument as MarkdownDocType } from "comark";
 import shiki from "comark/plugins/shiki";
 import { MarkdownDocument } from "@comark/react";
-import { Copy, Check } from "@phosphor-icons/react";
+import { CopyIcon, CheckIcon } from "@phosphor-icons/react";
 import { cn } from "../lib/utils.ts";
+
+const shikiPlugin = shiki();
 
 interface MarkdownViewerProps {
   content: string;
@@ -35,12 +37,12 @@ function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { langua
         >
           {copied ? (
             <>
-              <Check weight="bold" className="w-3.5 h-3.5 text-success animate-in zoom-in-75 duration-150" />
+              <CheckIcon weight="bold" className="size-3.5 text-success animate-in zoom-in-75 duration-150" />
               <span className="text-success-hover dark:text-success-light font-sans font-medium">Copied!</span>
             </>
           ) : (
             <>
-              <Copy weight="light" className="w-3.5 h-3.5" />
+              <CopyIcon weight="light" className="size-3.5" />
               <span className="font-sans font-medium">Copy</span>
             </>
           )}
@@ -145,7 +147,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
       return;
     }
 
-    parseMarkdown(content, { plugins: [shiki()] })
+    parseMarkdown(content, { plugins: [shikiPlugin] })
       .then((parsed) => {
         if (!cancelled) {
           setDoc(parsed);

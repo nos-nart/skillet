@@ -1,12 +1,10 @@
 import React, { useState, useDeferredValue } from "react";
-import {
-  Terminal,
-  MagnifyingGlass,
-  Copy,
-  Check,
-  Wrench,
-  Package,
-} from "@phosphor-icons/react";
+import { TerminalIcon,
+  MagnifyingGlassIcon,
+  CopyIcon,
+  CheckIcon,
+  WrenchIcon,
+  PackageIcon, } from "@phosphor-icons/react";
 import { Skill } from "../../types/skills.ts";
 import { Badge } from "../ui/badge.tsx";
 import { Input } from "../ui/input.tsx";
@@ -47,13 +45,13 @@ export function PromptsTab({ skills }: PromptsTabProps) {
   });
 
   return (
-    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
+    <main className="size-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header and Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800/80 pb-5">
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-              <Terminal weight="light" className="w-6 h-6 text-primary" />
+              <TerminalIcon weight="light" className="size-6 text-primary" />
               Prompt & Slash Command Catalog
             </h2>
             <p className="text-sm text-zinc-500 mt-1">
@@ -62,9 +60,9 @@ export function PromptsTab({ skills }: PromptsTabProps) {
           </div>
 
           <div className="relative w-full sm:w-80">
-            <MagnifyingGlass
+            <MagnifyingGlassIcon
               weight="light"
-              className="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-2.5 pointer-events-none"
+              className="size-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-2.5 pointer-events-none"
             />
             <Input
               type="text"
@@ -101,9 +99,9 @@ export function PromptsTab({ skills }: PromptsTabProps) {
                       >
                         <span className="font-semibold">{trigger}</span>
                         {isCopied ? (
-                          <Check weight="bold" className="w-3.5 h-3.5 text-primary animate-in zoom-in-75 duration-150" />
+                          <CheckIcon weight="bold" className="size-3.5 text-primary animate-in zoom-in-75 duration-150" />
                         ) : (
-                          <Copy weight="light" className="w-3.5 h-3.5 text-primary/80 opacity-60 group-hover:opacity-100 transition-opacity" />
+                          <CopyIcon weight="light" className="size-3.5 text-primary/80 opacity-60 group-hover:opacity-100 transition-opacity" />
                         )}
                       </button>
 
@@ -124,13 +122,13 @@ export function PromptsTab({ skills }: PromptsTabProps) {
                   <CardContent className="p-4 pt-2 border-t border-zinc-200 dark:border-zinc-800/40 mt-2 space-y-2">
                     <div className="flex items-center justify-between text-sm text-zinc-500">
                       <div className="flex items-center gap-1.5 truncate max-w-[180px]">
-                        <Package weight="light" className="w-3.5 h-3.5 shrink-0" />
+                        <PackageIcon weight="light" className="size-3.5 shrink-0" />
                         <span className="truncate font-mono">{skill.packageName}</span>
                       </div>
 
                       {skill.metadata.tools && skill.metadata.tools.length > 0 && (
                         <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-mono">
-                          <Wrench weight="light" className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+                          <WrenchIcon weight="light" className="size-3.5 text-zinc-400 dark:text-zinc-500" />
                           <span>{skill.metadata.tools.length} tool{skill.metadata.tools.length > 1 ? "s" : ""}</span>
                         </div>
                       )}

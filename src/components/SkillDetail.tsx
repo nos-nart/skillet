@@ -1,13 +1,11 @@
 import React, { useState } from "react";
-import {
-  Sparkle,
-  GitBranch,
-  ArrowsClockwise,
-  Terminal,
-  Trash,
-  ArrowSquareOut,
-  DownloadSimple,
-} from "@phosphor-icons/react";
+import { SparkleIcon,
+  GitBranchIcon,
+  ArrowsClockwiseIcon,
+  TerminalIcon,
+  TrashIcon,
+  ArrowSquareOutIcon,
+  DownloadSimpleIcon, } from "@phosphor-icons/react";
 import { Skill, Workspace } from "../types/skills.ts";
 import { MarkdownViewer } from "./MarkdownViewer.tsx";
 import { Button } from "./ui/button.tsx";
@@ -43,9 +41,9 @@ export function SkillDetail({
 
   if (!skill) {
     return (
-      <main className="w-full h-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none animate-view-in">
-        <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm flex items-center justify-center mb-4 text-zinc-400 dark:text-zinc-500">
-          <Sparkle weight="light" className="w-8 h-8" />
+      <main className="size-full flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-600 p-6 text-center bg-white dark:bg-zinc-950 select-none animate-view-in">
+        <div className="size-166 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm flex items-center justify-center mb-4 text-zinc-400 dark:text-zinc-500">
+          <SparkleIcon weight="light" className="size-8" />
         </div>
         <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-300 tracking-tight">No skill selected</h3>
         <p className="text-[13px] text-zinc-500 dark:text-zinc-500 mt-1.5 max-w-[260px] leading-relaxed">
@@ -91,7 +89,7 @@ export function SkillDetail({
   };
 
   return (
-    <main key={skill.id} className="w-full h-full bg-white dark:bg-zinc-950 flex flex-col relative overflow-hidden animate-view-in">
+    <main key={skill.id} className="size-full bg-white dark:bg-zinc-950 flex flex-col relative overflow-hidden animate-view-in">
       {/* Header Banner - Sticky & Translucent */}
       <div className="sticky top-0 z-20 p-6 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-2xl flex items-start justify-between shrink-0 transition-colors">
         <div className="space-y-2 max-w-2xl">
@@ -123,9 +121,9 @@ export function SkillDetail({
               disabled={updating}
               className="bg-warning hover:bg-warning-light text-zinc-950 font-semibold gap-1.5"
             >
-              <ArrowsClockwise
+              <ArrowsClockwiseIcon
                 weight="light"
-                className={`w-4 h-4 ${updating ? "animate-spin" : ""}`}
+                className={`size-4 ${updating ? "animate-spin" : ""}`}
               />
               <span>{updating ? "Updating..." : "Update to Latest"}</span>
             </Button>
@@ -139,7 +137,7 @@ export function SkillDetail({
               disabled={installing}
               className="gap-1.5 text-xs"
             >
-              <DownloadSimple weight="light" className="w-4 h-4 text-primary" />
+              <DownloadSimpleIcon weight="light" className="size-4 text-primary" />
               <span>{installing ? "Installing..." : "Install"}</span>
             </Button>
           )}
@@ -152,7 +150,7 @@ export function SkillDetail({
               disabled={uninstalling}
               className="gap-1.5 text-xs"
             >
-              <Trash weight="light" className="w-4 h-4" />
+              <TrashIcon weight="light" className="size-4" />
               <span>{uninstalling ? "Removing..." : "Uninstall"}</span>
             </Button>
           )}
@@ -209,7 +207,7 @@ export function SkillDetail({
                   className="text-primary-hover dark:text-primary-light hover:text-primary font-mono text-xs truncate flex items-center gap-1 transition-colors"
                 >
                   <span className="truncate">{skill.sourceUrl}</span>
-                  <ArrowSquareOut weight="light" className="w-3.5 h-3.5 shrink-0" />
+                  <ArrowSquareOutIcon weight="light" className="size-3.5 shrink-0" />
                 </a>
               ) : (
                 <span className="text-zinc-500 font-mono text-xs">Local Directory</span>
@@ -231,7 +229,7 @@ export function SkillDetail({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-              <GitBranch weight="light" className="w-4 h-4 text-primary" />
+              <GitBranchIcon weight="light" className="size-4 text-primary" />
               Per-Repository Activation Switchboard
             </h3>
             <span className="text-sm text-zinc-500">Symlinks managed automatically</span>
@@ -249,7 +247,7 @@ export function SkillDetail({
                 >
                   <div className="flex items-center gap-3.5">
                     <div className={`p-2 rounded-lg ${isGlobal ? "bg-warning-soft text-warning-hover dark:text-warning-light" : "bg-info-soft text-info-hover dark:text-info-light"}`}>
-                      <GitBranch weight="light" className="w-4.5 h-4.5" />
+                      <GitBranchIcon weight="light" className="size-4.5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -287,7 +285,7 @@ export function SkillDetail({
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
-              <Terminal weight="light" className="w-4 h-4 text-primary" />
+              <TerminalIcon weight="light" className="size-4 text-primary" />
               SKILL.md Documentation & Prompts
             </h3>
             <span className="text-xs font-mono text-zinc-400 dark:text-zinc-500">Live Preview</span>

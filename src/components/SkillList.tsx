@@ -1,12 +1,10 @@
 import React, { useState, useDeferredValue } from "react";
-import {
-  MagnifyingGlass,
-  ArrowsClockwise,
-  ArrowCircleUp,
-  CaretRight,
-  Package,
-  Plus,
-} from "@phosphor-icons/react";
+import { MagnifyingGlassIcon,
+  ArrowsClockwiseIcon,
+  ArrowCircleUpIcon,
+  CaretRightIcon,
+  PackageIcon,
+  PlusIcon, } from "@phosphor-icons/react";
 import { Skill } from "../types/skills.ts";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
@@ -70,7 +68,7 @@ export function SkillList({
   const updateCount = skills.filter((s) => s.updateAvailable).length;
 
   return (
-    <section className="w-full h-full bg-zinc-50 dark:bg-zinc-900/60 flex flex-col select-none overflow-hidden">
+    <section className="size-full bg-zinc-50 dark:bg-zinc-900/60 flex flex-col select-none overflow-hidden">
       {/* Top action toolbar */}
       <div className="p-3.5 space-y-3">
         <div className="flex items-center justify-between">
@@ -91,7 +89,7 @@ export function SkillList({
                 title="Add custom skill from GitHub or local folder"
                 className="h-8 text-xs gap-1 px-2.5"
               >
-                <Plus weight="light" className="w-4 h-4 text-primary" />
+                <PlusIcon weight="light" className="size-4 text-primary" />
                 <span>New</span>
               </Button>
             )}
@@ -103,9 +101,9 @@ export function SkillList({
               title="Check for updates"
               className="h-8 text-xs gap-1 px-2.5"
             >
-              <ArrowCircleUp
+              <ArrowCircleUpIcon
                 weight="light"
-                className={`w-4 h-4 text-primary transition-transform ${isCheckingUpdates ? "animate-spin" : ""}`}
+                className={`size-4 text-primary transition-transform ${isCheckingUpdates ? "animate-spin" : ""}`}
               />
               <span>{isCheckingUpdates ? "Checking..." : "Updates"}</span>
             </Button>
@@ -117,9 +115,9 @@ export function SkillList({
               title="Rescan local directories"
               className="h-8 w-8"
             >
-              <ArrowsClockwise
+              <ArrowsClockwiseIcon
                 weight="light"
-                className={`w-4 h-4 text-primary transition-transform ${isLoading ? "animate-spin" : "hover:rotate-45"}`}
+                className={`size-4 text-primary transition-transform ${isLoading ? "animate-spin" : "hover:rotate-45"}`}
               />
             </Button>
           </div>
@@ -127,9 +125,9 @@ export function SkillList({
 
         {/* Search input */}
         <div className="relative">
-          <MagnifyingGlass
+          <MagnifyingGlassIcon
             weight="light"
-            className="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-2.5 pointer-events-none"
+            className="size-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-2.5 pointer-events-none"
           />
           <Input
             type="text"
@@ -155,7 +153,7 @@ export function SkillList({
               <div key={pkgName} className="space-y-1.5">
                 <div className="px-2.5 py-1 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
                   <div className="flex items-center gap-1.5 truncate">
-                    <Package weight="light" className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                    <PackageIcon weight="light" className="size-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
                     <span className="truncate">{pkgName}</span>
                   </div>
                   <span className="text-zinc-400 dark:text-zinc-600 font-mono text-xs shrink-0 ml-1">{pkgSkills.length}</span>
@@ -168,7 +166,7 @@ export function SkillList({
                       <button
                         key={skill.id}
                         onClick={() => onSelectSkill(skill)}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-100 flex items-center justify-between group cursor-pointer active:scale-[0.98] border border-transparent ${
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-100 flex items-center justify-between group cursor-pointer border border-transparent ${
                           isSelected
                             ? "bg-primary text-white shadow-sm"
                             : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80"
@@ -180,16 +178,16 @@ export function SkillList({
                               {skill.metadata?.trigger || `/${skill.slug}`}
                             </span>
                             {skill.updateAvailable && (
-                              <span className="w-2 h-2 rounded-full bg-warning-light animate-pulse shrink-0" />
+                              <span className="size-2 rounded-full bg-warning-light animate-pulse shrink-0" />
                             )}
                           </div>
                           <p className={`text-sm truncate mt-0.5 ${isSelected ? "text-primary-50" : "text-zinc-500"}`}>
                             {skill.metadata?.description || skill.name}
                           </p>
                         </div>
-                        <CaretRight
+                        <CaretRightIcon
                           weight="bold"
-                          className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                          className={`size-3.5 shrink-0 transition-colors ${
                             isSelected ? "text-white" : "text-zinc-400 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-400"
                           }`}
                         />

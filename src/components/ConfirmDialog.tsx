@@ -1,5 +1,5 @@
 import React from "react";
-import { Warning, Trash, X } from "@phosphor-icons/react";
+import { WarningIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import { Button } from "./ui/button.tsx";
 
 interface ConfirmDialogProps {
@@ -33,9 +33,9 @@ export function ConfirmDialog({
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${variant === "destructive" ? "bg-destructive-soft text-destructive-hover dark:text-destructive-light" : "bg-primary-soft text-primary-hover dark:text-primary-light"}`}>
                 {variant === "destructive" ? (
-                  <Trash weight="light" className="w-5 h-5" />
+                  <TrashIcon weight="light" className="size-5" />
                 ) : (
-                  <Warning weight="light" className="w-5 h-5" />
+                  <WarningIcon weight="light" className="size-5" />
                 )}
               </div>
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
@@ -44,7 +44,7 @@ export function ConfirmDialog({
               onClick={onCancel}
               className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
             >
-              <X weight="light" className="w-4 h-4" />
+              <XIcon weight="light" className="size-4" />
             </button>
           </div>
 
@@ -72,7 +72,7 @@ export function ConfirmDialog({
             disabled={isLoading}
             className="text-xs gap-1.5"
           >
-            {variant === "destructive" && <Trash weight="light" className="w-3.5 h-3.5" />}
+            {variant === "destructive" && <TrashIcon weight="light" className="size-3.5" />}
             <span>{isLoading ? "Processing..." : confirmLabel}</span>
           </Button>
         </div>

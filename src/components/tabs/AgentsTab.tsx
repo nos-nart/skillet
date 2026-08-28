@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Robot, Package, TerminalWindow } from "@phosphor-icons/react";
+import { RobotIcon, PackageIcon, TerminalWindowIcon } from "@phosphor-icons/react";
 import { Badge } from "../ui/badge.tsx";
 import { Card, CardContent } from "../ui/card.tsx";
 import { SUPPORTED_AGENTS, AgentConfig } from "../../backend/agents.ts";
@@ -13,7 +13,7 @@ import {
 } from "../AgentLogos.tsx";
 
 function getAgentLogo(id: string) {
-  const className = "w-6 h-6 shrink-0";
+  const className = "size-6 shrink-0";
   switch (id) {
     case "claude-code":
       return <AnthropicLogo className={`${className} text-[#D97757]`} />;
@@ -29,7 +29,7 @@ function getAgentLogo(id: string) {
     case "opencode":
       return <img src="https://opencode.ai/_build/assets/preview-opencode-logo-light-B5i-Y4z2.png" className={`${className} object-contain`} alt="OpenCode" />;
     default:
-      return <Package weight="light" className={`${className} text-zinc-400`} />;
+      return <PackageIcon weight="light" className={`${className} text-zinc-400`} />;
   }
 }
 
@@ -41,11 +41,11 @@ export function AgentsTab() {
   }, []);
 
   return (
-    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
+    <main className="size-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
       <div className="max-w-3xl space-y-6">
         <div>
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-            <Robot weight="light" className="w-6 h-6 text-zinc-900 dark:text-zinc-100" />
+            <RobotIcon weight="light" className="size-6 text-zinc-900 dark:text-zinc-100" />
             Detected Coding Agents
           </h2>
           <p className="text-sm text-zinc-500 mt-1">

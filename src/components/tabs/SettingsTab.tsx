@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GearSix, Sun, Moon } from "@phosphor-icons/react";
+import { GearSixIcon, SunIcon, MoonIcon } from "@phosphor-icons/react";
 import { Card, CardContent } from "../ui/card.tsx";
 import { Input } from "../ui/input.tsx";
 import { Button } from "../ui/button.tsx";
@@ -17,11 +17,11 @@ export function SettingsTab() {
   };
 
   return (
-    <main className="w-full h-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
+    <main className="size-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
       <div className="max-w-2xl space-y-6">
         <div>
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-            <GearSix weight="light" className="w-6 h-6 text-zinc-500" />
+            <GearSixIcon weight="light" className="size-6 text-zinc-500" />
             Settings & Preferences
           </h2>
           <p className="text-sm text-zinc-500 mt-1">
@@ -68,7 +68,7 @@ export function SettingsTab() {
                   onClick={() => setTheme("dark")}
                   className="gap-1.5"
                 >
-                  <Moon weight="light" className="w-4 h-4" />
+                  <MoonIcon weight="light" className="size-4" />
                   <span>Dark Mode</span>
                 </Button>
                 <Button
@@ -77,7 +77,7 @@ export function SettingsTab() {
                   onClick={() => setTheme("light")}
                   className="gap-1.5"
                 >
-                  <Sun weight="light" className="w-4 h-4" />
+                  <SunIcon weight="light" className="size-4" />
                   <span>Light Mode</span>
                 </Button>
               </div>

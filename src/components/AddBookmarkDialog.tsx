@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, BookmarkSimple } from "@phosphor-icons/react";
+import { XIcon, BookmarkSimpleIcon } from "@phosphor-icons/react";
 import { Button } from "./ui/button.tsx";
 
 interface AddBookmarkDialogProps {
@@ -37,14 +37,14 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between p-3 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
           <div className="flex items-center gap-2">
-            <BookmarkSimple className="w-5 h-5 text-primary" weight="bold" />
+            <BookmarkSimpleIcon className="size-5 text-primary" weight="bold" />
             <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Add Bookmarks</h3>
           </div>
           <button
             onClick={onClose}
             className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50 dark:hover:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <XIcon className="size-5" />
           </button>
         </div>
         

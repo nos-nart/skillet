@@ -1,6 +1,6 @@
 import React from "react";
 import * as ResizablePrimitive from "react-resizable-panels";
-import { DotsSixVertical } from "@phosphor-icons/react";
+import { DotsSixVerticalIcon } from "@phosphor-icons/react";
 import { cn } from "../../lib/utils.ts";
 
 export function ResizablePanelGroup({
@@ -41,7 +41,7 @@ export function ResizableHandle({
     >
       {withHandle && (
         <div className="z-10 flex h-5 w-3 items-center justify-center rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 shadow-xs">
-          <DotsSixVertical weight="light" className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
+          <DotsSixVerticalIcon weight="light" className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
         </div>
       )}
     </ResizablePrimitive.PanelResizeHandle>

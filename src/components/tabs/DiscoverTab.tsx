@@ -1,5 +1,5 @@
 import React, { useReducer, useState, useEffect } from "react";
-import { MagnifyingGlass, DownloadSimple, CheckCircle, FolderOpen, ArrowSquareOut, BookmarkSimple, Plus } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, DownloadSimpleIcon, CheckCircleIcon, FolderOpenIcon, ArrowSquareOutIcon, BookmarkSimpleIcon, PlusIcon } from "@phosphor-icons/react";
 import { Input } from "../ui/input.tsx";
 import { Button } from "../ui/button.tsx";
 import { ScrollArea } from "../ui/scroll-area.tsx";
@@ -249,14 +249,14 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Discover Skills</h2>
           <Button variant="ghost" size="sm" onClick={() => setIsBookmarkDialogOpen(true)} className="h-7 gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
-            <Plus weight="bold" /> Bookmark
+            <PlusIcon weight="bold" /> Bookmark
           </Button>
         </div>
         <p className="text-sm text-zinc-500 mb-6">Browse and install skills from skills.sh or any GitHub repository.</p>
         
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
             <Input
               value={state.query}
               onChange={(e) => dispatch({ type: "SET_QUERY", payload: e.target.value })}
@@ -282,7 +282,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
             {state.bookmarks.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                  <BookmarkSimple className="text-primary" weight="fill" /> Your Bookmarks
+                  <BookmarkSimpleIcon className="text-primary" weight="fill" /> Your Bookmarks
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
                   {state.bookmarks.map(bm => {
@@ -291,7 +291,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                     return (
                       <div key={bm} onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, bm); }} className="flex items-center justify-between p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group">
                         <div className="flex items-center gap-2 truncate">
-                          <BookmarkSimple className="w-4 h-4 text-zinc-400" />
+                          <BookmarkSimpleIcon className="size-4 text-zinc-400" />
                           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</span>
                         </div>
                         <button onClick={(e) => handleRemoveBookmark(e, bm)} className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-destructive transition-all">
@@ -324,7 +324,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm text-zinc-500 mb-4 pb-2 border-b border-zinc-100 dark:border-zinc-800/50">
               <div className="flex items-center gap-2 font-mono text-xs">
-                <FolderOpen className="w-4 h-4" />
+                <FolderOpenIcon className="size-4" />
                 <span>{state.repoInfo.owner} / {state.repoInfo.repo} {state.repoInfo.path ? `/ ${state.repoInfo.path}` : ""}</span>
               </div>
               <Button variant="ghost" size="sm" onClick={handleBack} className="h-7 text-xs px-2">
@@ -345,7 +345,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                           {item.name}
                         </h3>
                         <a href={item.html_url} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-primary transition-colors">
-                          <ArrowSquareOut className="w-4 h-4" />
+                          <ArrowSquareOutIcon className="size-4" />
                         </a>
                       </div>
                       <p className="text-sm text-zinc-500 line-clamp-2">
@@ -364,9 +364,9 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                         {isInstalling ? (
                           "Installing..."
                         ) : isInstalled ? (
-                          <span className="flex items-center justify-center gap-1"><CheckCircle weight="fill" className="text-success" /> Installed</span>
+                          <span className="flex items-center justify-center gap-1"><CheckCircleIcon weight="fill" className="text-success" /> Installed</span>
                         ) : (
-                          <span className="flex items-center justify-center gap-1"><DownloadSimple /> Install</span>
+                          <span className="flex items-center justify-center gap-1"><DownloadSimpleIcon /> Install</span>
                         )}
                       </Button>
                     </div>

@@ -1,15 +1,13 @@
 import React, { useState } from "react";
-import {
-  Sparkle,
-  Robot,
-  Terminal,
-  GearSix,
-  GitBranch,
-  FolderSimplePlus,
-  Sun,
-  Moon,
-  Compass,
-} from "@phosphor-icons/react";
+import { SparkleIcon,
+  RobotIcon,
+  TerminalIcon,
+  GearSixIcon,
+  GitBranchIcon,
+  FolderSimplePlusIcon,
+  SunIcon,
+  MoonIcon,
+  CompassIcon, } from "@phosphor-icons/react";
 import { Workspace } from "../types/skills.ts";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
@@ -88,14 +86,14 @@ export function Sidebar({
   };
 
   return (
-    <aside className="w-full h-full bg-zinc-100/90 dark:bg-zinc-950 flex flex-col select-none shrink-0 overflow-hidden">
+    <aside className="size-full bg-zinc-100/90 dark:bg-zinc-950 flex flex-col select-none shrink-0 overflow-hidden">
       {/* App Header */}
       <div className="p-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
             src="/logo.svg"
             alt="Skillet Icon"
-            className="w-8 h-8 object-contain"
+            className="size-8 object-contain"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
@@ -118,9 +116,9 @@ export function Sidebar({
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             {theme === "dark" ? (
-              <Sun weight="light" className="w-5 h-5  transition-transform duration-200" />
+              <SunIcon weight="light" className="size-5  transition-transform duration-200" />
             ) : (
-              <Moon weight="light" className="w-5 h-5  transition-transform duration-200" />
+              <MoonIcon weight="light" className="size-5  transition-transform duration-200" />
             )}
           </button>
         )}
@@ -141,7 +139,7 @@ export function Sidebar({
             className="text-xs text-primary-hover dark:text-primary-light hover: flex items-center gap-1.5 leading-none transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
             title="Choose workspace folder from Finder"
           >
-            <FolderSimplePlus weight="light" className="w-4 h-4 shrink-0" />
+            <FolderSimplePlusIcon weight="light" className="size-4 shrink-0" />
             <span className="leading-none">{isPickingFolder ? "Opening..." : "Add Folder"}</span>
           </button>
         </div>
@@ -190,7 +188,7 @@ export function Sidebar({
               </option>
             ))}
           </select>
-          <GitBranch weight="light" className="w-4 h-4 text-zinc-400 absolute right-2.5 top-2.5 pointer-events-none" />
+          <GitBranchIcon weight="light" className="size-4 text-zinc-400 absolute right-2.5 top-2.5 pointer-events-none" />
         </div>
       </div>
 
@@ -208,7 +206,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Sparkle weight="light" className="w-4.5 h-4.5 " />
+              <SparkleIcon weight="light" className="size-4.5 " />
               <span>Skills</span>
             </div>
             <Badge variant="secondary" className="font-mono px-2 py-0.5 text-xs rounded-lg">
@@ -225,7 +223,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Compass weight="light" className="w-4.5 h-4.5 " />
+              <CompassIcon weight="light" className="size-4.5 " />
               <span>Discover</span>
             </div>
           </button>
@@ -239,7 +237,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Robot weight="light" className="w-4.5 h-4.5 " />
+              <RobotIcon weight="light" className="size-4.5 " />
               <span>Agents</span>
             </div>
           </button>
@@ -253,7 +251,7 @@ export function Sidebar({
             }`}
           >
             <div className="flex items-center gap-3">
-              <Terminal weight="light" className="w-4.5 h-4.5 " />
+              <TerminalIcon weight="light" className="size-4.5 " />
               <span>Prompts</span>
             </div>
           </button>
@@ -272,7 +270,7 @@ export function Sidebar({
               : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
           }`}
         >
-          <GearSix weight="light" className="w-4.5 h-4.5 text-zinc-500" />
+          <GearSixIcon weight="light" className="size-4.5 text-zinc-500" />
           <span>Settings</span>
         </button>
       </div>
