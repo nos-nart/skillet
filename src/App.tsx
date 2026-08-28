@@ -255,6 +255,7 @@ export function App() {
           isOpen={state.isNewSkillOpen}
           onClose={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: false })}
           onInstall={handleInstallNewSkill}
+          onCreate={handleCreateNewSkill}
         />
       </div>
     );
@@ -337,6 +338,7 @@ export function App() {
         isOpen={state.isNewSkillOpen}
         onClose={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: false })}
         onInstall={handleInstallNewSkill}
+        onCreate={handleCreateNewSkill}
       />
     </div>
   );
