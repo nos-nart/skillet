@@ -27,7 +27,7 @@ function getAgentLogo(id: string) {
     case "windsurf":
       return <WindsurfLogo className={`${className} text-teal-500`} />;
     case "opencode":
-      return <TerminalWindow weight="light" className={`${className} text-zinc-900 dark:text-zinc-100`} />;
+      return <img src="https://opencode.ai/_build/assets/preview-opencode-logo-light-B5i-Y4z2.png" className={`${className} object-contain`} alt="OpenCode" />;
     default:
       return <Package weight="light" className={`${className} text-zinc-400`} />;
   }
@@ -48,7 +48,7 @@ export function AgentsTab() {
             <Robot weight="light" className="w-6 h-6 text-zinc-900 dark:text-zinc-100" />
             Detected Coding Agents
           </h2>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-sm text-zinc-500 mt-1">
             Active AI coding agents and their standard skill discovery locations on your system.
           </p>
         </div>

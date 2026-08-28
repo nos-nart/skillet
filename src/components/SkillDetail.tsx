@@ -234,7 +234,7 @@ export function SkillDetail({
               <GitBranch weight="light" className="w-4 h-4 text-primary" />
               Per-Repository Activation Switchboard
             </h3>
-            <span className="text-xs text-zinc-500">Symlinks managed automatically</span>
+            <span className="text-sm text-zinc-500">Symlinks managed automatically</span>
           </div>
 
           <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/30">

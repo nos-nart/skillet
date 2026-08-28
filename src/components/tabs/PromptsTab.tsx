@@ -56,7 +56,7 @@ export function PromptsTab({ skills }: PromptsTabProps) {
               <Terminal weight="light" className="w-6 h-6 text-primary" />
               Prompt & Slash Command Catalog
             </h2>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-sm text-zinc-500 mt-1">
               Browse, search, and copy triggers across all your installed skills.
             </p>
           </div>
@@ -122,7 +122,7 @@ export function PromptsTab({ skills }: PromptsTabProps) {
                   </CardHeader>
 
                   <CardContent className="p-4 pt-2 border-t border-zinc-200 dark:border-zinc-800/40 mt-2 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-zinc-500">
+                    <div className="flex items-center justify-between text-sm text-zinc-500">
                       <div className="flex items-center gap-1.5 truncate max-w-[180px]">
                         <Package weight="light" className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate font-mono">{skill.packageName}</span>

@@ -5,7 +5,7 @@
 @layer base {
   :root {
     color-scheme: light dark;
-    --font-sans: "Space Grotesk", system-ui, -apple-system, sans-serif;
+    --font-sans: "Work Sans", system-ui, -apple-system, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);

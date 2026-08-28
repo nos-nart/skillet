@@ -78,7 +78,7 @@ export function NewSkillDialog({ isOpen, onClose, onInstall }: NewSkillDialogPro
                 required
                 className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
               />
-              <p className="text-[10px] text-zinc-500">
+              <p className="text-xs text-zinc-500">
                 Supports GitHub shorthand (`owner/repo`), GitHub URLs, or absolute local paths.
               </p>
             </div>

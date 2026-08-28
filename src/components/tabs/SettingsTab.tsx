@@ -24,7 +24,7 @@ export function SettingsTab() {
             <GearSix weight="light" className="w-6 h-6 text-zinc-500" />
             Settings & Preferences
           </h2>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-sm text-zinc-500 mt-1">
             Configure GitHub API tokens, discovery directories, and runtime preferences.
           </p>
         </div>
@@ -35,7 +35,7 @@ export function SettingsTab() {
               <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 block">
                 GitHub Personal Access Token (Optional)
               </label>
-              <p className="text-xs text-zinc-500">
+              <p className="text-sm text-zinc-500">
                 Used to increase rate limits when discovering remote skills and checking for updates.
               </p>
               <div className="flex items-center gap-2 pt-1">
@@ -58,7 +58,7 @@ export function SettingsTab() {
               <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 block">
                 Theme Appearance
               </label>
-              <p className="text-xs text-zinc-500">
+              <p className="text-sm text-zinc-500">
                 Choose your preferred interface theme.
               </p>
               <div className="flex items-center gap-2 pt-1">
@@ -89,7 +89,7 @@ export function SettingsTab() {
               <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 block">
                 Application Runtime
               </label>
-              <p className="text-xs text-zinc-500">
+              <p className="text-sm text-zinc-500">
                 Skillet v1.0.0 (Deno Desktop Runtime · Vite 8 · Rolldown · Space Grotesk · comark · Shiki · Phosphor Icons)
               </p>
             </CardContent>

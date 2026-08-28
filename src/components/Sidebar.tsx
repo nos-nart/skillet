@@ -93,9 +93,9 @@ export function Sidebar({
       <div className="p-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
-            src="/icon.png"
+            src="/logo.svg"
             alt="Skillet Icon"
-            className="w-9 h-9 rounded-lg object-cover border border-zinc-200 dark:border-zinc-800"
+            className="w-8 h-8 object-contain"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
@@ -103,11 +103,11 @@ export function Sidebar({
           <div>
             <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5 font-sans">
               <span>Skillet</span>
-              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-lg bg-primary-soft text-primary-hover dark:text-primary-light border border-primary-border font-mono">
+              <span className="text-xs font-semibold px-1.5 py-0.2 rounded-lg bg-primary-soft text-primary-hover dark:text-primary-light border border-primary-border font-mono">
                 v1.0
               </span>
             </h1>
-            <p className="text-xs text-zinc-500">Universal Skills & Prompts</p>
+            <p className="text-sm text-zinc-500">Universal Skills & Prompts</p>
           </div>
         </div>
 

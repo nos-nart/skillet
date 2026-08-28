@@ -174,7 +174,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
 
   if (!doc) {
     return (
-      <div className="p-4 text-xs text-zinc-500 italic">
+      <div className="p-4 text-sm text-zinc-500 italic">
         Loading documentation...
       </div>
     );

@@ -248,7 +248,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
       <div className="p-5 pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Discover Skills</h2>
-          <Button variant="ghost" size="sm" onClick={() => setIsBookmarkDialogOpen(true)} className="h-7 gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+          <Button variant="ghost" size="sm" onClick={() => setIsBookmarkDialogOpen(true)} className="h-7 gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
             <Plus weight="bold" /> Bookmark
           </Button>
         </div>
@@ -309,11 +309,11 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "cursor/plugins"); }}>
                   <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-primary transition-colors">cursor/plugins</h3>
-                  <p className="text-xs text-zinc-500 mt-1">Official Cursor community skills repository.</p>
+                  <p className="text-sm text-zinc-500 mt-1">Official Cursor community skills repository.</p>
                 </div>
                 <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "vercel-labs/skills"); }}>
                   <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-primary transition-colors">vercel-labs/skills</h3>
-                  <p className="text-xs text-zinc-500 mt-1">Foundational skills and examples from Vercel.</p>
+                  <p className="text-sm text-zinc-500 mt-1">Foundational skills and examples from Vercel.</p>
                 </div>
               </div>
             </div>
@@ -348,7 +348,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
                           <ArrowSquareOut className="w-4 h-4" />
                         </a>
                       </div>
-                      <p className="text-xs text-zinc-500 line-clamp-2">
+                      <p className="text-sm text-zinc-500 line-clamp-2">
                         {item.description || "No description available. Click install to fetch and add this skill to your workspace."}
                       </p>
                     </div>

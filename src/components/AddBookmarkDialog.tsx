@@ -53,7 +53,7 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
               Paste URLs or Text
             </label>
-            <p className="text-xs text-zinc-500 mb-3">
+            <p className="text-sm text-zinc-500 mb-3">
               You can paste a list of skills.sh URLs, GitHub links, or plain text containing links. We'll automatically extract the skills.
             </p>
             <textarea
