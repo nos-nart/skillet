@@ -38,13 +38,61 @@ export async function downloadSkillFromGitHub(
     }
   }
 
+
+  // Check if source is a Gist URL
+  if (options.source.includes("gist.github.com/")) {
+    const gistId = options.source.split("/").pop();
+    if (!gistId) return { ok: false, error: "Invalid Gist URL" };
+    
+    try {
+      const headers = new Headers({ "User-Agent": "Skillet-Desktop-App" });
+      if (options.token) headers.set("Authorization", `token ${options.token}`);
+      
+      const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
+      if (!res.ok) throw new Error("Failed to fetch Gist");
+      const gistData = await res.json();
+      
+      const owner = gistData.owner?.login || "gist";
+      let globalDir = ".gemini/config/skills";
+      let installedCount = 0;
+      
+      for (const [filename, fileData] of Object.entries(gistData.files)) {
+        if (!filename.endsWith(".md")) continue;
+        
+        // Use the filename (without .md) as the skill slug, unless it's SKILL.md and they provided a name
+        let skillSlug = filename.replace(/\.md$/, "");
+        if (filename === "SKILL.md" && options.skillName) {
+           skillSlug = options.skillName;
+        }
+        
+        const targetDir = options.targetDir || `${home}/${globalDir}/${owner}/${skillSlug}`;
+        await ensureDir(targetDir);
+        
+        const skillMdPath = `${targetDir}/SKILL.md`;
+        await ensureParentDir(skillMdPath);
+        await Deno.writeTextFile(skillMdPath, (fileData as any).content || "");
+        
+        installedCount++;
+      }
+      
+      if (installedCount === 0) {
+         return { ok: false, error: "No .md files found in this Gist" };
+      }
+      
+      return { ok: true, path: `${home}/${globalDir}/${owner}` };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: message };
+    }
+  }
+
   const repoInfo = parseGitHubRepo(options.source);
   if (!repoInfo) {
     return { ok: false, error: "Invalid GitHub repository format" };
   }
 
   // Intelligently determine the best global directory based on owner/repo name
-  let globalDir = ".skills";
+  let globalDir = ".gemini/config/skills";
   const repoStr = `${repoInfo.owner}/${repoInfo.repo}`.toLowerCase();
   if (repoStr.includes("cursor")) globalDir = ".cursor/skills";
   else if (repoStr.includes("gemini") || repoStr.includes("antigravity")) globalDir = ".gemini/config/skills";
