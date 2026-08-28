@@ -114,7 +114,7 @@ export async function handleApiRequest(
           return Response.json({ ok: false, error: "Name and content are required." }, { status: 400 });
         }
         
-        // Save to .gemini/config/skills by default
+        // Save to universal ~/.skills directory by default
         const home = Deno.env.get("HOME") || "/tmp";
         // Sanitize name to be safe for directory
         const safeName = body.name.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();

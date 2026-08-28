@@ -101,6 +101,10 @@ export function App() {
   const deletedSkillIds = React.useRef<Set<string>>(new Set());
   const isMobile = useMediaQuery("(max-width: 950px)");
 
+  const handleSelectSkill = useCallback((s: Skill | null) => {
+    startTransition(() => dispatch({ type: "SELECT_SKILL", payload: s }));
+  }, []);
+
   const loadSkills = useCallback(async () => {
     dispatch({ type: "LOAD_SKILLS_START" });
     try {
@@ -215,7 +219,7 @@ export function App() {
             <SkillList
               skills={state.skills}
               selectedSkill={state.selectedSkill}
-              onSelectSkill={(s) => startTransition(() => dispatch({ type: "SELECT_SKILL", payload: s }))}
+              onSelectSkill={handleSelectSkill}
               onCheckUpdates={handleCheckUpdates}
               onRescan={loadSkills}
               onNewSkill={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: true })}
@@ -285,7 +289,7 @@ export function App() {
             <SkillList
               skills={state.skills}
               selectedSkill={state.selectedSkill}
-              onSelectSkill={(s) => startTransition(() => dispatch({ type: "SELECT_SKILL", payload: s }))}
+              onSelectSkill={handleSelectSkill}
               onCheckUpdates={handleCheckUpdates}
               onRescan={loadSkills}
               onNewSkill={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: true })}

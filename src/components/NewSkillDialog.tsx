@@ -23,13 +23,15 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
 
   if (!isOpen) return null;
 
+  const isInstall = mode === "install";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     setLoading(true);
     setError(null);
     try {
-      if (mode === "install") {
+      if (isInstall) {
         if (!source.trim()) return;
         await onInstall(source.trim(), skillName.trim() || undefined);
       } else {
@@ -48,6 +50,18 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
     }
   };
 
+  const getToggleClass = (btnMode: "install" | "create") => 
+    `flex-1 text-center py-1.5 rounded-md font-medium transition-colors ${
+      mode === btnMode 
+        ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm" 
+        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+    }`;
+
+  const isSubmitDisabled = loading || (isInstall ? !source.trim() : (!skillName.trim() || !markdownContent.trim()));
+  const submitText = loading 
+    ? (isInstall ? "Installing..." : "Creating...") 
+    : (isInstall ? "Install Skill" : "Create Skill");
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
       <Card className="w-full max-w-lg bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden animate-in zoom-in-95 duration-150">
@@ -59,7 +73,7 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
                 Add New Skill
               </CardTitle>
               <CardDescription className="text-xs mt-1 text-zinc-600 dark:text-zinc-400">
-                {mode === "install" ? "Install a custom skill from GitHub or a local directory." : "Create a new skill manually by pasting Markdown."}
+                {isInstall ? "Install a custom skill from GitHub or a local directory." : "Create a new skill manually by pasting Markdown."}
               </CardDescription>
             </div>
             <button
@@ -82,20 +96,20 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
               <button 
                 type="button" 
                 onClick={() => { setMode("install"); setError(null); }}
-                className={`flex-1 text-center py-1.5 rounded-md font-medium transition-colors ${mode === "install" ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}
+                className={getToggleClass("install")}
               >
                 Import from GitHub
               </button>
               <button 
                 type="button" 
                 onClick={() => { setMode("create"); setError(null); }}
-                className={`flex-1 text-center py-1.5 rounded-md font-medium transition-colors ${mode === "create" ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}
+                className={getToggleClass("create")}
               >
                 Create Manually
               </button>
             </div>
 
-            {mode === "install" ? (
+            {isInstall ? (
               <>
                 <div className="space-y-1.5">
                   <label className="text-zinc-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
@@ -175,10 +189,10 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
             <Button 
               type="submit" 
               size="sm" 
-              disabled={loading || (mode === "install" ? !source.trim() : (!skillName.trim() || !markdownContent.trim()))} 
+              disabled={isSubmitDisabled} 
               className="text-xs"
             >
-              {loading ? (mode === "install" ? "Installing..." : "Creating...") : (mode === "install" ? "Install Skill" : "Create Skill")}
+              {submitText}
             </Button>
           </CardFooter>
         </form>
