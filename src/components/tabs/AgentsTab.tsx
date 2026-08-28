@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { RobotIcon, PackageIcon, TerminalWindowIcon } from "@phosphor-icons/react";
+import { RobotIcon, PackageIcon } from "@phosphor-icons/react";
 import { Badge } from "../ui/badge.tsx";
 import { Card, CardContent } from "../ui/card.tsx";
 import { SUPPORTED_AGENTS, AgentConfig } from "../../backend/agents.ts";
@@ -27,7 +27,7 @@ function getAgentLogo(id: string) {
     case "windsurf":
       return <WindsurfLogo className={`${className} text-teal-500`} />;
     case "opencode":
-      return <img src="https://opencode.ai/_build/assets/preview-opencode-logo-light-B5i-Y4z2.png" className={`${className} object-contain`} alt="OpenCode" />;
+      return <img src="/opencode.svg" className={`${className} object-contain`} alt="OpenCode" />;
     default:
       return <PackageIcon weight="light" className={`${className} text-zinc-400`} />;
   }
