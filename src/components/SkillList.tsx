@@ -183,7 +183,7 @@ export function SkillList({
                               <span className="w-2 h-2 rounded-full bg-warning-light animate-pulse shrink-0" />
                             )}
                           </div>
-                          <p className={`text-[11px] truncate mt-0.5 ${isSelected ? "text-primary-50" : "text-zinc-500"}`}>
+                          <p className={`text-sm truncate mt-0.5 ${isSelected ? "text-primary-50" : "text-zinc-500"}`}>
                             {skill.metadata?.description || skill.name}
                           </p>
                         </div>
