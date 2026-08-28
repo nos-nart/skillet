@@ -108,13 +108,13 @@ const customComponents = {
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
-      className="border-l-2 border-primary/80 bg-primary/5 dark:bg-primary-soft pl-4 py-2.5 my-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 rounded-r-lg shadow-sm"
+      className="border-l-2 border-primary/80 bg-primary/5 dark:bg-primary-soft pl-4 py-2.5 my-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 rounded-lg"
       {...props}
     />
   ),
   
   table: (props: React.HTMLAttributes<HTMLTableElement>) => (
-    <div className="w-full overflow-x-auto mb-5 border border-zinc-200 dark:border-zinc-800/80 rounded-lg shadow-sm">
+    <div className="w-full overflow-x-auto mb-5 border border-zinc-200 dark:border-zinc-800/80 rounded-lg">
       <table className="w-full text-left text-sm text-zinc-700 dark:text-zinc-300 border-collapse" {...props} />
     </div>
   ),
