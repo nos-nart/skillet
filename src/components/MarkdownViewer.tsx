@@ -108,11 +108,28 @@ const customComponents = {
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
-      className="border-l-2 border-primary/80 bg-primary/5 dark:bg-primary-soft pl-3.5 py-1.5 my-3.5 text-xs italic text-zinc-700 dark:text-zinc-300 rounded-r-lg"
+      className="border-l-2 border-primary/80 bg-primary/5 dark:bg-primary-soft pl-4 py-2.5 my-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 rounded-r-lg shadow-sm"
       {...props}
     />
   ),
-  pre: CodeBlockWrapper,
+  
+  table: (props: React.HTMLAttributes<HTMLTableElement>) => (
+    <div className="w-full overflow-x-auto mb-5 border border-zinc-200 dark:border-zinc-800/80 rounded-lg shadow-sm">
+      <table className="w-full text-left text-sm text-zinc-700 dark:text-zinc-300 border-collapse" {...props} />
+    </div>
+  ),
+  thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <thead className="bg-zinc-100/50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800/80" {...props} />
+  ),
+  th: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <th className="px-4 py-2.5 font-semibold text-zinc-900 dark:text-zinc-100" {...props} />
+  ),
+  td: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
+    <td className="px-4 py-2.5 border-t border-zinc-200 dark:border-zinc-800/80 align-top" {...props} />
+  ),
+  tr: (props: React.HTMLAttributes<HTMLTableRowElement>) => (
+    <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors" {...props} />
+  ),pre: CodeBlockWrapper,
   code: (props: React.HTMLAttributes<HTMLElement>) => {
     return (
       <code

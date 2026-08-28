@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useReducer } from "react";
+import React, { useEffect, useCallback, useReducer, startTransition } from "react";
 import { Sidebar, NavTab } from "./components/Sidebar.tsx";
 import { SkillList } from "./components/SkillList.tsx";
 import { SkillDetail } from "./components/SkillDetail.tsx";
@@ -206,7 +206,7 @@ export function App() {
             <SkillList
               skills={state.skills}
               selectedSkill={state.selectedSkill}
-              onSelectSkill={(s) => dispatch({ type: "SELECT_SKILL", payload: s })}
+              onSelectSkill={(s) => startTransition(() => dispatch({ type: "SELECT_SKILL", payload: s }))}
               onCheckUpdates={handleCheckUpdates}
               onRescan={loadSkills}
               onNewSkill={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: true })}
@@ -218,7 +218,7 @@ export function App() {
         {state.mobileView === "detail" && state.currentTab === "skills" && (
           <div className="h-full w-full animate-in slide-in-from-bottom-4 fade-in duration-300 relative">
              <div className="absolute top-2 left-2 z-50">
-              <button onClick={() => dispatch({ type: "SELECT_SKILL", payload: null })} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">← Back</button>
+              <button onClick={() => startTransition(() => dispatch({ type: "SELECT_SKILL", payload: null }))} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">← Back</button>
             </div>
             <SkillDetail
               skill={state.selectedSkill}
@@ -274,7 +274,7 @@ export function App() {
             <SkillList
               skills={state.skills}
               selectedSkill={state.selectedSkill}
-              onSelectSkill={(s) => dispatch({ type: "SELECT_SKILL", payload: s })}
+              onSelectSkill={(s) => startTransition(() => dispatch({ type: "SELECT_SKILL", payload: s }))}
               onCheckUpdates={handleCheckUpdates}
               onRescan={loadSkills}
               onNewSkill={() => dispatch({ type: "SET_NEW_SKILL_OPEN", payload: true })}
