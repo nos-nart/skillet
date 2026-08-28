@@ -105,6 +105,33 @@ export async function handleApiRequest(
   const wm = options.workspaceManager || defaultWorkspaceManager;
 
   try {
+
+    // POST /api/skills (Create skill manually)
+    if (url.pathname === "/api/skills" && req.method === "POST") {
+      try {
+        const body = await req.json().catch(() => null);
+        if (!body || !body.name || !body.content) {
+          return Response.json({ ok: false, error: "Name and content are required." }, { status: 400 });
+        }
+        
+        // Save to .gemini/config/skills by default
+        const home = Deno.env.get("HOME") || "/tmp";
+        // Sanitize name to be safe for directory
+        const safeName = body.name.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
+        const targetDir = `${home}/.gemini/config/skills/${safeName}`;
+        
+        // Write the SKILL.md
+        const skillMdPath = `${targetDir}/SKILL.md`;
+        await ensureParentDir(skillMdPath);
+        await Deno.writeTextFile(skillMdPath, body.content);
+        
+        return Response.json({ ok: true, path: targetDir });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return Response.json({ ok: false, error: msg }, { status: 500 });
+      }
+    }
+
     // GET /api/skills
     if (url.pathname === "/api/skills" && req.method === "GET") {
       const rawSkills: Skill[] = [];

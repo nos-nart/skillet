@@ -3,6 +3,16 @@ import { AgentConfig } from "../backend/agents.ts";
 import { InstallResult, UninstallResult } from "../backend/installer.ts";
 
 export const api = {
+
+  async createSkill(name: string, content: string): Promise<{ ok: boolean; error?: string }> {
+    const res = await fetch("/api/skills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, content }),
+    });
+    return res.json();
+  },
+
   async getSkills(): Promise<Skill[]> {
     const res = await fetch("/api/skills");
     if (!res.ok) throw new Error("Failed to fetch skills");

@@ -171,6 +171,15 @@ export function App() {
     deletedSkillIds.current.delete(skill.id);
   };
 
+
+  const handleCreateNewSkill = async (name: string, content: string) => {
+    const result = await api.createSkill(name, content);
+    if (!result.ok) {
+      throw new Error(result.error || "Creation failed");
+    }
+    await loadSkills();
+  };
+
   const handleInstallNewSkill = async (source: string, skillName?: string) => {
     const token = localStorage.getItem("github_token") || undefined;
     const result = await api.installSkill({ source, skillName, token });
@@ -235,7 +244,8 @@ export function App() {
              <div className="absolute top-2 left-2 z-50">
               <button onClick={() => dispatch({ type: "SET_MOBILE_VIEW", payload: "sidebar" })} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">← Menu</button>
             </div>
-            {state.currentTab === "discover" && <DiscoverTab installedSkills={state.skills} onInstall={handleInstallNewSkill} />}
+            {state.currentTab === "discover" && <DiscoverTab installedSkills={state.skills} onInstall={handleInstallNewSkill}
+        onCreate={handleCreateNewSkill} />}
             {state.currentTab === "agents" && <AgentsTab />}
             {state.currentTab === "prompts" && <PromptsTab skills={state.skills} />}
             {state.currentTab === "settings" && <SettingsTab />}
