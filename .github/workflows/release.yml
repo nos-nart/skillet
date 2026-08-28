@@ -40,7 +40,7 @@ jobs:
         run: deno task build
 
       - name: Package Desktop App
-        run: deno desktop --icon public/icon.png -A --target ${{ matrix.target }} -o ${{ matrix.output }} desktop.ts
+        run: deno desktop --icon public/icon.png -A --include dist --target ${{ matrix.target }} -o ${{ matrix.output }} desktop.ts
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
