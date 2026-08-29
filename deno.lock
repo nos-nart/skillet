@@ -18,6 +18,7 @@
     "npm:class-variance-authority@0.7.1": "0.7.1",
     "npm:clsx@2.1.1": "2.1.1",
     "npm:comark@0.6.2": "0.6.2_shiki@4.3.1",
+    "npm:oxlint@*": "1.80.0",
     "npm:oxlint@1.80.0": "1.80.0",
     "npm:react-dom@19.2.8": "19.2.8_react@19.2.8",
     "npm:react-resizable-panels@2.1.7": "2.1.7_react@19.2.8_react-dom@19.2.8__react@19.2.8",

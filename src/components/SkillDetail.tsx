@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SparkleIcon,
   GitBranchIcon,
   ArrowsClockwiseIcon,
@@ -38,6 +38,10 @@ export function SkillDetail({
   const [installing, setInstalling] = useState(false);
   const [isConfirmUninstallOpen, setIsConfirmUninstallOpen] = useState(false);
   const [toggleState, setToggleState] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setToggleState({});
+  }, [skill?.id]);
 
   if (!skill) {
     return (

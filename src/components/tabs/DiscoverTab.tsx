@@ -43,7 +43,7 @@ function discoverReducer(state: DiscoverState, action: DiscoverAction): Discover
     case "SEARCH_START":
       return { ...state, isLoading: true, error: null, items: [], repoInfo: action.payload };
     case "CLEAR_SEARCH":
-      return { ...state, items: [], repoInfo: undefined, error: null, query: "" };
+      return { ...state, items: [], repoInfo: null, error: null, query: "" };
     case "SEARCH_SUCCESS":
       return { ...state, isLoading: false, items: action.payload };
     case "SEARCH_ERROR":

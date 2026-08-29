@@ -72,8 +72,8 @@ export function getAgentConfig(agentId: AgentId): AgentConfig | undefined {
 }
 
 export function getAgentRelPath(agentId: AgentId): string {
-  const config = getAgentConfig(agentId);
-  return config ? config.localRelPath : ".skills";
+  // Always use the universal .skills directory in the project workspace
+  return ".skills";
 }
 
 export function getAgentGlobalPath(agentId: AgentId, homeDir: string): string {
