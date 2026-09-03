@@ -1,49 +1,101 @@
 import React from "react";
-import * as ResizablePrimitive from "react-resizable-panels";
+import * as stylex from "@stylexjs/stylex";
+import {
+  PanelGroup,
+  Panel,
+  PanelResizeHandle,
+} from "react-resizable-panels";
 import { DotsSixVerticalIcon } from "@phosphor-icons/react";
-import { cn } from "../../lib/utils.ts";
+import { colors, iconSizes } from "../../tokens.stylex.ts";
+
+const styles = stylex.create({
+  group: {
+    display: "flex",
+    width: "100%",
+    height: "100%",
+  },
+  groupVertical: {
+    flexDirection: "column",
+  },
+  handle: {
+    position: "relative" as const,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.borderDefault,
+    transitionProperty: "background-color",
+    transitionDuration: "150ms",
+    outline: "none",
+    ":hover": {
+      backgroundColor: colors.primary,
+    },
+    ":focus-visible": {
+      boxShadow: `0 0 0 2px ${colors.primary}`,
+    },
+  },
+  handleColumnDivider: {
+    width: 1,
+    height: "100%",
+    flexShrink: 0,
+  },
+  handleRowDivider: {
+    width: "100%",
+    height: 1,
+    flexShrink: 0,
+  },
+  grip: {
+    zIndex: 10,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 12,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgSecondary,
+  },
+});
 
 export function ResizablePanelGroup({
-  className,
+  direction = "horizontal",
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) {
+}: React.ComponentProps<typeof PanelGroup>) {
   return (
-    <ResizablePrimitive.PanelGroup
-      className={cn(
-        "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
-        className
-      )}
+    <PanelGroup
+      direction={direction}
+      {...stylex.props(styles.group, direction === "vertical" && styles.groupVertical)}
       {...props}
     />
   );
 }
 
-export function ResizablePanel({
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.Panel>) {
-  return <ResizablePrimitive.Panel {...props} />;
+export function ResizablePanel(props: React.ComponentProps<typeof Panel>) {
+  return <Panel {...props} />;
 }
 
 export function ResizableHandle({
   withHandle,
-  className,
+  direction = "horizontal",
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
+}: React.ComponentProps<typeof PanelResizeHandle> & {
   withHandle?: boolean;
+  direction?: "horizontal" | "vertical";
 }) {
   return (
-    <ResizablePrimitive.PanelResizeHandle
-      className={cn(
-        "relative flex w-px items-center justify-center bg-zinc-200 dark:bg-zinc-800 hover:bg-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-1 data-[panel-group-direction=vertical]:h-px data-[panel-group-direction=vertical]:w-full data-[panel-group-direction=vertical]:after:left-0 data-[panel-group-direction=vertical]:after:h-1 data-[panel-group-direction=vertical]:after:w-full data-[panel-group-direction=vertical]:after:-translate-y-1/2 data-[panel-group-direction=vertical]:after:translate-x-0 [&[data-panel-group-direction=vertical]>div]:rotate-90",
-        className
+    <PanelResizeHandle
+      {...stylex.props(
+        styles.handle,
+        direction === "horizontal" ? styles.handleColumnDivider : styles.handleRowDivider,
       )}
       {...props}
     >
       {withHandle && (
-        <div className="z-10 flex h-5 w-3 items-center justify-center rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 shadow-xs">
-          <DotsSixVerticalIcon weight="light" className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
+        <div {...stylex.props(styles.grip)}>
+          <DotsSixVerticalIcon weight="light" style={{ ...iconSizes.xs, color: colors.textMuted }} />
         </div>
       )}
-    </ResizablePrimitive.PanelResizeHandle>
+    </PanelResizeHandle>
   );
 }

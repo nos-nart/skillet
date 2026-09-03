@@ -1,14 +1,60 @@
-@import "tailwindcss";
-
-@custom-variant dark (&:where(.dark, .dark *));
+@layer base, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9;
 
 @layer base {
   :root {
     color-scheme: light dark;
-    --font-sans: "Work Sans", system-ui, -apple-system, sans-serif;
+    --font-sans: "Space Grotesk", system-ui, -apple-system, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* OKLCH Color palette */
+    --color-orange-400: oklch(0.75 0.183 55.934);
+    --color-orange-500: oklch(0.705 0.213 47.604);
+    --color-orange-600: oklch(0.646 0.222 41.116);
+    --color-orange-700: oklch(0.553 0.195 38.402);
+    --color-emerald-400: oklch(0.792 0.209 151.711);
+    --color-emerald-500: oklch(0.696 0.17 162.48);
+    --color-emerald-600: oklch(0.596 0.145 163.225);
+    --color-red-400: oklch(0.704 0.191 22.216);
+    --color-red-500: oklch(0.637 0.237 25.331);
+    --color-red-600: oklch(0.577 0.245 27.325);
+    --color-amber-400: oklch(0.828 0.189 84.429);
+    --color-amber-500: oklch(0.769 0.188 70.08);
+    --color-amber-600: oklch(0.666 0.179 58.318);
+    --color-sky-400: oklch(0.785 0.131 224.283);
+    --color-sky-500: oklch(0.673 0.182 230.341);
+    --color-sky-600: oklch(0.588 0.158 241.966);
+
+    /* Neutral colors — light mode (OKLCH base) */
+    --sk-bg-primary: oklch(1 0 0);
+    --sk-bg-secondary: oklch(0.967 0.001 286.375 / 0.8);
+    --sk-bg-tertiary: oklch(0.92 0.004 286.32 / 0.6);
+    --sk-bg-hover: oklch(0.92 0.004 286.32 / 0.5);
+    --sk-bg-muted: oklch(0.967 0.001 286.375 / 0.5);
+    --sk-bg-panel: oklch(0.985 0 0);
+    --sk-text-primary: oklch(0.21 0.006 285.885);
+    --sk-text-secondary: oklch(0.552 0.016 285.938);
+    --sk-text-muted: oklch(0.705 0.015 286.067);
+    --sk-text-dark: oklch(0.141 0.005 285.823);
+    --sk-border-default: oklch(0.92 0.004 286.32);
+    --sk-border-subtle: oklch(0.92 0.004 286.32 / 0.8);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   html {
@@ -17,11 +63,64 @@
 
   body {
     font-family: var(--font-sans);
-    letter-spacing: -0.015em;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+  }
+
+  button {
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+  }
+
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  img,
+  svg {
+    display: block;
+    vertical-align: middle;
   }
 
   html.dark {
     color-scheme: dark;
+    --sk-bg-primary: oklch(0.141 0.005 285.823);
+    --sk-bg-secondary: oklch(0.21 0.006 285.885 / 0.5);
+    --sk-bg-tertiary: oklch(0.274 0.006 286.033 / 0.9);
+    --sk-bg-hover: oklch(0.274 0.006 286.033 / 0.8);
+    --sk-bg-muted: oklch(0.21 0.006 285.885 / 0.5);
+    --sk-bg-panel: oklch(0.141 0.005 285.823);
+    --sk-text-primary: oklch(0.967 0.001 286.375);
+    --sk-text-secondary: oklch(0.705 0.015 286.067);
+    --sk-text-muted: oklch(0.552 0.016 285.938);
+    --sk-text-dark: oklch(0.141 0.005 285.823);
+    --sk-border-default: oklch(0.274 0.006 286.033);
+    --sk-border-subtle: oklch(0.274 0.006 286.033 / 0.8);
   }
 
   html.light {
@@ -49,20 +148,32 @@
 }
 
 /* Shiki Dual-Theme Token Support */
-html.dark .shiki,
-html.dark .shiki span {
+html.dark .shiki [style*="--shiki-dark"] {
   color: var(--shiki-dark) !important;
+}
+html.dark .shiki {
+  color: #BABED8;
 }
 
 /* Code Block Interior Padding & Appearance */
 .code-block-inner {
-  padding: 1.25rem !important; /* 20px padding */
+  padding: 0.5rem 0.875rem !important;
+  font-family: monospace;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
 }
 
-.code-block pre {
+.code-block-inner pre {
   margin: 0 !important;
   padding: 0 !important;
   background: transparent !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+blockquote p:last-child {
+  margin-bottom: 0 !important;
 }
 
 /* Micro-interaction Animation Utilities */
@@ -88,37 +199,44 @@ html.dark .shiki span {
   animation: fadeInScale 180ms var(--ease-out-strong) forwards;
 }
 
-@theme {
-  --color-primary: var(--color-orange-500);
-  --color-primary-hover: var(--color-orange-600);
-  --color-primary-active: var(--color-orange-700);
-  --color-primary-light: var(--color-orange-400);
-  --color-primary-soft: color-mix(in srgb, var(--color-orange-500) 10%, transparent);
-  --color-primary-border: color-mix(in srgb, var(--color-orange-500) 20%, transparent);
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-@theme {
-  --color-success: var(--color-emerald-500);
-  --color-success-hover: var(--color-emerald-600);
-  --color-success-light: var(--color-emerald-400);
-  --color-success-soft: color-mix(in srgb, var(--color-emerald-500) 10%, transparent);
-  --color-success-border: color-mix(in srgb, var(--color-emerald-500) 20%, transparent);
-
-  --color-destructive: var(--color-red-500);
-  --color-destructive-hover: var(--color-red-600);
-  --color-destructive-light: var(--color-red-400);
-  --color-destructive-soft: color-mix(in srgb, var(--color-red-500) 10%, transparent);
-  --color-destructive-border: color-mix(in srgb, var(--color-red-500) 20%, transparent);
-
-  --color-warning: var(--color-amber-500);
-  --color-warning-hover: var(--color-amber-600);
-  --color-warning-light: var(--color-amber-400);
-  --color-warning-soft: color-mix(in srgb, var(--color-amber-500) 15%, transparent);
-  --color-warning-border: color-mix(in srgb, var(--color-amber-500) 30%, transparent);
-
-  --color-info: var(--color-sky-500);
-  --color-info-hover: var(--color-sky-600);
-  --color-info-light: var(--color-sky-400);
-  --color-info-soft: color-mix(in srgb, var(--color-sky-500) 15%, transparent);
-  --color-info-border: color-mix(in srgb, var(--color-sky-500) 30%, transparent);
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

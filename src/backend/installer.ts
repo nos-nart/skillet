@@ -54,7 +54,7 @@ export async function downloadSkillFromGitHub(
   const repoStr = `${repoInfo.owner}/${repoInfo.repo}`.toLowerCase();
   if (repoStr.includes("cursor")) globalDir = ".cursor/skills";
   else if (repoStr.includes("gemini") || repoStr.includes("antigravity")) globalDir = ".gemini/config/skills";
-  else if (repoStr.includes("claude")) globalDir = ".claude/skills";
+  else if (repoStr.includes("claude") || repoStr.includes("anthropic") || repoStr.includes("gstack") || repoStr.includes("garrytan")) globalDir = ".claude/skills";
   else if (repoStr.includes("windsurf")) globalDir = ".codeium/windsurf/skills";
   else if (repoStr.includes("copilot")) globalDir = ".github/skills";
 
@@ -186,7 +186,7 @@ async function downloadGistSkill(
     const gistData = await res.json();
     
     const owner = gistData.owner?.login || "gist";
-    let globalDir = ".skills";
+    const globalDir = ".skills";
     let installedCount = 0;
     
     const mdFiles = Object.keys(gistData.files).filter(f => f.endsWith(".md"));

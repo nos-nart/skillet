@@ -1,20 +1,61 @@
 import * as React from "react";
-import { cn } from "../../lib/utils.ts";
+import * as stylex from "@stylexjs/stylex";
+import { colors } from "../../tokens.stylex.ts";
+
+const styles = stylex.create({
+  input: {
+    display: "flex",
+    height: 34,
+    width: "100%",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgPrimary,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: 6,
+    paddingBottom: 6,
+    fontSize: 12,
+    color: colors.textPrimary,
+    boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.1)",
+    transitionProperty: "border-color, box-shadow",
+    transitionDuration: "150ms",
+    "::placeholder": {
+      color: colors.textMuted,
+    },
+    ":focus": {
+      outline: "none",
+      borderColor: colors.primary,
+      boxShadow: "0 0 0 1px var(--color-orange-500), inset 0 1px 1px rgba(0, 0, 0, 0.08)",
+    },
+    ":disabled": {
+      cursor: "not-allowed",
+      opacity: 0.5,
+    },
+    "::-webkit-file-upload-button": {
+      borderWidth: 0,
+      borderStyle: "none",
+      backgroundColor: "transparent",
+      fontSize: 12,
+      fontWeight: 500,
+    },
+  },
+});
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
+    const sx = stylex.props(styles.input);
     return (
       <input
         type={type}
-        className={cn(
-          "flex h-8.5 w-full rounded-lg border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
         ref={ref}
         {...props}
+        {...sx}
+        className={className ? `${sx.className} ${className}` : sx.className}
       />
     );
   }

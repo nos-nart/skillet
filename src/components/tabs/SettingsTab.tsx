@@ -1,9 +1,70 @@
 import React, { useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { GearSixIcon, SunIcon, MoonIcon } from "@phosphor-icons/react";
 import { Card, CardContent } from "../ui/card.tsx";
 import { Input } from "../ui/input.tsx";
 import { Button } from "../ui/button.tsx";
 import { useTheme } from "../../hooks/useTheme.ts";
+import { colors, iconSizes } from "../../tokens.stylex.ts";
+
+const styles = stylex.create({
+  main: {
+    width: "100%",
+    height: "100%",
+    padding: 32,
+    backgroundColor: colors.bgPrimary,
+    overflowY: "auto",
+  },
+  container: {
+    maxWidth: 640,
+    display: "flex",
+    flexDirection: "column",
+    gap: 24,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 700,
+    color: colors.textPrimary,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  },
+  desc: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  section: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: colors.textPrimary,
+  },
+  hint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  inputRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 4,
+  },
+  themeRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 4,
+  },
+  runtime: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+});
 
 export function SettingsTab() {
   const [token, setToken] = useState(localStorage.getItem("github_token") || "");
@@ -17,34 +78,30 @@ export function SettingsTab() {
   };
 
   return (
-    <main className="size-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
-      <div className="max-w-2xl space-y-6">
+    <main {...stylex.props(styles.main)}>
+      <div {...stylex.props(styles.container)}>
         <div>
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-            <GearSixIcon weight="light" className="size-6 text-zinc-500" />
+          <h2 {...stylex.props(styles.title)}>
+            <GearSixIcon weight="light" style={{ ...iconSizes.xl, color: colors.textSecondary }} />
             Settings & Preferences
           </h2>
-          <p className="text-sm text-zinc-500 mt-1">
+          <p {...stylex.props(styles.desc)}>
             Configure GitHub API tokens, discovery directories, and runtime preferences.
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div {...stylex.props(styles.section)}>
           <Card>
-            <CardContent className="p-5 space-y-3">
-              <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 block">
-                GitHub Personal Access Token (Optional)
-              </label>
-              <p className="text-sm text-zinc-500">
-                Used to increase rate limits when discovering remote skills and checking for updates.
-              </p>
-              <div className="flex items-center gap-2 pt-1">
+            <CardContent style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+              <label {...stylex.props(styles.label)}>GitHub Personal Access Token (Optional)</label>
+              <p {...stylex.props(styles.hint)}>Used to increase rate limits when discovering remote skills and checking for updates.</p>
+              <div {...stylex.props(styles.inputRow)}>
                 <Input
                   type="password"
                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
+                  style={{ fontFamily: "monospace", flex: 1 }}
                 />
                 <Button size="sm" onClick={handleSaveToken}>
                   {saved ? "Saved!" : "Save"}
@@ -54,30 +111,24 @@ export function SettingsTab() {
           </Card>
 
           <Card>
-            <CardContent className="p-5 space-y-3">
-              <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 block">
-                Theme Appearance
-              </label>
-              <p className="text-sm text-zinc-500">
-                Choose your preferred interface theme.
-              </p>
-              <div className="flex items-center gap-2 pt-1">
+            <CardContent style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+              <label {...stylex.props(styles.label)}>Theme Appearance</label>
+              <p {...stylex.props(styles.hint)}>Choose your preferred interface theme.</p>
+              <div {...stylex.props(styles.themeRow)}>
                 <Button
                   variant={theme === "dark" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setTheme("dark")}
-                  className="gap-1.5"
                 >
-                  <MoonIcon weight="light" className="size-4" />
+                  <MoonIcon weight="light" style={iconSizes.md} />
                   <span>Dark Mode</span>
                 </Button>
                 <Button
                   variant={theme === "light" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setTheme("light")}
-                  className="gap-1.5"
                 >
-                  <SunIcon weight="light" className="size-4" />
+                  <SunIcon weight="light" style={iconSizes.md} />
                   <span>Light Mode</span>
                 </Button>
               </div>
@@ -85,11 +136,9 @@ export function SettingsTab() {
           </Card>
 
           <Card>
-            <CardContent className="p-5 space-y-2">
-              <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 block">
-                Application Runtime
-              </label>
-              <p className="text-sm text-zinc-500">
+            <CardContent style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+              <label {...stylex.props(styles.label)}>Application Runtime</label>
+              <p {...stylex.props(styles.runtime)}>
                 Skillet v1.0.0 (Deno Desktop Runtime · Vite 8 · Rolldown · Space Grotesk · comark · Shiki · Phosphor Icons)
               </p>
             </CardContent>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { SparkleIcon,
   RobotIcon,
   TerminalIcon,
@@ -12,9 +13,244 @@ import { Workspace } from "../types/skills.ts";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
 import { Badge } from "./ui/badge.tsx";
-import { ScrollArea } from "./ui/scroll-area.tsx";
 import { Separator } from "./ui/separator.tsx";
+import { colors, iconSizes } from "../tokens.stylex.ts";
 import { api } from "../client/apiClient.ts";
+
+const styles = stylex.create({
+  aside: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: colors.bgSecondary,
+    display: "flex",
+    flexDirection: "column",
+    userSelect: "none",
+    flexShrink: 0,
+    overflow: "hidden",
+  },
+  header: {
+    padding: 16,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  },
+  logo: {
+    width: 32,
+    height: 32,
+    objectFit: "contain" as const,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: colors.textPrimary,
+    letterSpacing: "-0.01em",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
+  versionBadge: {
+    fontSize: 10,
+    fontFamily: "monospace",
+    fontWeight: 700,
+    paddingLeft: 6,
+    paddingRight: 6,
+    paddingTop: 1,
+    paddingBottom: 1,
+    borderRadius: 4,
+    backgroundColor: "rgba(249, 115, 22, 0.15)",
+    color: colors.primary,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "rgba(249, 115, 22, 0.3)",
+  },
+  subtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  themeBtn: {
+    padding: 8,
+    color: colors.textMuted,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderStyle: "none",
+    borderRadius: 0,
+    cursor: "pointer",
+    transitionProperty: "color, background-color",
+    transitionDuration: "150ms",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    ":hover": {
+      color: colors.textPrimary,
+      backgroundColor: colors.bgTertiary,
+    },
+    ":active": {
+      transform: "scale(0.95)",
+    },
+  },
+  scopeSection: {
+    padding: 12,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  scopeHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingLeft: 4,
+    paddingRight: 4,
+    height: 20,
+  },
+  scopeLabel: {
+    fontSize: 11,
+    textTransform: "uppercase" as const,
+    fontWeight: 600,
+    letterSpacing: "0.05em",
+    color: colors.textMuted,
+    lineHeight: 1,
+  },
+  addBtn: {
+    fontSize: 11,
+    color: colors.primary,
+    fontWeight: 500,
+    display: "flex",
+    alignItems: "center",
+    gap: "1ch",
+    whiteSpace: "nowrap" as const,
+    transitionProperty: "color, transform",
+    transitionDuration: "150ms",
+    cursor: "pointer",
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderStyle: "none",
+    padding: 0,
+    ":hover": {
+      color: colors.primaryHover,
+    },
+    ":active": {
+      transform: "scale(0.95)",
+    },
+  },
+  addForm: {
+    padding: 10,
+    backgroundColor: colors.bgPrimary,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    borderRadius: 8,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  addFormActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+  manualInput: {
+    height: 32,
+    fontSize: 12,
+    fontFamily: "monospace",
+  },
+  selectWrapper: {
+    position: "relative" as const,
+  },
+  select: {
+    width: "100%",
+    backgroundColor: colors.bgPrimary,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    color: colors.textPrimary,
+    fontSize: 12,
+    fontWeight: 500,
+    borderRadius: 8,
+    paddingLeft: 12,
+    paddingRight: 32,
+    paddingTop: 8,
+    paddingBottom: 8,
+    appearance: "none",
+    cursor: "pointer",
+    outline: "none",
+    transitionProperty: "border-color",
+    transitionDuration: "150ms",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+    ":focus": {
+      boxShadow: "0 0 0 1px var(--color-orange-500)",
+    },
+  },
+  selectIcon: {
+    position: "absolute" as const,
+    right: 10,
+    top: 10,
+    pointerEvents: "none" as const,
+    color: colors.textMuted,
+  },
+  nav: {
+    flex: 1,
+    padding: 8,
+  },
+  navList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+  },
+  navItem: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderRadius: 0,
+    fontSize: 13,
+    fontWeight: 500,
+    transitionProperty: "background-color, color, transform, box-shadow",
+    transitionDuration: "150ms",
+    cursor: "pointer",
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderStyle: "none",
+    textAlign: "left" as const,
+    ":active": {
+      transform: "scale(0.98)",
+    },
+  },
+  navItemActive: {
+    backgroundColor: colors.bgTertiary,
+    color: colors.textPrimary,
+    fontWeight: 600,
+    boxShadow: "inset -2px 0 0 var(--color-orange-500)",
+  },
+  navItemInactive: {
+    color: colors.textSecondary,
+    ":hover": {
+      backgroundColor: colors.bgHover,
+      color: colors.textPrimary,
+    },
+  },
+  navItemLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "1ch",
+  },
+  footer: {
+    padding: 8,
+  },
+});
 
 export type NavTab = "skills" | "discover" | "agents" | "prompts" | "settings";
 
@@ -85,40 +321,44 @@ export function Sidebar({
     setIsAddingManually(false);
   };
 
+  const navItems = [
+    { tab: "skills" as const, icon: SparkleIcon, label: "Skills", count: skillsCount },
+    { tab: "discover" as const, icon: CompassIcon, label: "Discover" },
+    { tab: "agents" as const, icon: RobotIcon, label: "Agents" },
+    { tab: "prompts" as const, icon: TerminalIcon, label: "Prompts" },
+  ];
+
   return (
-    <aside className="size-full bg-zinc-100/90 dark:bg-zinc-950 flex flex-col select-none shrink-0 overflow-hidden">
-      {/* App Header */}
-      <div className="p-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <aside {...stylex.props(styles.aside)}>
+      <div {...stylex.props(styles.header)}>
+        <div {...stylex.props(styles.headerLeft)}>
           <img
             src="/logo.svg"
             alt="Skillet Icon"
-            className="size-8 object-contain"
+            {...stylex.props(styles.logo)}
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
           />
           <div>
-            <h1 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-1.5 font-sans">
+            <div {...stylex.props(styles.title)}>
               <span>Skillet</span>
-              <span className="text-xs font-semibold px-1.5 py-0.2 rounded-lg bg-primary-soft text-primary-hover dark:text-primary-light border border-primary-border font-mono">
-                v1.0
-              </span>
-            </h1>
-            <p className="text-sm text-zinc-500">Universal Skills & Prompts</p>
+              <span {...stylex.props(styles.versionBadge)}>v1.0</span>
+            </div>
+            <p {...stylex.props(styles.subtitle)}>Universal Skills & Prompts</p>
           </div>
         </div>
 
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
-            className="p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/80 dark:hover:bg-zinc-900 rounded-lg transition-transform duration-200 active:rotate-45 active:scale-90 cursor-pointer"
+            {...stylex.props(styles.themeBtn)}
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
             {theme === "dark" ? (
-              <SunIcon weight="light" className="size-5  transition-transform duration-200" />
+              <SunIcon weight="light" style={iconSizes.md} />
             ) : (
-              <MoonIcon weight="light" className="size-5  transition-transform duration-200" />
+              <MoonIcon weight="light" style={iconSizes.md} />
             )}
           </button>
         )}
@@ -126,46 +366,41 @@ export function Sidebar({
 
       <Separator />
 
-      {/* Workspace Selector */}
-      <div className="p-3.5 space-y-2">
-        <div className="flex items-center justify-between px-1 h-5">
-          <span className="text-[11px] uppercase font-bold tracking-wider text-zinc-500 leading-none flex items-center">
-            Scope / Workspace
-          </span>
+      <div {...stylex.props(styles.scopeSection)}>
+        <div {...stylex.props(styles.scopeHeader)}>
+          <span {...stylex.props(styles.scopeLabel)}>Scope / Workspace</span>
           <button
             type="button"
             onClick={handlePickFolder}
             disabled={isPickingFolder}
-            className="text-xs text-primary-hover dark:text-primary-light hover: flex items-center gap-1.5 leading-none transition-transform duration-150 active:scale-95 cursor-pointer font-medium"
+            {...stylex.props(styles.addBtn)}
             title="Choose workspace folder from Finder"
           >
-            <FolderSimplePlusIcon weight="light" className="size-4 shrink-0" />
-            <span className="leading-none">{isPickingFolder ? "Opening..." : "Add Folder"}</span>
+            <FolderSimplePlusIcon weight="light" style={{ width: 16, height: 16, flexShrink: 0, color: colors.primary }} />
+            <span>{isPickingFolder ? "Opening..." : "Add Folder"}</span>
           </button>
         </div>
 
         {isAddingManually && (
-          <div className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-2 animate-in fade-in-50 zoom-in-95 duration-150">
+          <div {...stylex.props(styles.addForm)}>
             <Input
               type="text"
               placeholder="/path/to/my-repo"
               value={manualPath}
               onChange={(e) => setManualPath(e.target.value)}
-              className="h-8 text-xs font-mono"
+              {...stylex.props(styles.manualInput)}
             />
-            <div className="flex justify-end gap-1.5">
+            <div {...stylex.props(styles.addFormActions)}>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsAddingManually(false)}
-                className="h-7 px-2.5 text-xs"
               >
                 Cancel
               </Button>
               <Button
                 size="sm"
                 onClick={handleSaveManual}
-                className="h-7 px-2.5 text-xs"
               >
                 Save
               </Button>
@@ -173,14 +408,14 @@ export function Sidebar({
           </div>
         )}
 
-        <div className="relative">
+        <div {...stylex.props(styles.selectWrapper)}>
           <select
             value={selectedWorkspace?.id || "global"}
             onChange={(e) => {
               const ws = workspaces.find((w) => w.id === e.target.value);
               if (ws) onSelectWorkspace(ws);
             }}
-            className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-200 text-xs font-medium rounded-lg px-3 py-2 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50 pr-8 truncate transition-colors"
+            {...stylex.props(styles.select)}
           >
             {workspaces.map((ws) => (
               <option key={ws.id} value={ws.id}>
@@ -188,90 +423,51 @@ export function Sidebar({
               </option>
             ))}
           </select>
-          <GitBranchIcon weight="light" className="size-4 text-zinc-400 absolute right-2.5 top-2.5 pointer-events-none" />
+          <GitBranchIcon weight="light" style={{ width: 16, height: 16 }} {...stylex.props(styles.selectIcon)} />
         </div>
       </div>
 
       <Separator />
 
-      {/* Navigation items */}
-      <ScrollArea className="flex-1 p-2.5">
-        <nav className="space-y-1.5">
-          <button
-            onClick={() => setCurrentTab("skills")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
-              currentTab === "skills"
-                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <SparkleIcon weight="light" className="size-4.5 " />
-              <span>Skills</span>
-            </div>
-            <Badge variant="secondary" className="font-mono px-2 py-0.5 text-xs rounded-lg">
-              {skillsCount}
-            </Badge>
-          </button>
-
-          <button
-            onClick={() => setCurrentTab("discover")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
-              currentTab === "discover"
-                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <CompassIcon weight="light" className="size-4.5 " />
-              <span>Discover</span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setCurrentTab("agents")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
-              currentTab === "agents"
-                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <RobotIcon weight="light" className="size-4.5 " />
-              <span>Agents</span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setCurrentTab("prompts")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
-              currentTab === "prompts"
-                ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <TerminalIcon weight="light" className="size-4.5 " />
-              <span>Prompts</span>
-            </div>
-          </button>
-        </nav>
-      </ScrollArea>
+      <nav {...stylex.props(styles.nav)}>
+        <div {...stylex.props(styles.navList)}>
+          {navItems.map(({ tab, icon: Icon, label, count }) => (
+            <button
+              key={tab}
+              onClick={() => setCurrentTab(tab)}
+              {...stylex.props(
+                styles.navItem,
+                currentTab === tab ? styles.navItemActive : styles.navItemInactive,
+              )}
+            >
+              <div {...stylex.props(styles.navItemLeft)}>
+                <Icon weight="light" style={{ width: 18, height: 18, flexShrink: 0 }} />
+                <span>{label}</span>
+              </div>
+              {count !== undefined && (
+                <Badge variant="secondary">
+                  {count}
+                </Badge>
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>
 
       <Separator />
 
-      {/* Settings at bottom */}
-      <div className="p-2.5">
+      <div {...stylex.props(styles.footer)}>
         <button
           onClick={() => setCurrentTab("settings")}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-[0.98] cursor-pointer ${
-            currentTab === "settings"
-              ? "bg-zinc-200/60 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100"
-              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 hover:text-zinc-900 dark:hover:text-zinc-200"
-          }`}
+          {...stylex.props(
+            styles.navItem,
+            currentTab === "settings" ? styles.navItemActive : styles.navItemInactive,
+          )}
         >
-          <GearSixIcon weight="light" className="size-4.5 text-zinc-500" />
-          <span>Settings</span>
+          <div {...stylex.props(styles.navItemLeft)}>
+            <GearSixIcon weight="light" style={{ width: 18, height: 18, flexShrink: 0, color: colors.textSecondary }} />
+            <span>Settings</span>
+          </div>
         </button>
       </div>
     </aside>

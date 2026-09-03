@@ -1,6 +1,77 @@
 import React, { useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { XIcon, BookmarkSimpleIcon } from "@phosphor-icons/react";
 import { Button } from "./ui/button.tsx";
+import { dialogStyles } from "./ui/dialogStyles.ts";
+import { colors, iconSizes } from "../tokens.stylex.ts";
+
+const styles = stylex.create({
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingLeft: 16,
+    paddingRight: 16,
+    borderBottom: `1px solid ${colors.borderDefault}`,
+    backgroundColor: colors.bgSecondary,
+  },
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerTitle: {
+    fontWeight: 600,
+    color: colors.textPrimary,
+    fontSize: 14,
+  },
+  form: {
+    padding: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
+  label: {
+    display: "block",
+    fontSize: 14,
+    fontWeight: 500,
+    color: colors.textSecondary,
+    marginBottom: 6,
+  },
+  hint: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: 12,
+  },
+  textarea: {
+    width: "100%",
+    minHeight: 160,
+    padding: 12,
+    fontSize: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgPrimary,
+    color: colors.textPrimary,
+    outline: "none",
+    resize: "vertical" as const,
+    transitionProperty: "border-color, box-shadow",
+    transitionDuration: "150ms",
+    ":focus": {
+      borderColor: colors.primaryBorder,
+      boxShadow: `0 0 0 2px color-mix(in srgb, ${colors.primary} 20%, transparent)`,
+    },
+  },
+  footer: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 8,
+    paddingTop: 8,
+  },
+});
 
 interface AddBookmarkDialogProps {
   isOpen: boolean;
@@ -15,11 +86,9 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Extract skills.sh or github URLs
     const urlRegex = /https?:\/\/(?:www\.)?(?:skills\.sh|github\.com)\/[^\s]+/g;
     const matches = text.match(urlRegex) || [];
     
-    // Also support short forms like user/repo if they are just on their own lines
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
     const shortForms = lines.filter(l => l.match(/^[\w.-]+\/[\w.-]+(?:\/[\w.-]+)*$/));
 
@@ -33,39 +102,39 @@ export function AddBookmarkDialog({ isOpen, onClose, onSave }: AddBookmarkDialog
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-3 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-          <div className="flex items-center gap-2">
-            <BookmarkSimpleIcon className="size-5 text-primary" weight="bold" />
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Add Bookmarks</h3>
+    <div {...stylex.props(dialogStyles.overlay)}>
+      <div {...stylex.props(dialogStyles.dialog)}>
+        <div {...stylex.props(styles.header)}>
+          <div {...stylex.props(styles.headerLeft)}>
+            <BookmarkSimpleIcon weight="bold" style={{ ...iconSizes.lg, color: colors.primary }} />
+            <h3 {...stylex.props(styles.headerTitle)}>Add Bookmarks</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50 dark:hover:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
+            {...stylex.props(dialogStyles.closeBtn)}
           >
-            <XIcon className="size-5" />
+            <XIcon style={iconSizes.lg} />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} {...stylex.props(styles.form)}>
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+            <label {...stylex.props(styles.label)}>
               Paste URLs or Text
             </label>
-            <p className="text-sm text-zinc-500 mb-3">
+            <p {...stylex.props(styles.hint)}>
               You can paste a list of skills.sh URLs, GitHub links, or plain text containing links. We'll automatically extract the skills.
             </p>
             <textarea
               autoFocus
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="e.g. https://skills.sh/dmmulroy/anti-slop&#10;cursor/plugins/deslop"
-              className="w-full min-h-[160px] p-3 text-sm rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-border focus:border-primary transition-all resize-y"
+              placeholder={"e.g. https://skills.sh/dmmulroy/anti-slop\ncursor/plugins/deslop"}
+              {...stylex.props(styles.textarea)}
             />
           </div>
           
-          <div className="flex justify-end gap-2 pt-2">
+          <div {...stylex.props(styles.footer)}>
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel
             </Button>

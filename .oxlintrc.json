@@ -1,5 +1,24 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "import", "oxc", "unicorn"],
+  "categories": {
+    "correctness": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/**"],
+      "rules": {
+        "import/no-namespace": "off"
+      }
+    },
+    {
+      "files": ["src/hooks/useMediaQuery.ts", "src/hooks/useWorkspaces.ts", "src/components/MarkdownViewer.tsx", "src/components/SkillDetail.tsx"],
+      "rules": {
+        "react/set-state-in-effect": "warn",
+        "react-hooks/exhaustive-deps": "warn"
+      }
+    }
+  ],
   "ignorePatterns": [
     ".agent/**",
     ".agents/**",
@@ -36,6 +55,28 @@
     "anti-slop/no-unknown-type-aliases": "error",
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-widen-then-assert": "error",
-    "anti-slop/require-safety-comment-for-type-assertion": "error"
+    "anti-slop/require-safety-comment-for-type-assertion": "error",
+
+    "no-useless-catch": "error",
+    "no-useless-rename": "error",
+    "object-shorthand": "error",
+    "prefer-const": "error",
+    "prefer-object-has-own": "error",
+    "no-throw-literal": "error",
+
+    "import/no-namespace": "error",
+
+    "oxc/const-comparisons": "error",
+    "oxc/double-comparisons": "error",
+    "oxc/uninvoked-array-callback": "error",
+    "oxc/missing-throw": "error",
+
+    "unicorn/no-useless-spread": "error",
+    "unicorn/no-useless-promise-resolve-reject": "error",
+    "unicorn/prefer-structured-clone": "error",
+    "unicorn/consistent-empty-array-spread": "error",
+    "unicorn/no-typeof-undefined": "error",
+    "unicorn/prefer-array-flat-map": "error",
+    "unicorn/prefer-includes": "error"
   }
 }

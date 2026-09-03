@@ -28,28 +28,61 @@ export function parseGitHubRepo(input: string): GitHubRepoInfo | null {
   // Strip trailing slashes
   cleaned = cleaned.replace(/\/$/, "");
 
-  // 1. skills.sh URLs: https://www.skills.sh/owner/repo/path
+  const buildResult = (owner: string, repo: string, subPath?: string): GitHubRepoInfo => {
+    return subPath ? { owner, repo, path: subPath } : { owner, repo };
+  };
+
+  const getCustomDefaultRepo = (ownerLower: string): string => {
+    if (ownerLower === "garrytan") return "gstack";
+    if (ownerLower === "addyosmani") return "agent-skills";
+    if (ownerLower === "cursor") return "plugins";
+    return "skills";
+  };
+
+  // 1. skills.sh URLs: https://www.skills.sh/owner/repo/path or https://www.skills.sh/owner
   const skillsShMatch = cleaned.match(/^https?:\/\/(?:www\.)?skills\.sh\/([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
   if (skillsShMatch) {
-    return { owner: skillsShMatch[1], repo: skillsShMatch[2], path: skillsShMatch[3] || undefined };
+    return buildResult(skillsShMatch[1], skillsShMatch[2], skillsShMatch[3]);
+  }
+
+  const skillsShOwnerMatch = cleaned.match(/^https?:\/\/(?:www\.)?skills\.sh\/([\w.-]+)$/);
+  if (skillsShOwnerMatch) {
+    const owner = skillsShOwnerMatch[1];
+    return buildResult(owner, getCustomDefaultRepo(owner.toLowerCase()));
   }
 
   // 2. HTTPS GitHub URL format: https://github.com/owner/repo[/tree/main/path]
-  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(?:tree|blob)\/[^/]+\/(.*))?$/);
+  const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(?:tree|blob)\/[^/]+\/(.*)|\/.*)?$/);
   if (httpsMatch) {
-    return { owner: httpsMatch[1], repo: httpsMatch[2], path: httpsMatch[3] || undefined };
+    return buildResult(httpsMatch[1], httpsMatch[2], httpsMatch[3]);
   }
 
   // 3. SSH GitHub URL format: git@github.com:owner/repo
   const sshMatch = cleaned.match(/^git@github\.com:([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
   if (sshMatch) {
-    return { owner: sshMatch[1], repo: sshMatch[2], path: sshMatch[3] || undefined };
+    return buildResult(sshMatch[1], sshMatch[2], sshMatch[3]);
   }
 
   // 4. Shorthand format: owner/repo[/path]
   const shortMatch = cleaned.match(/^([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
   if (shortMatch) {
-    return { owner: shortMatch[1], repo: shortMatch[2], path: shortMatch[3] || undefined };
+    return buildResult(shortMatch[1], shortMatch[2], shortMatch[3]);
+  }
+
+  // 5. Known standalone owner shorthand (e.g. garrytan, mattpocock, expo)
+  const KNOWN_SKILLS_CREATORS = new Set([
+    "anthropics",
+    "cursor",
+    "vercel-labs",
+    "cloudflare",
+    "expo",
+    "mattpocock",
+    "addyosmani",
+    "garrytan",
+  ]);
+  const lower = cleaned.toLowerCase();
+  if (/^[\w.-]+$/.test(cleaned) && KNOWN_SKILLS_CREATORS.has(lower)) {
+    return buildResult(cleaned, getCustomDefaultRepo(lower));
   }
 
   return null;

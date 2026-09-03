@@ -1,9 +1,12 @@
 import { defineConfig } from "npm:vite@8.2.2";
 import react from "npm:@vitejs/plugin-react@6.1.0";
-import tailwindcss from "npm:@tailwindcss/vite@4.3.3";
+import stylex from "npm:@stylexjs/unplugin@0.19.0";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    stylex.vite({ useCSSLayers: true }),
+    react({ compiler: true }),
+  ],
   server: {
     port: 3000,
     strictPort: true,

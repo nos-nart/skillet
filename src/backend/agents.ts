@@ -71,7 +71,7 @@ export function getAgentConfig(agentId: AgentId): AgentConfig | undefined {
   return SUPPORTED_AGENTS.find((a) => a.id === agentId);
 }
 
-export function getAgentRelPath(agentId: AgentId): string {
+export function getAgentRelPath(_agentId: AgentId): string {
   // Always use the universal .skills directory in the project workspace
   return ".skills";
 }

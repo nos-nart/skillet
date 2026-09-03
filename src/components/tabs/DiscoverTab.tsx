@@ -1,11 +1,389 @@
 import React, { useReducer, useState, useEffect } from "react";
-import { MagnifyingGlassIcon, DownloadSimpleIcon, CheckCircleIcon, FolderOpenIcon, ArrowSquareOutIcon, BookmarkSimpleIcon, PlusIcon } from "@phosphor-icons/react";
+import * as stylex from "@stylexjs/stylex";
+import { MagnifyingGlassIcon, DownloadSimpleIcon, CheckCircleIcon, FolderOpenIcon, ArrowSquareOutIcon, BookmarkSimpleIcon, PlusIcon, TerminalWindowIcon, CpuIcon, StackIcon } from "@phosphor-icons/react";
 import { Input } from "../ui/input.tsx";
 import { Button } from "../ui/button.tsx";
 import { ScrollArea } from "../ui/scroll-area.tsx";
 import { Skill } from "../../types/skills.ts";
 import { AddBookmarkDialog } from "../AddBookmarkDialog.tsx";
 import { api } from "../../client/apiClient.ts";
+import { colors, iconSizes } from "../../tokens.stylex.ts";
+import { AnthropicLogo, CursorLogo, VercelLogo, CloudflareLogo, ExpoLogo } from "../AgentLogos.tsx";
+import { SuspenseImage } from "../SuspenseImage.tsx";
+
+const styles = stylex.create({
+  root: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    width: "100%",
+    backgroundColor: colors.bgPrimary,
+  },
+  header: {
+    padding: 20,
+    paddingBottom: 12,
+    borderBottom: `1px solid ${colors.borderDefault}`,
+  },
+  headerTop: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 700,
+    color: colors.textPrimary,
+  },
+  desc: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 24,
+  },
+  form: {
+    display: "flex",
+    gap: 8,
+  },
+  searchWrapper: {
+    position: "relative" as const,
+    flex: 1,
+  },
+  searchIcon: {
+    position: "absolute" as const,
+    left: 12,
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: colors.textMuted,
+    pointerEvents: "none" as const,
+  },
+  error: {
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+    backgroundColor: colors.destructiveSoft,
+    color: colors.destructiveHover,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.destructiveBorder,
+    fontSize: 14,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: colors.textPrimary,
+    marginBottom: 12,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  bookmarkItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgSecondary,
+    cursor: "pointer",
+    transitionProperty: "border-color",
+    transitionDuration: "150ms",
+    ":hover": {
+      borderColor: colors.primary,
+    },
+  },
+  bookmarkLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    overflow: "hidden",
+  },
+  bookmarkName: {
+    fontSize: 14,
+    fontWeight: 500,
+    color: colors.textPrimary,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
+  repoCard: {
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgSecondary,
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+    cursor: "pointer",
+    transitionProperty: "border-color, transform, box-shadow",
+    transitionDuration: "150ms",
+    ":hover": {
+      borderColor: colors.borderSubtle,
+      transform: "translateY(-1.5px)",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+    },
+    ":active": {
+      transform: "scale(0.99)",
+    },
+  },
+  repoCardHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "1ch",
+  },
+  repoCardTitle: {
+    fontWeight: 600,
+    fontSize: 13,
+    color: colors.textPrimary,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
+  repoCardDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 8,
+    lineHeight: 1.45,
+  },
+  resultHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: colors.borderSubtle,
+  },
+  resultPath: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontFamily: "monospace",
+    fontSize: 12,
+  },
+  skillItem: {
+    display: "flex",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgSecondary,
+    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.02)",
+    transitionProperty: "border-color, box-shadow",
+    transitionDuration: "150ms",
+    ":hover": {
+      borderColor: colors.borderSubtle,
+      boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.04)",
+    },
+  },
+  skillContent: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 16,
+  },
+  skillNameRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  skillName: {
+    fontWeight: 600,
+    fontSize: 14,
+    color: colors.textPrimary,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap" as const,
+  },
+  skillLink: {
+    color: colors.textMuted,
+    transitionProperty: "color",
+    transitionDuration: "150ms",
+  },
+  skillDesc: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    display: "-webkit-box" as const,
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical" as const,
+    overflow: "hidden",
+  },
+  installed: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "1ch",
+    color: colors.success,
+  },
+  installRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "1ch",
+  },
+  emptyStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 24,
+  },
+  bookmarkGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: 8,
+  },
+  repoGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: 16,
+  },
+  resultStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
+  skillStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+  removeBtn: {
+    padding: 4,
+    color: colors.textMuted,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderStyle: "none",
+    cursor: "pointer",
+  },
+});
+
+interface PopularRepo {
+  owner: string;
+  repo: string;
+  fullName: string;
+  desc: string;
+  fallbackIcon?: React.ReactNode;
+}
+
+const POPULAR_REPOS: PopularRepo[] = [
+  {
+    owner: "anthropics",
+    repo: "skills",
+    fullName: "anthropics/skills",
+    desc: "Official Anthropic agent skills and guidelines.",
+    fallbackIcon: <AnthropicLogo style={{ width: 22, height: 22, color: "#D97757", flexShrink: 0 }} />,
+  },
+  {
+    owner: "cursor",
+    repo: "plugins",
+    fullName: "cursor/plugins",
+    desc: "Official Cursor community skills repository.",
+    fallbackIcon: <CursorLogo style={{ width: 22, height: 22, color: colors.textPrimary, flexShrink: 0 }} />,
+  },
+  {
+    owner: "vercel-labs",
+    repo: "skills",
+    fullName: "vercel-labs/skills",
+    desc: "Foundational skills and examples from Vercel.",
+    fallbackIcon: <VercelLogo style={{ width: 22, height: 22, color: colors.textPrimary, flexShrink: 0 }} />,
+  },
+  {
+    owner: "cloudflare",
+    repo: "skills",
+    fullName: "cloudflare/skills",
+    desc: "Skills for teaching agents to build on Cloudflare.",
+    fallbackIcon: <CloudflareLogo style={{ width: 22, height: 22, color: "#F38020", flexShrink: 0 }} />,
+  },
+  {
+    owner: "expo",
+    repo: "skills",
+    fullName: "expo/skills",
+    desc: "Official AI agent skills for Expo & React Native.",
+    fallbackIcon: <ExpoLogo style={{ width: 22, height: 22, color: "#5856D6", flexShrink: 0 }} />,
+  },
+  {
+    owner: "mattpocock",
+    repo: "skills",
+    fullName: "mattpocock/skills",
+    desc: "Skills for Real Engineers by Matt Pocock.",
+    fallbackIcon: <TerminalWindowIcon style={{ width: 22, height: 22, color: "#3178C6", flexShrink: 0 }} />,
+  },
+  {
+    owner: "addyosmani",
+    repo: "agent-skills",
+    fullName: "addyosmani/agent-skills",
+    desc: "Production-grade engineering skills by Addy Osmani.",
+    fallbackIcon: <CpuIcon style={{ width: 22, height: 22, color: "#8B5CF6", flexShrink: 0 }} />,
+  },
+  {
+    owner: "garrytan",
+    repo: "gstack",
+    fullName: "garrytan/gstack",
+    desc: "Garry Tan's Claude Code setup with 23+ skills & tools.",
+    fallbackIcon: <StackIcon style={{ width: 22, height: 22, color: "#F59E0B", flexShrink: 0 }} />,
+  },
+];
+
+function PopularRepoAvatar({ owner, fallback }: { owner: string; fallback?: React.ReactNode }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div style={{ width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: colors.bgTertiary, flexShrink: 0 }}>
+        {fallback || <FolderOpenIcon style={{ width: 20, height: 20, color: colors.textMuted }} />}
+      </div>
+    );
+  }
+
+  return (
+    <SuspenseImage
+      src={`https://github.com/${owner}.png?size=96`}
+      alt={owner}
+      data-testid="github-avatar"
+      onError={() => setHasError(true)}
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        objectFit: "cover",
+        flexShrink: 0,
+        backgroundColor: colors.bgTertiary,
+      }}
+      placeholderClassName="w-9 h-9 rounded-lg"
+    />
+  );
+}
+
+function GitHubAvatar({ owner, fallback }: { owner: string; fallback?: React.ReactNode }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <>{fallback || <FolderOpenIcon style={{ width: 20, height: 20, color: colors.textMuted, flexShrink: 0 }} />}</>;
+  }
+
+  return (
+    <SuspenseImage
+      src={`https://github.com/${owner}.png?size=64`}
+      alt={owner}
+      data-testid="github-avatar"
+      onError={() => setHasError(true)}
+      style={{
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        objectFit: "cover",
+        flexShrink: 0,
+      }}
+      placeholderClassName="w-5 h-5 rounded"
+    />
+  );
+}
 
 interface GitHubContentItem {
   name: string;
@@ -84,32 +462,57 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
     api.getBookmarks().then((bms) => dispatch({ type: "SET_BOOKMARKS", payload: bms })).catch(console.error);
   }, []);
 
+  const getCustomDefaultRepo = (ownerLower: string): string => {
+    if (ownerLower === "garrytan") return "gstack";
+    if (ownerLower === "addyosmani") return "agent-skills";
+    if (ownerLower === "cursor") return "plugins";
+    return "skills";
+  };
+
+  const KNOWN_SKILLS_CREATORS = new Set([
+    "anthropics",
+    "cursor",
+    "vercel-labs",
+    "cloudflare",
+    "expo",
+    "mattpocock",
+    "addyosmani",
+    "garrytan",
+  ]);
+
   const parseRepo = (input: string) => {
-    let cleaned = input.trim().replace(/\.git$/, "").replace(/\/$/, "");
+    const cleaned = input.trim().replace(/\.git$/, "").replace(/\/$/, "");
     const skillsShMatch = cleaned.match(/^https?:\/\/(?:www\.)?skills\.sh\/([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
     if (skillsShMatch) return { owner: skillsShMatch[1], repo: skillsShMatch[2], path: skillsShMatch[3] || undefined };
 
-    const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(?:tree|blob)\/[^/]+\/(.*))?$/);
+    const skillsShOwnerMatch = cleaned.match(/^https?:\/\/(?:www\.)?skills\.sh\/([\w.-]+)$/);
+    if (skillsShOwnerMatch) {
+      const owner = skillsShOwnerMatch[1];
+      return { owner, repo: getCustomDefaultRepo(owner.toLowerCase()) };
+    }
+
+    const httpsMatch = cleaned.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(?:tree|blob)\/[^/]+\/(.*)|\/.*)?$/);
     if (httpsMatch) return { owner: httpsMatch[1], repo: httpsMatch[2], path: httpsMatch[3] || undefined };
 
     const shortMatch = cleaned.match(/^([\w.-]+)\/([\w.-]+)(?:\/(.*))?$/);
     if (shortMatch) return { owner: shortMatch[1], repo: shortMatch[2], path: shortMatch[3] || undefined };
-    
+
+    const lower = cleaned.toLowerCase();
+    if (/^[\w.-]+$/.test(cleaned) && KNOWN_SKILLS_CREATORS.has(lower)) {
+      return { owner: cleaned, repo: getCustomDefaultRepo(lower) };
+    }
+
     return null;
   };
 
   const fetchDescription = async (owner: string, repo: string, itemPath: string, name: string, branch: string = "main") => {
     try {
-      // Try to fetch SKILL.md first
       let url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${itemPath ? `${itemPath}/` : ""}SKILL.md`;
       let res = await fetch(url);
-      
-      // Fallback to README.md if SKILL.md is missing or doesn't have a description
       if (!res.ok) {
         url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${itemPath ? `${itemPath}/` : ""}README.md`;
         res = await fetch(url);
       }
-      
       if (res.ok) {
         const text = await res.text();
         const descMatch = text.match(/description:\s*(.+)/i) || text.match(/^#\s+.*?\n+(.+?)(?=\n|$)/m);
@@ -119,95 +522,48 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
           dispatch({ type: "SET_ITEM_DESCRIPTION", payload: { name, description: desc } });
         }
       }
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   };
 
-  const handleSearch = async (e: React.FormEvent, directQuery?: string) => {
-    e.preventDefault();
+  const handleSearch = async (e?: React.SyntheticEvent, directQuery?: string) => {
+    e?.preventDefault();
     const searchQuery = directQuery !== undefined ? directQuery : state.query;
     if (!searchQuery.trim()) return;
-
-    if (directQuery !== undefined) {
-      dispatch({ type: "SET_QUERY", payload: directQuery });
-    }
-
+    if (directQuery !== undefined) dispatch({ type: "SET_QUERY", payload: directQuery });
     const info = parseRepo(searchQuery);
-    if (!info) {
-      dispatch({ type: "SEARCH_ERROR", payload: "Invalid format. Use owner/repo (e.g. cursor/plugins) or a skills.sh URL." });
-      return;
-    }
-
+    if (!info) { dispatch({ type: "SEARCH_ERROR", payload: "Invalid format. Use owner/repo or a skills.sh URL." }); return; }
     dispatch({ type: "SEARCH_START", payload: info });
-
     try {
-      // 1. Get default branch
       const repoRes = await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}`);
       if (!repoRes.ok) throw new Error("Repository not found");
       const repoData = await repoRes.json();
       const branch = repoData.default_branch;
-
-      // 2. Get recursive tree
       const treeRes = await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`);
       if (!treeRes.ok) throw new Error("Failed to fetch repository tree");
       const treeData = await treeRes.json();
-
-      // 3. Find SKILL.md or .cursorrules
-      const skillFiles = treeData.tree.filter((t: any) => 
-        t.type === "blob" && 
-        (t.path.endsWith("SKILL.md") || t.path.endsWith(".cursorrules") || t.path.endsWith("cursorrules"))
-      );
-
-      // 4. If a specific path was searched, filter to that path or its subdirectories
+      const skillFiles = treeData.tree.filter((t: any) => t.type === "blob" && (t.path.endsWith("SKILL.md") || t.path.endsWith(".cursorrules") || t.path.endsWith("cursorrules")));
       let targetFiles = skillFiles;
       if (info.path) {
-        targetFiles = skillFiles.filter((t: any) => 
-          t.path === info.path || t.path.startsWith(`${info.path}/`)
-        );
-        if (targetFiles.length === 0) {
-          throw new Error("No skills found at this path");
-        }
+        targetFiles = skillFiles.filter((t: any) => t.path === info.path || t.path.startsWith(`${info.path}/`));
+        if (targetFiles.length === 0) throw new Error("No skills found at this path");
       }
-
-      if (targetFiles.length === 0) {
-        throw new Error("No skills found in this repository");
-      }
-
-      // 5. Convert to GitHubContentItem
+      if (targetFiles.length === 0) throw new Error("No skills found in this repository");
       const items: GitHubContentItem[] = targetFiles.map((file: any) => {
         const parts = file.path.split("/");
-        parts.pop(); // remove file name
+        parts.pop();
         const skillPath = parts.join("/");
         const skillName = parts.length > 0 ? parts[parts.length - 1] : info.repo;
-
-        return {
-          name: skillName,
-          path: skillPath,
-          type: "dir",
-          html_url: `https://github.com/${info.owner}/${info.repo}/tree/${branch}/${skillPath}`
-        };
+        return { name: skillName, path: skillPath, type: "dir", html_url: `https://github.com/${info.owner}/${info.repo}/tree/${branch}/${skillPath}` };
       });
-
-      // Deduplicate by path
       const uniqueItems = Array.from(new Map(items.map(item => [item.path, item])).values());
-
       dispatch({ type: "SEARCH_SUCCESS", payload: uniqueItems });
-
-      // Fetch descriptions async
-      uniqueItems.forEach(item => {
-        fetchDescription(info.owner, info.repo, item.path, item.name, branch);
-      });
-
+      uniqueItems.forEach(item => { fetchDescription(info.owner, info.repo, item.path, item.name, branch); });
     } catch (err: any) {
       dispatch({ type: "SEARCH_ERROR", payload: err.message || "Failed to fetch repository" });
     }
   };
 
-  const handleBack = () => {
-    dispatch({ type: "CLEAR_SEARCH" });
-    
-  };
+  const handleBack = () => { dispatch({ type: "CLEAR_SEARCH" }); };
 
   const handleInstall = async (item: GitHubContentItem) => {
     if (!state.repoInfo) return;
@@ -227,9 +583,7 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
       const updated = Array.from(new Set([...state.bookmarks, ...urls]));
       await api.saveBookmarks(updated);
       dispatch({ type: "SET_BOOKMARKS", payload: updated });
-    } catch (err) {
-      console.error("Failed to save bookmarks:", err);
-    }
+    } catch (err) { console.error("Failed to save bookmarks:", err); }
   };
 
   const handleRemoveBookmark = async (e: React.MouseEvent, url: string) => {
@@ -238,63 +592,59 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
       const updated = state.bookmarks.filter(b => b !== url);
       await api.saveBookmarks(updated);
       dispatch({ type: "SET_BOOKMARKS", payload: updated });
-    } catch (err) {
-      console.error("Failed to remove bookmark:", err);
-    }
+    } catch (err) { console.error("Failed to remove bookmark:", err); }
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-white dark:bg-zinc-950">
-      <div className="p-5 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Discover Skills</h2>
-          <Button variant="ghost" size="sm" onClick={() => setIsBookmarkDialogOpen(true)} className="h-7 gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+    <div {...stylex.props(styles.root)}>
+      <div {...stylex.props(styles.header)}>
+        <div {...stylex.props(styles.headerTop)}>
+          <h2 {...stylex.props(styles.title)}>Discover Skills</h2>
+          <Button variant="ghost" size="sm" onClick={() => setIsBookmarkDialogOpen(true)}>
             <PlusIcon weight="bold" /> Bookmark
           </Button>
         </div>
-        <p className="text-sm text-zinc-500 mb-6">Browse and install skills from skills.sh or any GitHub repository.</p>
+        <p {...stylex.props(styles.desc)}>Browse and install skills from skills.sh or any GitHub repository.</p>
         
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <div className="relative flex-1">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
+        <form onSubmit={handleSearch} {...stylex.props(styles.form)}>
+          <div {...stylex.props(styles.searchWrapper)}>
+            <MagnifyingGlassIcon {...stylex.props(styles.searchIcon)} weight="light" style={iconSizes.md} />
             <Input
               value={state.query}
               onChange={(e) => dispatch({ type: "SET_QUERY", payload: e.target.value })}
-              placeholder="e.g. cursor/plugins or https://www.skills.sh/cursor/plugins"
-              className="pl-9 h-9 w-full"
+              placeholder="e.g. anthropics/skills, cloudflare/skills, or https://www.skills.sh/garrytan"
+              style={{ paddingLeft: 36, height: 36, width: "100%" }}
             />
           </div>
-          <Button type="submit" disabled={state.isLoading} className="h-9 px-4">
+          <Button type="submit" disabled={state.isLoading} style={{ height: 36, paddingLeft: 16, paddingRight: 16 }}>
             {state.isLoading ? "Searching..." : "Browse"}
           </Button>
         </form>
       </div>
 
-      <ScrollArea className="flex-1 p-5">
+      <ScrollArea style={{ flex: 1 }} contentStyle={{ padding: "20px 24px" }}>
         {state.error && (
-          <div className="p-4 mb-4 rounded-lg bg-destructive-soft text-destructive-hover dark:text-destructive-light border border-destructive-border text-sm">
-            {state.error}
-          </div>
+          <div {...stylex.props(styles.error)}>{state.error}</div>
         )}
 
         {!state.isLoading && !state.error && state.items.length === 0 && !state.repoInfo && (
-          <div className="space-y-6">
+          <div {...stylex.props(styles.emptyStack)}>
             {state.bookmarks.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                  <BookmarkSimpleIcon className="text-primary" weight="fill" /> Your Bookmarks
+                <h3 {...stylex.props(styles.sectionTitle)}>
+                  <BookmarkSimpleIcon weight="fill" style={{ ...iconSizes.md, color: colors.primary }} /> Your Bookmarks
                 </h3>
-                <div className="grid grid-cols-1 gap-2">
+                <div {...stylex.props(styles.bookmarkGrid)}>
                   {state.bookmarks.map(bm => {
                     const info = parseRepo(bm);
                     const displayName = info ? `${info.owner}/${info.repo}${info.path ? `/${info.path}` : ""}` : bm;
                     return (
-                      <div key={bm} onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, bm); }} className="flex items-center justify-between p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group">
-                        <div className="flex items-center gap-2 truncate">
-                          <BookmarkSimpleIcon className="size-4 text-zinc-400" />
-                          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</span>
+                      <div key={bm} onClick={(e) => { handleSearch(e, bm); }} {...stylex.props(styles.bookmarkItem)}>
+                        <div {...stylex.props(styles.bookmarkLeft)}>
+                          <BookmarkSimpleIcon style={{ ...iconSizes.md, color: colors.textMuted }} />
+                          <span {...stylex.props(styles.bookmarkName)}>{displayName}</span>
                         </div>
-                        <button onClick={(e) => handleRemoveBookmark(e, bm)} className="opacity-0 group-hover:opacity-100 p-1 text-zinc-400 hover:text-destructive transition-all">
+                        <button onClick={(e) => handleRemoveBookmark(e, bm)} {...stylex.props(styles.removeBtn)}>
                           &times;
                         </button>
                       </div>
@@ -305,68 +655,99 @@ export function DiscoverTab({ installedSkills, onInstall }: { installedSkills: S
             )}
             
             <div>
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Popular Repositories</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "cursor/plugins"); }}>
-                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-primary transition-colors">cursor/plugins</h3>
-                  <p className="text-sm text-zinc-500 mt-1">Official Cursor community skills repository.</p>
-                </div>
-                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:border-primary/50 transition-colors cursor-pointer group" onClick={(e) => { /* SAFETY: wrapper */ handleSearch(e as any, "vercel-labs/skills"); }}>
-                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-primary transition-colors">vercel-labs/skills</h3>
-                  <p className="text-sm text-zinc-500 mt-1">Foundational skills and examples from Vercel.</p>
-                </div>
+              <h3 {...stylex.props(styles.sectionTitle)}>Popular Repositories</h3>
+              <div {...stylex.props(styles.repoGrid)}>
+                {POPULAR_REPOS.map((r) => (
+                  <div
+                    key={r.fullName}
+                    {...stylex.props(styles.repoCard)}
+                    onClick={(e) => { handleSearch(e, r.fullName); }}
+                  >
+                    <div {...stylex.props(styles.repoCardHeader)}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "1.2ch", flex: 1, minWidth: 0 }}>
+                        <PopularRepoAvatar owner={r.owner} fallback={r.fallbackIcon} />
+                        <h3 {...stylex.props(styles.repoCardTitle)}>{r.fullName}</h3>
+                      </div>
+                      <a
+                        href={`https://github.com/${r.fullName}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title={`Open ${r.fullName} on GitHub`}
+                        style={{
+                          color: colors.textMuted,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: 2,
+                          borderRadius: 4,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <ArrowSquareOutIcon style={{ width: 14, height: 14 }} />
+                      </a>
+                    </div>
+                    <p {...stylex.props(styles.repoCardDesc)}>{r.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
         {state.items.length > 0 && state.repoInfo && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between text-sm text-zinc-500 mb-4 pb-2 border-b border-zinc-100 dark:border-zinc-800/50">
-              <div className="flex items-center gap-2 font-mono text-xs">
-                <FolderOpenIcon className="size-4" />
+          <div {...stylex.props(styles.resultStack)}>
+            <div {...stylex.props(styles.resultHeader)}>
+              <div {...stylex.props(styles.resultPath)}>
+                <GitHubAvatar owner={state.repoInfo.owner} />
                 <span>{state.repoInfo.owner} / {state.repoInfo.repo} {state.repoInfo.path ? `/ ${state.repoInfo.path}` : ""}</span>
+                <a
+                  href={`https://github.com/${state.repoInfo.owner}/${state.repoInfo.repo}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="View on GitHub"
+                  style={{ color: colors.textMuted, display: "inline-flex", alignItems: "center", marginLeft: 4 }}
+                >
+                  <ArrowSquareOutIcon style={{ width: 14, height: 14 }} />
+                </a>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleBack} className="h-7 text-xs px-2">
-                &larr; Back to Discover
-              </Button>
+              <Button variant="ghost" size="sm" onClick={handleBack}>&larr; Back</Button>
             </div>
             
-            <div className="flex flex-col gap-3">
+            <div {...stylex.props(styles.skillStack)}>
               {state.items.map((item) => {
                 const isInstalled = installedSkills.some(s => (s.packageName === `${state.repoInfo!.owner}/${state.repoInfo!.repo}` || s.packageName === state.repoInfo!.owner) && s.slug === item.name);
                 const isInstalling = state.installingItem === item.name;
-
                 return (
-                  <div key={item.path} className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 hover:border-primary/30 transition-all duration-200">
-                    <div className="flex-1 min-w-0 pr-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate" title={item.name}>
-                          {item.name}
-                        </h3>
-                        <a href={item.html_url} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-primary transition-colors">
-                          <ArrowSquareOutIcon className="size-4" />
+                  <div key={item.path} {...stylex.props(styles.skillItem)}>
+                    <div {...stylex.props(styles.skillContent)}>
+                      <div {...stylex.props(styles.skillNameRow)}>
+                        <h3 {...stylex.props(styles.skillName)} title={item.name}>{item.name}</h3>
+                        <a href={item.html_url} target="_blank" rel="noreferrer" {...stylex.props(styles.skillLink)}>
+                          <ArrowSquareOutIcon style={iconSizes.md} />
                         </a>
                       </div>
-                      <p className="text-sm text-zinc-500 line-clamp-2">
+                      <p {...stylex.props(styles.skillDesc)}>
                         {item.description || "No description available. Click install to fetch and add this skill to your workspace."}
                       </p>
                     </div>
-                    
-                    <div className="shrink-0">
+                    <div style={{ flexShrink: 0 }}>
                       <Button
                         variant={isInstalled ? "secondary" : "default"}
                         size="sm"
-                        className="w-24 text-xs h-8"
                         disabled={isInstalled || isInstalling}
                         onClick={() => handleInstall(item)}
+                        style={{ minWidth: 104, fontSize: 12, height: 32, paddingLeft: 12, paddingRight: 12 }}
                       >
-                        {isInstalling ? (
-                          "Installing..."
-                        ) : isInstalled ? (
-                          <span className="flex items-center justify-center gap-1"><CheckCircleIcon weight="fill" className="text-success" /> Installed</span>
+                        {isInstalling ? "Installing..." : isInstalled ? (
+                          <span {...stylex.props(styles.installed)}>
+                            <CheckCircleIcon weight="fill" style={{ width: 16, height: 16, flexShrink: 0 }} />
+                            <span>Installed</span>
+                          </span>
                         ) : (
-                          <span className="flex items-center justify-center gap-1"><DownloadSimpleIcon /> Install</span>
+                          <span {...stylex.props(styles.installRow)}>
+                            <DownloadSimpleIcon weight="bold" style={{ width: 16, height: 16, flexShrink: 0 }} />
+                            <span>Install</span>
+                          </span>
                         )}
                       </Button>
                     </div>

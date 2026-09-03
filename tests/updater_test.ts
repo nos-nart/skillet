@@ -26,6 +26,15 @@ Deno.test("parseGitHubRepo extracts owner and repo from various formats", () => 
   assertEquals(parseGitHubRepo("https://github.com/cursor/plugins.git"), { owner: "cursor", repo: "plugins" });
   assertEquals(parseGitHubRepo("git@github.com:mattpocock/skills.git"), { owner: "mattpocock", repo: "skills" });
   assertEquals(parseGitHubRepo("https://github.com/owner/sub-repo/extra/path"), { owner: "owner", repo: "sub-repo" });
+  assertEquals(parseGitHubRepo("https://www.skills.sh/anthropics"), { owner: "anthropics", repo: "skills" });
+  assertEquals(parseGitHubRepo("https://www.skills.sh/garrytan"), { owner: "garrytan", repo: "gstack" });
+  assertEquals(parseGitHubRepo("https://www.skills.sh/addyosmani"), { owner: "addyosmani", repo: "agent-skills" });
+  assertEquals(parseGitHubRepo("https://www.skills.sh/cloudflare"), { owner: "cloudflare", repo: "skills" });
+  assertEquals(parseGitHubRepo("https://www.skills.sh/expo"), { owner: "expo", repo: "skills" });
+  assertEquals(parseGitHubRepo("https://www.skills.sh/mattpocock"), { owner: "mattpocock", repo: "skills" });
+  assertEquals(parseGitHubRepo("garrytan"), { owner: "garrytan", repo: "gstack" });
+  assertEquals(parseGitHubRepo("addyosmani"), { owner: "addyosmani", repo: "agent-skills" });
+  assertEquals(parseGitHubRepo("mattpocock"), { owner: "mattpocock", repo: "skills" });
   assertEquals(parseGitHubRepo("invalid-repo"), null);
   assertEquals(parseGitHubRepo(""), null);
   assertEquals(parseGitHubRepo("https://gitlab.com/owner/repo"), null);

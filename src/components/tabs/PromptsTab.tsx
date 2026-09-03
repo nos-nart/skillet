@@ -1,4 +1,5 @@
 import React, { useState, useDeferredValue } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { TerminalIcon,
   MagnifyingGlassIcon,
   CopyIcon,
@@ -9,6 +10,120 @@ import { Skill } from "../../types/skills.ts";
 import { Badge } from "../ui/badge.tsx";
 import { Input } from "../ui/input.tsx";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card.tsx";
+import { colors, iconSizes } from "../../tokens.stylex.ts";
+
+const styles = stylex.create({
+  main: {
+    width: "100%",
+    height: "100%",
+    padding: 32,
+    backgroundColor: colors.bgPrimary,
+    overflowY: "auto",
+  },
+  container: {
+    maxWidth: 1152,
+    marginLeft: "auto",
+    marginRight: "auto",
+    display: "flex",
+    flexDirection: "column",
+    gap: 24,
+  },
+  header: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 16,
+    paddingBottom: 20,
+    borderBottom: `1px solid ${colors.borderDefault}`,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: colors.textPrimary,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  },
+  desc: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  searchWrapper: {
+    position: "relative" as const,
+    width: "100%",
+  },
+  searchIcon: {
+    position: "absolute" as const,
+    left: 12,
+    top: 10,
+    pointerEvents: "none" as const,
+    color: colors.textMuted,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 16,
+  },
+  empty: {
+    padding: 48,
+    textAlign: "center",
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  triggerBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    fontFamily: "monospace",
+    fontSize: 12,
+    color: colors.primaryHover,
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.primaryBorder,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingTop: 4,
+    paddingBottom: 4,
+    borderRadius: 8,
+    transitionProperty: "background-color",
+    transitionDuration: "150ms",
+    cursor: "pointer",
+    ":active": {
+      transform: "scale(0.95)",
+    },
+  },
+  cardHeader: {
+    padding: 16,
+    paddingBottom: 8,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  cardTop: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  cardContent: {
+    padding: 16,
+    paddingTop: 8,
+    borderTop: `1px solid ${colors.borderSubtle}`,
+    marginTop: 8,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  toolCount: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    fontFamily: "monospace",
+  },
+});
 
 interface PromptsTabProps {
   skills: Skill[];
@@ -22,9 +137,7 @@ export function PromptsTab({ skills }: PromptsTabProps) {
   const copyToClipboard = (trigger: string) => {
     navigator.clipboard.writeText(trigger);
     setCopiedTrigger(trigger);
-    setTimeout(() => {
-      setCopiedTrigger((prev) => (prev === trigger ? null : prev));
-    }, 2000);
+    setTimeout(() => { setCopiedTrigger((prev) => (prev === trigger ? null : prev)); }, 2000);
   };
 
   const filtered = skills.filter((s) => {
@@ -35,104 +148,75 @@ export function PromptsTab({ skills }: PromptsTabProps) {
     const desc = (s.metadata?.description || "").toLowerCase();
     const tools = (s.metadata?.tools || []).join(" ").toLowerCase();
     const agent = (s.agent || "").toLowerCase();
-    return (
-      trigger.includes(q) ||
-      name.includes(q) ||
-      desc.includes(q) ||
-      tools.includes(q) ||
-      agent.includes(q)
-    );
+    return trigger.includes(q) || name.includes(q) || desc.includes(q) || tools.includes(q) || agent.includes(q);
   });
 
   return (
-    <main className="size-full p-8 bg-white dark:bg-zinc-950 overflow-y-auto animate-view-in">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header and Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800/80 pb-5">
-          <div>
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
-              <TerminalIcon weight="light" className="size-6 text-primary" />
-              Prompt & Slash Command Catalog
-            </h2>
-            <p className="text-sm text-zinc-500 mt-1">
-              Browse, search, and copy triggers across all your installed skills.
-            </p>
-          </div>
-
-          <div className="relative w-full sm:w-80">
-            <MagnifyingGlassIcon
-              weight="light"
-              className="size-4 text-zinc-400 dark:text-zinc-500 absolute left-3 top-2.5 pointer-events-none"
-            />
-            <Input
-              type="text"
-              placeholder="Filter triggers, tools, agents..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 text-xs h-8.5 bg-zinc-50 dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 transition-colors"
-            />
+    <main {...stylex.props(styles.main)}>
+      <div {...stylex.props(styles.container)}>
+        <div {...stylex.props(styles.header)}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <div>
+              <h2 {...stylex.props(styles.title)}>
+                <TerminalIcon weight="light" style={{ ...iconSizes.xl, color: colors.primary }} />
+                Prompt & Slash Command Catalog
+              </h2>
+              <p {...stylex.props(styles.desc)}>Browse, search, and copy triggers across all your installed skills.</p>
+            </div>
+            <div {...stylex.props(styles.searchWrapper)}>
+              <MagnifyingGlassIcon weight="light" {...stylex.props(styles.searchIcon)} style={iconSizes.md} />
+              <Input
+                type="text"
+                placeholder="Filter triggers, tools, agents..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ paddingLeft: 36, height: 34, width: "100%", backgroundColor: colors.bgSecondary, borderColor: colors.borderDefault }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Responsive Grid */}
         {filtered.length === 0 ? (
-          <div className="p-12 text-center text-zinc-400 dark:text-zinc-500 text-xs">
+          <div {...stylex.props(styles.empty)}>
             {skills.length === 0 ? "No skills or prompts detected yet." : "No prompts matching your search."}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div {...stylex.props(styles.grid)}>
             {filtered.map((skill) => {
               const trigger = skill.metadata.trigger || `/${skill.slug}`;
               const isCopied = copiedTrigger === trigger;
-
               return (
-                <Card
-                  key={skill.id}
-                  className="bg-zinc-50/80 dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-zinc-100/90 dark:hover:bg-zinc-900/70 hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-150 ease-out flex flex-col justify-between group"
-                >
-                  <CardHeader className="p-4 pb-2 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
+                <Card key={skill.id}>
+                  <CardHeader {...stylex.props(styles.cardHeader)}>
+                    <div {...stylex.props(styles.cardTop)}>
                       <button
                         onClick={() => copyToClipboard(trigger)}
                         title="Click to copy trigger"
-                        className="inline-flex items-center gap-1.5 font-mono text-xs text-primary-hover dark:text-primary-light bg-primary-soft hover:bg-primary-border border border-primary-border px-2.5 py-1 rounded-lg transition-all duration-150 active:scale-95 cursor-pointer"
+                        {...stylex.props(styles.triggerBtn)}
                       >
-                        <span className="font-semibold">{trigger}</span>
+                        <span style={{ fontWeight: 600 }}>{trigger}</span>
                         {isCopied ? (
-                          <CheckIcon weight="bold" className="size-3.5 text-primary animate-in zoom-in-75 duration-150" />
+                          <CheckIcon weight="bold" style={{ ...iconSizes.sm, color: colors.success }} />
                         ) : (
-                          <CopyIcon weight="light" className="size-3.5 text-primary/80 opacity-60 group-hover:opacity-100 transition-opacity" />
+                          <CopyIcon weight="light" style={{ ...iconSizes.sm, opacity: 0.6 }} />
                         )}
                       </button>
-
-                      <Badge variant="secondary" className="capitalize text-xs rounded-lg">
-                        {skill.agent}
-                      </Badge>
+                      <Badge variant="secondary">{skill.agent}</Badge>
                     </div>
-
-                    <CardTitle className="text-sm font-semibold text-zinc-900 dark:text-zinc-200 truncate">
-                      {skill.name}
-                    </CardTitle>
-
-                    <CardDescription className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                      {skill.metadata.description || "No description provided."}
-                    </CardDescription>
+                    <CardTitle>{skill.name}</CardTitle>
+                    <CardDescription>{skill.metadata.description || "No description provided."}</CardDescription>
                   </CardHeader>
-
-                  <CardContent className="p-4 pt-2 border-t border-zinc-200 dark:border-zinc-800/40 mt-2 space-y-2">
-                    <div className="flex items-center justify-between text-sm text-zinc-500">
-                      <div className="flex items-center gap-1.5 truncate max-w-[180px]">
-                        <PackageIcon weight="light" className="size-3.5 shrink-0" />
-                        <span className="truncate font-mono">{skill.packageName}</span>
-                      </div>
-
-                      {skill.metadata.tools && skill.metadata.tools.length > 0 && (
-                        <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-mono">
-                          <WrenchIcon weight="light" className="size-3.5 text-zinc-400 dark:text-zinc-500" />
-                          <span>{skill.metadata.tools.length} tool{skill.metadata.tools.length > 1 ? "s" : ""}</span>
-                        </div>
-                      )}
+                  <CardContent {...stylex.props(styles.cardContent)}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
+                      <PackageIcon weight="light" style={{ ...iconSizes.sm, flexShrink: 0 }} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace" }}>{skill.packageName}</span>
                     </div>
+                    {skill.metadata.tools && skill.metadata.tools.length > 0 && (
+                      <div {...stylex.props(styles.toolCount)}>
+                        <WrenchIcon weight="light" style={{ ...iconSizes.sm, color: colors.textMuted }} />
+                        <span>{skill.metadata.tools.length} tool{skill.metadata.tools.length > 1 ? "s" : ""}</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );

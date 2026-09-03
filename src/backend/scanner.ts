@@ -95,7 +95,7 @@ export async function scanDirectoryForSkills(
             skills.push({
               id: nextRelative,
               name: metadata.name,
-              slug: slug,
+              slug,
               packageName,
               scope,
               agent,

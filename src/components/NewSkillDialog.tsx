@@ -1,8 +1,126 @@
 import React, { useState } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { PlusIcon, XIcon, GitBranchIcon, FolderIcon, FileTextIcon } from "@phosphor-icons/react";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/card.tsx";
+import { dialogStyles } from "./ui/dialogStyles.ts";
+import { colors, iconSizes } from "../tokens.stylex.ts";
+
+const styles = stylex.create({
+  header: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 12,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: colors.textPrimary,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  desc: {
+    fontSize: 12,
+    marginTop: 4,
+    color: colors.textSecondary,
+  },
+  content: {
+    padding: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+    fontSize: 12,
+  },
+  error: {
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: colors.destructiveSoft,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.destructiveBorder,
+    color: colors.destructiveHover,
+    fontSize: 12,
+  },
+  toggleRow: {
+    display: "flex",
+    backgroundColor: colors.bgSecondary,
+    padding: 4,
+    borderRadius: 8,
+  },
+  toggleBtn: {
+    flex: 1,
+    textAlign: "center",
+    paddingTop: 6,
+    paddingBottom: 6,
+    borderRadius: 6,
+    fontWeight: 500,
+    transitionProperty: "color, background-color",
+    transitionDuration: "150ms",
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderStyle: "none",
+    cursor: "pointer",
+    fontSize: 12,
+  },
+  toggleActive: {
+    backgroundColor: colors.bgPrimary,
+    color: colors.textPrimary,
+  },
+  toggleInactive: {
+    color: colors.textMuted,
+    ":hover": {
+      color: colors.textSecondary,
+    },
+  },
+  fieldGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+  label: {
+    color: colors.textSecondary,
+    fontWeight: 600,
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
+  hint: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  textarea: {
+    width: "100%",
+    resize: "none",
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: colors.bgPrimary,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    color: colors.textPrimary,
+    fontSize: 12,
+    fontFamily: "monospace",
+    outline: "none",
+    transitionProperty: "border-color, box-shadow",
+    transitionDuration: "150ms",
+    ":focus": {
+      borderColor: colors.primaryBorder,
+      boxShadow: `0 0 0 2px color-mix(in srgb, ${colors.primary} 20%, transparent)`,
+    },
+  },
+  footer: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 8,
+    paddingTop: 10,
+    borderTop: `1px solid ${colors.borderDefault}`,
+    backgroundColor: colors.bgSecondary,
+  },
+});
 
 interface NewSkillDialogProps {
   isOpen: boolean;
@@ -50,60 +168,51 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
     }
   };
 
-  const getToggleClass = (btnMode: "install" | "create") => 
-    `flex-1 text-center py-1.5 rounded-md font-medium transition-colors ${
-      mode === btnMode 
-        ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm" 
-        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-    }`;
-
   const isSubmitDisabled = loading || (isInstall ? !source.trim() : (!skillName.trim() || !markdownContent.trim()));
   const submitText = loading 
     ? (isInstall ? "Installing..." : "Creating...") 
     : (isInstall ? "Install Skill" : "Create Skill");
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-      <Card className="w-full max-w-lg bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden animate-in zoom-in-95 duration-150">
+    <div {...stylex.props(dialogStyles.overlay)}>
+      <Card {...stylex.props(dialogStyles.dialog)}>
         <form onSubmit={handleSubmit}>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardHeader {...stylex.props(styles.header)}>
             <div>
-              <CardTitle className="text-sm font-bold flex items-center gap-2 text-zinc-900 dark:text-zinc-100">
-                <PlusIcon weight="light" className="size-4 text-primary" />
+              <CardTitle {...stylex.props(styles.title)}>
+                <PlusIcon weight="light" style={{ ...iconSizes.md, color: colors.primary }} />
                 Add New Skill
               </CardTitle>
-              <CardDescription className="text-xs mt-1 text-zinc-600 dark:text-zinc-400">
+              <CardDescription {...stylex.props(styles.desc)}>
                 {isInstall ? "Install a custom skill from GitHub or a local directory." : "Create a new skill manually by pasting Markdown."}
               </CardDescription>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              {...stylex.props(dialogStyles.closeBtn)}
             >
-              <XIcon weight="light" className="size-4" />
+              <XIcon weight="light" style={iconSizes.md} />
             </button>
           </CardHeader>
 
-          <CardContent className="space-y-4 text-xs">
+          <CardContent {...stylex.props(styles.content)}>
             {error && (
-              <div className="p-2.5 rounded-lg bg-destructive-soft border border-destructive-border text-destructive-hover dark:text-destructive-light text-xs">
-                {error}
-              </div>
+              <div {...stylex.props(styles.error)}>{error}</div>
             )}
             
-            <div className="flex bg-zinc-100 dark:bg-zinc-950 p-1 rounded-lg">
+            <div {...stylex.props(styles.toggleRow)}>
               <button 
                 type="button" 
                 onClick={() => { setMode("install"); setError(null); }}
-                className={getToggleClass("install")}
+                {...stylex.props(styles.toggleBtn, mode === "install" ? styles.toggleActive : styles.toggleInactive)}
               >
                 Import from GitHub
               </button>
               <button 
                 type="button" 
                 onClick={() => { setMode("create"); setError(null); }}
-                className={getToggleClass("create")}
+                {...stylex.props(styles.toggleBtn, mode === "create" ? styles.toggleActive : styles.toggleInactive)}
               >
                 Create Manually
               </button>
@@ -111,41 +220,39 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
 
             {isInstall ? (
               <>
-                <div className="space-y-1.5">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
-                    <GitBranchIcon weight="light" className="size-3.5 text-primary" />
+                <div {...stylex.props(styles.fieldGroup)}>
+                  <label {...stylex.props(styles.label)}>
+                    <GitBranchIcon weight="light" style={{ ...iconSizes.sm, color: colors.primary }} />
                     GitHub Repository, Gist, or Local Path
                   </label>
                   <Input
-                    placeholder="e.g. vercel-labs/skills, a Gist URL, or /path/to/skill"
+                    placeholder="e.g. anthropics/skills, vercel-labs/skills, a Gist URL, or /path/to/skill"
                     value={source}
                     onChange={(e) => setSource(e.target.value)}
                     required
-                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
                   />
-                  <p className="text-xs text-zinc-500">
+                  <p {...stylex.props(styles.hint)}>
                     Supports GitHub shorthand (`owner/repo`), Gist URLs, or absolute local paths.
                   </p>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
-                    <FolderIcon weight="light" className="size-3.5 text-primary" />
+                <div {...stylex.props(styles.fieldGroup)}>
+                  <label {...stylex.props(styles.label)}>
+                    <FolderIcon weight="light" style={{ ...iconSizes.sm, color: colors.primary }} />
                     Custom Skill Name (Optional)
                   </label>
                   <Input
                     placeholder="Leave blank to use repository name"
                     value={skillName}
                     onChange={(e) => setSkillName(e.target.value)}
-                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
                   />
                 </div>
               </>
             ) : (
               <>
-                <div className="space-y-1.5">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
-                    <FolderIcon weight="light" className="size-3.5 text-primary" />
+                <div {...stylex.props(styles.fieldGroup)}>
+                  <label {...stylex.props(styles.label)}>
+                    <FolderIcon weight="light" style={{ ...iconSizes.sm, color: colors.primary }} />
                     Skill Name
                   </label>
                   <Input
@@ -153,13 +260,12 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
                     value={skillName}
                     onChange={(e) => setSkillName(e.target.value)}
                     required
-                    className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
                   />
                 </div>
                 
-                <div className="space-y-1.5">
-                  <label className="text-zinc-700 dark:text-zinc-300 font-semibold flex items-center gap-1.5">
-                    <FileTextIcon weight="light" className="size-3.5 text-primary" />
+                <div {...stylex.props(styles.fieldGroup)}>
+                  <label {...stylex.props(styles.label)}>
+                    <FileTextIcon weight="light" style={{ ...iconSizes.sm, color: colors.primary }} />
                     SKILL.md Content
                   </label>
                   <textarea
@@ -168,29 +274,29 @@ export function NewSkillDialog({ isOpen, onClose, onInstall, onCreate }: NewSkil
                     onChange={(e) => setMarkdownContent(e.target.value)}
                     required
                     rows={8}
-                    className="w-full resize-none p-3 rounded-md bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all text-xs font-mono"
+                    {...stylex.props(styles.textarea)}
                   />
                 </div>
               </>
             )}
           </CardContent>
 
-          <CardFooter className="flex justify-end gap-2 pt-2.5 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-950/60">
+          <CardFooter {...stylex.props(styles.footer)}>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={onClose}
               disabled={loading}
-              className="text-xs"
+              style={{ fontSize: 12 }}
             >
               Cancel
             </Button>
             <Button 
               type="submit" 
               size="sm" 
-              disabled={isSubmitDisabled} 
-              className="text-xs"
+              disabled={isSubmitDisabled}
+              style={{ fontSize: 12 }}
             >
               {submitText}
             </Button>

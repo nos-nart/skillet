@@ -1,57 +1,328 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { parseMarkdown, type MarkdownDocument as MarkdownDocType } from "comark";
 import shiki from "comark/plugins/shiki";
 import { MarkdownDocument } from "@comark/react";
 import { CopyIcon, CheckIcon } from "@phosphor-icons/react";
-import { cn } from "../lib/utils.ts";
+import * as stylex from "@stylexjs/stylex";
+import { colors, iconSizes } from "../tokens.stylex.ts";
 
 const shikiPlugin = shiki();
+const docCache = new Map<string, MarkdownDocType>();
 
 interface MarkdownViewerProps {
   content: string;
 }
 
+const s = stylex.create({
+  codeBlock: {
+    margin: "12px 0",
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgSecondary,
+  },
+  codeHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingLeft: 14,
+    paddingRight: 14,
+    paddingTop: 5,
+    paddingBottom: 5,
+    backgroundColor: colors.bgTertiary,
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: colors.borderDefault,
+    fontSize: 10.5,
+    fontFamily: "monospace",
+    fontWeight: 500,
+    color: colors.textSecondary,
+  },
+  codeLang: {
+    letterSpacing: "0.05em",
+    fontWeight: 600,
+    textTransform: "uppercase" as const,
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  copyBtn: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 10.5,
+    color: colors.textMuted,
+    transitionProperty: "color",
+    transitionDuration: "150ms",
+    cursor: "pointer",
+    paddingLeft: 8,
+    paddingRight: 8,
+    paddingTop: 3,
+    paddingBottom: 3,
+    borderRadius: 6,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderStyle: "none",
+    ":hover": {
+      color: colors.textPrimary,
+      backgroundColor: colors.bgHover,
+    },
+    ":active": {
+      transform: "scale(0.95)",
+    },
+  },
+  pre: {
+    paddingLeft: 14,
+    paddingRight: 14,
+    paddingTop: 8,
+    paddingBottom: 8,
+    overflowX: "auto",
+  },
+  preInner: {
+    fontSize: 13,
+    fontFamily: "monospace",
+    color: colors.textPrimary,
+    lineHeight: 1.6,
+    fontWeight: 400,
+    display: "block",
+    margin: 0,
+    backgroundColor: "transparent",
+  },
+  h1: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: colors.textPrimary,
+    marginTop: 24,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: colors.borderDefault,
+  },
+  h2: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: colors.textPrimary,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  h3: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: colors.textPrimary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  h4: {
+    fontSize: 12,
+    fontWeight: 500,
+    color: colors.textSecondary,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  p: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 1.65,
+    marginBottom: 14,
+  },
+  ul: {
+    listStyleType: "disc",
+    listStylePosition: "outside",
+    marginLeft: 16,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 14,
+  },
+  ol: {
+    listStyleType: "decimal",
+    listStylePosition: "outside",
+    marginLeft: 16,
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 14,
+  },
+  li: {
+    lineHeight: 1.65,
+    paddingLeft: 4,
+  },
+  blockquote: {
+    borderLeftWidth: 3,
+    borderLeftStyle: "solid",
+    borderLeftColor: colors.primary,
+    backgroundColor: "color-mix(in srgb, var(--color-orange-500) 6%, transparent)",
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    margin: "16px 0",
+    fontSize: 13,
+    lineHeight: 1.65,
+    color: colors.textSecondary,
+    borderRadius: 0,
+  },
+  tableWrapper: {
+    width: "100%",
+    overflowX: "auto",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    borderRadius: 8,
+  },
+  table: {
+    width: "100%",
+    textAlign: "left",
+    fontSize: 14,
+    color: colors.textSecondary,
+    borderCollapse: "collapse" as const,
+  },
+  thead: {
+    backgroundColor: colors.bgTertiary,
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: colors.borderDefault,
+  },
+  th: {
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    fontWeight: 600,
+    color: colors.textPrimary,
+  },
+  td: {
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: colors.borderDefault,
+    verticalAlign: "top",
+  },
+  tr: {
+    transitionProperty: "background-color",
+    transitionDuration: "150ms",
+    ":hover": {
+      backgroundColor: colors.bgHover,
+    },
+  },
+  inlineCode: {
+    fontFamily: "monospace",
+    fontSize: 13,
+    paddingLeft: 6,
+    paddingRight: 6,
+    paddingTop: 2,
+    paddingBottom: 2,
+    borderRadius: 6,
+    backgroundColor: colors.bgTertiary,
+    color: colors.primaryHover,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+  },
+  link: {
+    color: colors.primaryHover,
+    textDecoration: "underline",
+    transitionProperty: "color",
+    transitionDuration: "150ms",
+    ":hover": {
+      color: colors.primary,
+    },
+  },
+  hr: {
+    margin: "20px 0",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: colors.borderDefault,
+    borderLeftWidth: 0,
+    borderLeftStyle: "none",
+    borderRightWidth: 0,
+    borderRightStyle: "none",
+    borderBottomWidth: 0,
+    borderBottomStyle: "none",
+  },
+  strong: {
+    fontWeight: 600,
+    color: colors.textPrimary,
+  },
+  errorBox: {
+    padding: 16,
+    fontSize: 12,
+    color: colors.destructive,
+    backgroundColor: colors.destructiveSoft,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.destructiveBorder,
+  },
+  errorTitle: {
+    fontWeight: 600,
+    marginBottom: 4,
+  },
+  errorPre: {
+    fontSize: 12,
+    fontFamily: "monospace",
+    whiteSpace: "pre-wrap" as const,
+  },
+  loading: {
+    padding: 16,
+    fontSize: 14,
+    color: colors.textMuted,
+    fontStyle: "italic",
+  },
+  markdownRoot: {
+    color: colors.textPrimary,
+    userSelect: "text" as const,
+  },
+});
+
 function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { language?: string }) {
   const [copied, setCopied] = useState(false);
   const preRef = useRef<HTMLPreElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const { className, style, language, ...rest } = props;
 
-  const handleCopy = () => {
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  const handleCopy = useCallback(() => {
     if (preRef.current) {
-      const text = preRef.current.innerText || "";
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(preRef.current.innerText || "");
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 2000);
     }
-  };
+  }, []);
 
   return (
-    <div className="code-block my-5 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800/90 bg-zinc-100/80 dark:bg-zinc-950">
-      <div className="flex items-center justify-between px-4.5 py-2 bg-zinc-200/60 dark:bg-zinc-900/90 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-mono font-medium text-zinc-600 dark:text-zinc-400">
-        <span className="tracking-wider font-semibold uppercase text-[10.5px] text-zinc-500 dark:text-zinc-400">{language || "code"}</span>
+    <div {...stylex.props(s.codeBlock)}>
+      <div {...stylex.props(s.codeHeader)}>
+        <span {...stylex.props(s.codeLang)}>{language || "code"}</span>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-150 active:scale-95 cursor-pointer px-2.5 py-1 rounded-md hover:bg-zinc-300/50 dark:hover:bg-zinc-800"
+          {...stylex.props(s.copyBtn)}
           title="Copy code"
         >
           {copied ? (
             <>
-              <CheckIcon weight="bold" className="size-3.5 text-success animate-in zoom-in-75 duration-150" />
-              <span className="text-success-hover dark:text-success-light font-sans font-medium">Copied!</span>
+              <CheckIcon weight="bold" style={{ ...iconSizes.sm, color: colors.success }} />
+              <span style={{ color: colors.successHover, fontWeight: 500 }}>Copied!</span>
             </>
           ) : (
             <>
-              <CopyIcon weight="light" className="size-3.5" />
-              <span className="font-sans font-medium">Copy</span>
+              <CopyIcon weight="light" style={iconSizes.sm} />
+              <span style={{ fontWeight: 500 }}>Copy</span>
             </>
           )}
         </button>
       </div>
-      <div className="code-block-inner p-5 overflow-x-auto">
+      <div className="code-block-inner" style={{ overflowX: "auto" }}>
         <pre
           ref={preRef}
-          className={cn("text-[12px] font-mono text-zinc-900 dark:text-zinc-100 leading-[1.7] font-normal block", className)}
+          className={className}
           style={style}
           {...rest}
         />
@@ -62,104 +333,88 @@ function CodeBlockWrapper(props: React.HTMLAttributes<HTMLPreElement> & { langua
 
 const customComponents = {
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h1
-      className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-6 mb-3 pb-2 border-b border-zinc-200 dark:border-zinc-800"
-      {...props}
-    />
+    <h1 {...stylex.props(s.h1)} {...props} />
   ),
   h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h2
-      className="text-base font-bold text-zinc-900 dark:text-zinc-100 mt-5 mb-2.5"
-      {...props}
-    />
+    <h2 {...stylex.props(s.h2)} {...props} />
   ),
   h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h3
-      className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-4 mb-2"
-      {...props}
-    />
+    <h3 {...stylex.props(s.h3)} {...props} />
   ),
   h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h4
-      className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-3 mb-1.5"
-      {...props}
-    />
+    <h4 {...stylex.props(s.h4)} {...props} />
   ),
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
-    <p
-      className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed mb-3.5"
-      {...props}
-    />
+    <p {...stylex.props(s.p)} {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul
-      className="list-disc list-outside ml-4 text-sm text-zinc-700 dark:text-zinc-300 space-y-1.5 mb-3.5"
-      {...props}
-    />
+    <ul {...stylex.props(s.ul)} {...props} />
   ),
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
-    <ol
-      className="list-decimal list-outside ml-4 text-sm text-zinc-700 dark:text-zinc-300 space-y-1.5 mb-3.5"
-      {...props}
-    />
+    <ol {...stylex.props(s.ol)} {...props} />
   ),
   li: (props: React.HTMLAttributes<HTMLLIElement>) => (
-    <li className="leading-relaxed pl-1" {...props} />
+    <li {...stylex.props(s.li)} {...props} />
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
-    <blockquote
-      className="border-l-2 border-primary/80 bg-primary/5 dark:bg-primary-soft pl-4 py-2.5 my-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 rounded-lg"
-      {...props}
-    />
+    <blockquote {...stylex.props(s.blockquote)} {...props} />
   ),
-  
   table: (props: React.HTMLAttributes<HTMLTableElement>) => (
-    <div className="w-full overflow-x-auto mb-5 border border-zinc-200 dark:border-zinc-800/80 rounded-lg">
-      <table className="w-full text-left text-sm text-zinc-700 dark:text-zinc-300 border-collapse" {...props} />
+    <div {...stylex.props(s.tableWrapper)}>
+      <table {...stylex.props(s.table)} {...props} />
     </div>
   ),
   thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => (
-    <thead className="bg-zinc-100/50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800/80" {...props} />
+    <thead {...stylex.props(s.thead)} {...props} />
   ),
   th: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
-    <th className="px-4 py-2.5 font-semibold text-zinc-900 dark:text-zinc-100" {...props} />
+    <th {...stylex.props(s.th)} {...props} />
   ),
   td: (props: React.HTMLAttributes<HTMLTableCellElement>) => (
-    <td className="px-4 py-2.5 border-t border-zinc-200 dark:border-zinc-800/80 align-top" {...props} />
+    <td {...stylex.props(s.td)} {...props} />
   ),
   tr: (props: React.HTMLAttributes<HTMLTableRowElement>) => (
-    <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors" {...props} />
-  ),pre: CodeBlockWrapper,
+    <tr {...stylex.props(s.tr)} {...props} />
+  ),
+  pre: CodeBlockWrapper,
   code: (props: React.HTMLAttributes<HTMLElement>) => {
     return (
-      <code
-        className="font-mono text-xs px-1.5 py-0.5 rounded-md bg-zinc-200/80 dark:bg-zinc-800/90 text-primary-hover dark:text-orange-300 border border-zinc-300 dark:border-zinc-700/50"
-        {...props}
-      />
+      <code {...stylex.props(s.inlineCode)} {...props} />
     );
   },
   a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
     <a
       target="_blank"
       rel="noreferrer"
-      className="text-primary-hover dark:text-primary-light underline hover:text-primary transition-colors"
+      {...stylex.props(s.link)}
       {...props}
     />
   ),
-  hr: () => <hr className="my-5 border-zinc-200 dark:border-zinc-800" />,
+  hr: () => <hr {...stylex.props(s.hr)} />,
   strong: (props: React.HTMLAttributes<HTMLElement>) => (
-    <strong className="font-semibold text-zinc-900 dark:text-zinc-100" {...props} />
+    <strong {...stylex.props(s.strong)} {...props} />
   ),
 };
 
 export function MarkdownViewer({ content }: MarkdownViewerProps) {
-  const [doc, setDoc] = useState<MarkdownDocType | null>(null);
+  const [doc, setDoc] = useState<MarkdownDocType | null>(() => {
+    if (!content) return null;
+    return docCache.get(content) || null;
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
     if (!content || !content.trim()) {
       setDoc(null);
+      setError(null);
+      return;
+    }
+
+    const cached = docCache.get(content);
+    if (cached) {
+      setDoc(cached);
       setError(null);
       return;
     }
@@ -167,6 +422,7 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
     parseMarkdown(content, { plugins: [shikiPlugin] })
       .then((parsed) => {
         if (!cancelled) {
+          docCache.set(content, parsed);
           setDoc(parsed);
           setError(null);
         }
@@ -184,23 +440,23 @@ export function MarkdownViewer({ content }: MarkdownViewerProps) {
 
   if (error) {
     return (
-      <div className="text-xs text-destructive p-4 bg-destructive-soft rounded-lg border border-destructive-border">
-        <p className="font-semibold mb-1">Markdown Render Error:</p>
-        <pre className="text-xs font-mono whitespace-pre-wrap">{content}</pre>
+      <div {...stylex.props(s.errorBox)}>
+        <p {...stylex.props(s.errorTitle)}>Markdown Render Error:</p>
+        <pre {...stylex.props(s.errorPre)}>{content}</pre>
       </div>
     );
   }
 
   if (!doc) {
     return (
-      <div className="p-4 text-sm text-zinc-500 italic">
+      <div {...stylex.props(s.loading)}>
         Loading documentation...
       </div>
     );
   }
 
   return (
-    <div className="markdown-content text-zinc-800 dark:text-zinc-200 select-text">
+    <div {...stylex.props(s.markdownRoot)}>
       <MarkdownDocument value={doc} components={customComponents} />
     </div>
   );

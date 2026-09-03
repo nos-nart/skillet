@@ -1,28 +1,41 @@
-import * as React from "react";
-import * as SeparatorPrimitive from "@radix-ui/react-separator";
-import { cn } from "../../lib/utils.ts";
+import React from "react";
+import * as stylex from "@stylexjs/stylex";
+import { colors } from "../../tokens.stylex.ts";
 
-const Separator = React.forwardRef<
-  React.ElementRef<typeof SeparatorPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>
->(
-  (
-    { className, orientation = "horizontal", decorative = true, ...props },
-    ref
-  ) => (
-    <SeparatorPrimitive.Root
-      ref={ref}
-      decorative={decorative}
-      orientation={orientation}
-      className={cn(
-        "shrink-0 bg-zinc-200 dark:bg-zinc-800",
-        orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
-        className
-      )}
-      {...props}
+const styles = stylex.create({
+  horizontal: {
+    height: 1,
+    width: "100%",
+    flexShrink: 0,
+    backgroundColor: colors.borderDefault,
+    borderWidth: 0,
+    borderStyle: "none",
+    margin: 0,
+    padding: 0,
+  },
+  vertical: {
+    width: 1,
+    height: "100%",
+    flexShrink: 0,
+    backgroundColor: colors.borderDefault,
+    borderWidth: 0,
+    borderStyle: "none",
+    margin: 0,
+    padding: 0,
+  },
+});
+
+interface SeparatorProps {
+  orientation?: "horizontal" | "vertical";
+  decorative?: boolean;
+}
+
+export function Separator({ orientation = "horizontal", decorative = true }: SeparatorProps) {
+  return (
+    <div
+      role={decorative ? "none" : "separator"}
+      aria-orientation={orientation}
+      {...stylex.props(orientation === "horizontal" ? styles.horizontal : styles.vertical)}
     />
-  )
-);
-Separator.displayName = SeparatorPrimitive.Root.displayName;
-
-export { Separator };
+  );
+}

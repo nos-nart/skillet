@@ -29,7 +29,7 @@ Skillet automatically detects your installed agents and routes skills to their s
 
 ## Getting Started
 
-Skillet is built entirely on the modern [Deno](https://deno.com) stack, using React 19 and Tailwind CSS v4.
+Skillet is built entirely on the modern [Deno](https://deno.com) stack, using React 19 and [StyleX](https://stylexjs.com) with OKLCH design tokens.
 
 ### Prerequisites
 - [Deno](https://deno.land/) installed on your machine.
@@ -55,6 +55,6 @@ deno task desktop:app
 
 - **Runtime & Desktop**: Deno & `deno desktop`
 - **Frontend**: React 19 (via Vite)
-- **Styling**: Tailwind CSS v4
-- **Components**: Radix UI & Phosphor Icons
+- **Styling**: StyleX (`@stylexjs/stylex`) with OKLCH color palette
+- **Icons**: Phosphor Icons (`@phosphor-icons/react`)
 - **Markdown Processing**: Comark & Shiki

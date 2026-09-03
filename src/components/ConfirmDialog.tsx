@@ -1,6 +1,65 @@
 import React from "react";
+import * as stylex from "@stylexjs/stylex";
 import { WarningIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import { Button } from "./ui/button.tsx";
+import { dialogStyles } from "./ui/dialogStyles.ts";
+import { colors, iconSizes } from "../tokens.stylex.ts";
+
+const styles = stylex.create({
+  body: {
+    padding: 20,
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+  topRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  topLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  },
+  iconWrap: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  iconDestructive: {
+    backgroundColor: colors.destructiveSoft,
+    color: colors.destructiveHover,
+  },
+  iconDefault: {
+    backgroundColor: colors.primarySoft,
+    color: colors.primaryHover,
+  },
+  dialogTitle: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: colors.textPrimary,
+  },
+  desc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 1.6,
+    paddingLeft: 40,
+  },
+  footer: {
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingTop: 14,
+    paddingBottom: 14,
+    backgroundColor: colors.bgSecondary,
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: colors.borderDefault,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
+});
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -26,41 +85,41 @@ export function ConfirmDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
-        <div className="p-5 space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${variant === "destructive" ? "bg-destructive-soft text-destructive-hover dark:text-destructive-light" : "bg-primary-soft text-primary-hover dark:text-primary-light"}`}>
+    <div {...stylex.props(dialogStyles.overlay)}>
+      <div {...stylex.props(dialogStyles.dialog)}>
+        <div {...stylex.props(styles.body)}>
+          <div {...stylex.props(styles.topRow)}>
+            <div {...stylex.props(styles.topLeft)}>
+              <div {...stylex.props(styles.iconWrap, variant === "destructive" ? styles.iconDestructive : styles.iconDefault)}>
                 {variant === "destructive" ? (
-                  <TrashIcon weight="light" className="size-5" />
+                  <TrashIcon weight="light" style={iconSizes.lg} />
                 ) : (
-                  <WarningIcon weight="light" className="size-5" />
+                  <WarningIcon weight="light" style={iconSizes.lg} />
                 )}
               </div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
+              <h3 {...stylex.props(styles.dialogTitle)}>{title}</h3>
             </div>
             <button
               onClick={onCancel}
-              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+              {...stylex.props(dialogStyles.closeBtn)}
             >
-              <XIcon weight="light" className="size-4" />
+              <XIcon weight="light" style={iconSizes.md} />
             </button>
           </div>
 
-          <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed pl-10">
+          <p {...stylex.props(styles.desc)}>
             {description}
           </p>
         </div>
 
-        <div className="px-5 py-3.5 bg-zinc-50 dark:bg-zinc-950/60 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center justify-end gap-2">
+        <div {...stylex.props(styles.footer)}>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={onCancel}
             disabled={isLoading}
-            className="text-xs"
+            style={{ fontSize: 12 }}
           >
             Cancel
           </Button>
@@ -70,9 +129,9 @@ export function ConfirmDialog({
             size="sm"
             onClick={onConfirm}
             disabled={isLoading}
-            className="text-xs gap-1.5"
+            style={{ fontSize: 12, gap: 6 }}
           >
-            {variant === "destructive" && <TrashIcon weight="light" className="size-3.5" />}
+            {variant === "destructive" && <TrashIcon weight="light" style={iconSizes.sm} />}
             <span>{isLoading ? "Processing..." : confirmLabel}</span>
           </Button>
         </div>

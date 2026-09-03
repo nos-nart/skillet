@@ -3,3 +3,6 @@ dist/
 .vite/
 docs
 .superpowers
+*.app/
+.scratch/
+.DS_Store

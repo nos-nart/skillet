@@ -1,45 +1,56 @@
-import * as React from "react";
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
-import { cn } from "../../lib/utils.ts";
+import React from "react";
+import * as stylex from "@stylexjs/stylex";
 
-const ScrollArea = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
-  <ScrollAreaPrimitive.Root
-    ref={ref}
-    className={cn("relative overflow-hidden", className)}
-    {...props}
-  >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
-      {children}
-    </ScrollAreaPrimitive.Viewport>
-    <ScrollBar />
-    <ScrollAreaPrimitive.Corner />
-  </ScrollAreaPrimitive.Root>
-));
-ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName;
+const styles = stylex.create({
+  root: {
+    position: "relative" as const,
+    overflow: "hidden",
+    width: "100%",
+    height: "100%",
+  },
+  viewport: {
+    width: "100%",
+    height: "100%",
+    overflowY: "auto",
+    overflowX: "hidden",
+    borderRadius: "inherit",
+    "::-webkit-scrollbar": {
+      width: 6,
+      height: 6,
+    },
+    "::-webkit-scrollbar-track": {
+      backgroundColor: "transparent",
+    },
+    "::-webkit-scrollbar-thumb": {
+      backgroundColor: "rgba(120, 120, 120, 0.25)",
+      borderRadius: 3,
+    },
+    "::-webkit-scrollbar-thumb:hover": {
+      backgroundColor: "rgba(120, 120, 120, 0.45)",
+    },
+  },
+});
 
-const ScrollBar = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
->(({ className, orientation = "vertical", ...props }, ref) => (
-  <ScrollAreaPrimitive.ScrollAreaScrollbar
-    ref={ref}
-    orientation={orientation}
-    className={cn(
-      "flex touch-none select-none transition-colors",
-      orientation === "vertical" &&
-        "h-full w-2 border-l border-l-transparent p-[1px]",
-      orientation === "horizontal" &&
-        "h-2 flex-col border-t border-t-transparent p-[1px]",
-      className
-    )}
-    {...props}
-  >
-    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-zinc-700/60 hover:bg-zinc-600" />
-  </ScrollAreaPrimitive.ScrollAreaScrollbar>
-));
-ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;
+interface ScrollAreaProps {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+  contentStyle?: React.CSSProperties;
+}
 
-export { ScrollArea, ScrollBar };
+export function ScrollArea({ children, style, className, contentStyle }: ScrollAreaProps) {
+  const rootProps = stylex.props(styles.root);
+  return (
+    <div
+      {...rootProps}
+      className={className ? `${rootProps.className} ${className}` : rootProps.className}
+      style={{ ...rootProps.style, ...style }}
+    >
+      <div {...stylex.props(styles.viewport)}>
+        <div style={contentStyle}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}

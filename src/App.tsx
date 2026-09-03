@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useReducer, startTransition } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Sidebar, NavTab } from "./components/Sidebar.tsx";
 import { SkillList } from "./components/SkillList.tsx";
 import { SkillDetail } from "./components/SkillDetail.tsx";
@@ -17,6 +18,93 @@ import { useTheme } from "./hooks/useTheme.ts";
 import { useMediaQuery } from "./hooks/useMediaQuery.ts";
 import { api } from "./client/apiClient.ts";
 import { Skill, Workspace } from "./types/skills.ts";
+import { colors } from "./tokens.stylex.ts";
+
+const styles = stylex.create({
+  root: {
+    width: "100vw",
+    height: "100vh",
+    overflow: "hidden",
+  },
+  rootLight: {
+    backgroundColor: colors.bgSecondary,
+    color: colors.textPrimary,
+  },
+  rootDark: {
+    backgroundColor: colors.bgPrimary,
+    color: colors.textPrimary,
+  },
+  desktopRow: {
+    display: "flex",
+    flexDirection: "row",
+    width: "100vw",
+    height: "100vh",
+    overflow: "hidden",
+  },
+  panel: {
+    width: "100%",
+    height: "100%",
+  },
+  mobileNav: {
+    position: "absolute" as const,
+    top: 8,
+    right: 8,
+    zIndex: 50,
+  },
+  mobileNavLeft: {
+    position: "absolute" as const,
+    top: 8,
+    left: 8,
+    zIndex: 50,
+  },
+  mobileBtn: {
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: 4,
+    paddingBottom: 4,
+    backgroundColor: colors.bgSecondary,
+    backdropFilter: "blur(16px)",
+    borderRadius: 9999,
+    fontSize: 12,
+    fontWeight: 500,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.borderDefault,
+    cursor: "pointer",
+    transitionProperty: "transform",
+    transitionDuration: "150ms",
+    color: colors.textPrimary,
+    ":active": {
+      transform: "scale(0.95)",
+    },
+  },
+  mobileBtnDark: {
+    backgroundColor: "rgba(9,9,11,0.8)",
+  },
+  slideLeft: {
+    width: "100%",
+    height: "100%",
+    animationName: "slideInFromLeft",
+    animationDuration: "300ms",
+    animationTimingFunction: "ease-out",
+  },
+  slideRight: {
+    width: "100%",
+    height: "100%",
+    animationName: "slideInFromRight",
+    animationDuration: "300ms",
+    animationTimingFunction: "ease-out",
+    position: "relative" as const,
+  },
+  slideBottom: {
+    width: "100%",
+    height: "100%",
+    animationName: "slideInFromBottom",
+    animationDuration: "300ms",
+    animationTimingFunction: "ease-out",
+    position: "relative" as const,
+  },
+});
 
 interface AppState {
   currentTab: NavTab;
@@ -45,7 +133,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { 
         ...state, 
         currentTab: action.payload,
-        mobileView: action.payload === "skills" ? (state.selectedSkill ? "detail" : "list") : state.mobileView
+        mobileView: action.payload === "skills" ? (state.selectedSkill ? "detail" : "list") : "list"
       };
     case "SET_MOBILE_VIEW":
       return { ...state, mobileView: action.payload };
@@ -99,7 +187,7 @@ export function App() {
   const { theme, toggleTheme } = useTheme();
   const { workspaces, selectedWorkspace, setSelectedWorkspace, addWorkspace } = useWorkspaces();
   const deletedSkillIds = React.useRef<Set<string>>(new Set());
-  const isMobile = useMediaQuery("(max-width: 950px)");
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const handleSelectSkill = useCallback((s: Skill | null) => {
     startTransition(() => dispatch({ type: "SELECT_SKILL", payload: s }));
@@ -195,9 +283,9 @@ export function App() {
 
   if (isMobile) {
     return (
-      <div className={`h-screen w-screen overflow-hidden font-sans ${theme === "light" ? "bg-zinc-100 text-zinc-900" : "bg-zinc-950 text-zinc-100"}`}>
+      <div {...stylex.props(styles.root, theme === "light" ? styles.rootLight : styles.rootDark)}>
         {state.mobileView === "sidebar" && (
-          <div className="h-full w-full animate-in slide-in-from-left-4 fade-in duration-300">
+          <div {...stylex.props(styles.slideLeft)}>
             <Sidebar
               currentTab={state.currentTab}
               setCurrentTab={(t) => dispatch({ type: "SET_TAB", payload: t })}
@@ -212,9 +300,9 @@ export function App() {
           </div>
         )}
         {state.mobileView === "list" && state.currentTab === "skills" && (
-          <div className="h-full w-full animate-in slide-in-from-right-4 fade-in duration-300 relative">
-            <div className="absolute top-2 right-2 z-50">
-              <button onClick={() => dispatch({ type: "SET_MOBILE_VIEW", payload: "sidebar" })} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">Done</button>
+          <div {...stylex.props(styles.slideRight)}>
+            <div {...stylex.props(styles.mobileNav)}>
+              <button onClick={() => dispatch({ type: "SET_MOBILE_VIEW", payload: "sidebar" })} {...stylex.props(styles.mobileBtn)}>Done</button>
             </div>
             <SkillList
               skills={state.skills}
@@ -229,9 +317,9 @@ export function App() {
           </div>
         )}
         {state.mobileView === "detail" && state.currentTab === "skills" && (
-          <div className="h-full w-full animate-in slide-in-from-bottom-4 fade-in duration-300 relative">
-             <div className="absolute top-2 left-2 z-50">
-              <button onClick={() => startTransition(() => dispatch({ type: "SELECT_SKILL", payload: null }))} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">← Back</button>
+          <div {...stylex.props(styles.slideBottom)}>
+             <div {...stylex.props(styles.mobileNavLeft)}>
+              <button onClick={() => startTransition(() => dispatch({ type: "SELECT_SKILL", payload: null }))} {...stylex.props(styles.mobileBtn)}>← Back</button>
             </div>
             <SkillDetail
               skill={state.selectedSkill}
@@ -244,9 +332,9 @@ export function App() {
           </div>
         )}
         {state.currentTab !== "skills" && state.mobileView !== "sidebar" && (
-          <div className="h-full w-full animate-in slide-in-from-right-4 fade-in duration-300 relative">
-             <div className="absolute top-2 left-2 z-50">
-              <button onClick={() => dispatch({ type: "SET_MOBILE_VIEW", payload: "sidebar" })} className="px-3 py-1 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 shadow-sm active:scale-95 transition-transform text-zinc-900 dark:text-zinc-100">← Menu</button>
+          <div {...stylex.props(styles.slideRight)}>
+             <div {...stylex.props(styles.mobileNavLeft)}>
+              <button onClick={() => dispatch({ type: "SET_MOBILE_VIEW", payload: "sidebar" })} {...stylex.props(styles.mobileBtn)}>← Menu</button>
             </div>
             {state.currentTab === "discover" && <DiscoverTab installedSkills={state.skills} onInstall={handleInstallNewSkill} />}
             {state.currentTab === "agents" && <AgentsTab />}
@@ -265,9 +353,9 @@ export function App() {
   }
 
   return (
-    <div className={`h-screen w-screen flex flex-row overflow-hidden font-sans ${theme === "light" ? "bg-zinc-100 text-zinc-900" : "bg-zinc-950 text-zinc-100"}`}>
+    <div {...stylex.props(styles.root, styles.desktopRow, theme === "light" ? styles.rootLight : styles.rootDark)}>
       {state.currentTab === "skills" ? (
-        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+        <ResizablePanelGroup direction="horizontal" {...stylex.props(styles.panel)}>
           <ResizablePanel defaultSize={18} minSize={14} maxSize={26}>
             <Sidebar
               currentTab={state.currentTab}
@@ -282,7 +370,7 @@ export function App() {
             />
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
+          <ResizableHandle />
 
           <ResizablePanel defaultSize={27} minSize={20} maxSize={40}>
             <SkillList
@@ -301,6 +389,7 @@ export function App() {
 
           <ResizablePanel defaultSize={55} minSize={30}>
             <SkillDetail
+              key={state.selectedSkill?.id ?? "empty"}
               skill={state.selectedSkill}
               workspaces={workspaces}
               selectedWorkspace={selectedWorkspace}
@@ -311,7 +400,7 @@ export function App() {
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (
-        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+        <ResizablePanelGroup direction="horizontal" {...stylex.props(styles.panel)}>
           <ResizablePanel defaultSize={18} minSize={14} maxSize={26}>
             <Sidebar
               currentTab={state.currentTab}
@@ -326,7 +415,7 @@ export function App() {
             />
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
+          <ResizableHandle />
 
           <ResizablePanel defaultSize={82} minSize={40}>
             {state.currentTab === "discover" && <DiscoverTab installedSkills={state.skills} onInstall={handleInstallNewSkill} />}
