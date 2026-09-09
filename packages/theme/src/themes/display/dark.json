@@ -1,0 +1,26 @@
+{
+  "name": "dark",
+  "appearance": "dark",
+  "colors": {
+    "background": "#191A1B",
+    "foreground": "#f5f5f5",
+    "muted": "#a3a3a3",
+    "surface": "#242526",
+    "surfaceMuted": "#2d2e30",
+    "border": "#3e4042",
+    "primary": "#60a5fa",
+    "danger": "#f87171",
+    "selection": "auto",
+    "code": "#111213",
+    "codeForeground": "#f5f5f5",
+    "inlineCodeForeground": "#eb5757",
+    "blockquoteBackground": "#202122",
+    "blockquoteBorder": "#6f7377",
+    "tableHeader": "#2a2b2d",
+    "tableRowAlt": "#1f2021",
+    "windowBackground": "#191A1B"
+  },
+  "fonts": {
+    "codeFontFamily": "Menlo"
+  }
+}
