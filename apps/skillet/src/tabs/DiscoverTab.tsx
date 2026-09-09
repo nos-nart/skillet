@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SkillList } from "../SkillList";
-import { parseGitHubRepo } from "../services/github";
+import { parseGitHubRepo, type FetchFn, type FetchResponse } from "../services/github";
 import type { Skill } from "../services/skills";
 
 // Native port of the web `DiscoverTab` (`src/components/tabs/DiscoverTab.tsx`):
@@ -84,6 +84,98 @@ export function mapTreeToSkillItems(
   return [...seen.values()];
 }
 
+// GitHub API headers shared with Task 3 `services/github.ts` (`fetchLatestCommit`
+// / `fetchSkillMd` contract: UA + v3 Accept, `token` auth when provided) so the
+// Discover search gets the same token/rate-limit behavior instead of an
+// unauthenticated bare fetch.
+export function buildGitHubApiHeaders(token?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    "User-Agent": "Skillet-Desktop-App",
+    Accept: "application/vnd.github.v3+json",
+  };
+  if (token) {
+    headers["Authorization"] = `token ${token}`;
+  }
+  return headers;
+}
+
+type ApiResponse = FetchResponse & { status?: number };
+
+const defaultDiscoverFetch: FetchFn = (url, init) =>
+  globalThis.fetch(url, init) as unknown as Promise<FetchResponse>;
+
+export interface BrowseRepoOptions {
+  token?: string;
+  fetchImpl?: FetchFn;
+}
+
+export interface BrowseRepoResult {
+  repo: DiscoverRepo;
+  items: DiscoveredSkillItem[];
+}
+
+function rateLimitError(status?: number): boolean {
+  return status === 403 || status === 429;
+}
+
+// Service-routed Discover search: repo metadata → default branch → recursive
+// tree → `mapTreeToSkillItems`. Injectable `fetchImpl`/`token` (Task 3 `FetchFn`
+// contract) so tests pin headers and callers can pass an authed fetch later.
+export async function browseRepoForSkills(
+  source: string,
+  options: BrowseRepoOptions = {},
+): Promise<BrowseRepoResult> {
+  const info = parseGitHubRepo(source);
+  if (!info) {
+    throw new Error("Invalid format. Use owner/repo or a GitHub URL.");
+  }
+  const fetchImpl = options.fetchImpl ?? defaultDiscoverFetch;
+  const headers = buildGitHubApiHeaders(options.token);
+  let repoRes: ApiResponse;
+  try {
+    repoRes = (await fetchImpl(
+      `https://api.github.com/repos/${info.owner}/${info.repo}`,
+      { headers },
+    )) as ApiResponse;
+  } catch {
+    throw new Error("Failed to fetch repository");
+  }
+  if (!repoRes.ok) {
+    if (rateLimitError(repoRes.status)) {
+      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
+    }
+    throw new Error("Repository not found");
+  }
+  const repoData = (await repoRes.json()) as { default_branch?: unknown };
+  const branch = typeof repoData.default_branch === "string" ? repoData.default_branch : "main";
+  let treeRes: ApiResponse;
+  try {
+    treeRes = (await fetchImpl(
+      `https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`,
+      { headers },
+    )) as ApiResponse;
+  } catch {
+    throw new Error("Failed to fetch repository tree");
+  }
+  if (!treeRes.ok) {
+    if (rateLimitError(treeRes.status)) {
+      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
+    }
+    throw new Error("Failed to fetch repository tree");
+  }
+  const treeData = (await treeRes.json()) as { tree?: unknown };
+  const tree = Array.isArray(treeData.tree)
+    ? (treeData.tree as { type?: unknown; path?: unknown }[]).filter(
+      (e): e is { type: string; path: string } =>
+        typeof e.type === "string" && typeof e.path === "string",
+    )
+    : [];
+  const repo: DiscoverRepo = { owner: info.owner, repo: info.repo, path: info.path, branch };
+  const rows = mapTreeToSkillItems(tree, repo);
+  if (rows.length === 0) throw new Error("No skills found in this repository");
+  return { repo, items: rows };
+}
+
 // Source string the installer consumes for a discovered row
 // (`owner/repo[/path]` shorthand, same acceptance as `parseGitHubRepo`).
 export function buildInstallSource(
@@ -96,9 +188,13 @@ export function buildInstallSource(
 export function DiscoverTab({
   installedSkills,
   onInstall,
+  token,
+  fetchImpl,
 }: {
   installedSkills: Skill[];
   onInstall: (source: string) => Promise<void>;
+  token?: string;
+  fetchImpl?: FetchFn;
 }): React.JSX.Element {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -122,27 +218,9 @@ export function DiscoverTab({
     setRepo(null);
     setAvatarFailed(false);
     try {
-      const repoRes = await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}`);
-      if (!repoRes.ok) throw new Error("Repository not found");
-      const repoData = (await repoRes.json()) as { default_branch?: unknown };
-      const branch = typeof repoData.default_branch === "string" ? repoData.default_branch : "main";
-      const treeRes = await fetch(
-        `https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`,
-      );
-      if (!treeRes.ok) throw new Error("Failed to fetch repository tree");
-      const treeData = (await treeRes.json()) as { tree?: unknown };
-      const tree = Array.isArray(treeData.tree)
-        ? (treeData.tree as { type?: unknown; path?: unknown }[])
-            .filter(
-              (e): e is { type: string; path: string } =>
-                typeof e.type === "string" && typeof e.path === "string",
-            )
-        : [];
-      const found: DiscoverRepo = { owner: info.owner, repo: info.repo, path: info.path, branch };
-      const rows = mapTreeToSkillItems(tree, found);
-      if (rows.length === 0) throw new Error("No skills found in this repository");
-      setRepo(found);
-      setItems(rows);
+      const found = await browseRepoForSkills(trimmed, { token, fetchImpl });
+      setRepo(found.repo);
+      setItems(found.items);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to fetch repository");
     } finally {

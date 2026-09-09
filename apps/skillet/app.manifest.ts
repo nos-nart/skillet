@@ -32,14 +32,16 @@ const manifest = {
     ios: [],
     android: [],
   },
-  // No `signing.macos.developmentTeam`: no Apple Developer team is available
-  // for this MVP, so Release builds ad-hoc sign (`--skip-sign` packaging).
-  // `release.macos.sparkle.publicEdKey` is REQUIRED by `package-macos-app.ts`
-  // even for unsigned locals (it lands in Info.plist as SUPublicEDKey).
-  // DEV-ONLY PLACEHOLDER: generated locally for Task 7, private key discarded
-  // and never stored — MUST be replaced with the real release keypair before
-  // any signed/notarized distribution (nobody can publish valid appcasts for
-  // this key, so rotation is enforced, not just advised).
+  // RELEASE CHECKLIST — READ BEFORE ANY SIGNED/NOTARIZED DISTRIBUTION:
+  // 1. ROTATE `release.macos.sparkle.publicEdKey` (DEV-ONLY PLACEHOLDER below:
+  //    generated locally for Task 7, private key discarded and never stored —
+  //    nobody can publish valid appcasts for it, so updates fail closed).
+  // 2. SET `signing.macos.developmentTeam` (currently absent → ad-hoc sign only).
+  // 3. GREP for "DEV-ONLY PLACEHOLDER" and confirm zero hits before release.
+  // `verify-app` does NOT fail on the placeholder (unsigned local packaging
+  // requires a key in Info.plist as SUPublicEDKey); this checklist is the guard.
+  // Chosen over a verify-time hard-fail so `bun run skillet verify macos` and
+  // `--skip-sign` local packaging stay green without a real team/key.
   release: {
     macos: {
       sparkle: {

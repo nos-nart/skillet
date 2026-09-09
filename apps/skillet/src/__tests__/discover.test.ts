@@ -1,4 +1,11 @@
-import { buildInstallSource, mapTreeToSkillItems, POPULAR_REPOS } from "../tabs/DiscoverTab";
+import {
+  browseRepoForSkills,
+  buildGitHubApiHeaders,
+  buildInstallSource,
+  mapTreeToSkillItems,
+  POPULAR_REPOS,
+} from "../tabs/DiscoverTab";
+import type { FetchFn } from "../services/github";
 
 test("popular repos seed the discover list", () => {
   expect(POPULAR_REPOS.map((r) => r.fullName)).toContain("anthropics/skills");
@@ -27,4 +34,59 @@ test("builds an install source from a discovered row", () => {
   expect(buildInstallSource({ owner: "anthropics", repo: "skills" }, "skills/eli5")).toBe(
     "anthropics/skills/skills/eli5",
   );
+});
+
+test("sends the token auth header on both api calls", async () => {
+  const seen: Array<{ url: string; headers?: Record<string, string> }> = [];
+  const fetchImpl: FetchFn = (url, init) => {
+    seen.push({ url, headers: init?.headers });
+    if (url.endsWith("/repos/anthropics/skills")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ default_branch: "main" }),
+        text: () => Promise.resolve(""),
+      });
+    }
+    return Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({ tree: [{ type: "blob", path: "skills/eli5/SKILL.md" }] }),
+      text: () => Promise.resolve(""),
+    });
+  };
+  expect(buildGitHubApiHeaders("SECRET")).toMatchObject({
+    Authorization: "token SECRET",
+    Accept: "application/vnd.github.v3+json",
+  });
+  const found = await browseRepoForSkills("anthropics/skills", {
+    token: "SECRET",
+    fetchImpl,
+  });
+  expect(found.items).toHaveLength(1);
+  expect(seen).toHaveLength(2);
+  for (const call of seen) {
+    expect(call.headers?.["Authorization"]).toBe("token SECRET");
+  }
+});
+
+test("surfaces repository-not-found and rate-limit errors", async () => {
+  const notFound: FetchFn = () =>
+    Promise.resolve({
+      ok: false,
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(""),
+    });
+  await expect(browseRepoForSkills("anthropics/skills", { fetchImpl: notFound })).rejects.toThrow(
+    "Repository not found",
+  );
+  const rateLimited: FetchFn = () =>
+    Promise.resolve({
+      ok: false,
+      status: 403,
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(""),
+    } as never);
+  await expect(
+    browseRepoForSkills("anthropics/skills", { fetchImpl: rateLimited }),
+  ).rejects.toThrow("rate limit");
 });
