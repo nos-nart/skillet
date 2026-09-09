@@ -32,6 +32,19 @@ test("derives default trigger from name", () => {
   expect(metadata.trigger).toBe("/my-cool-skill");
 });
 
+test("missing-name trigger falls back to /skill (scanner.ts parity)", () => {
+  const { metadata } = parseSkillMd("---\ndescription: hi\n---\n\nBody");
+  expect(metadata.name).toBe("Unnamed Skill");
+  expect(metadata.trigger).toBe("/skill");
+});
+
+test("unparseable frontmatter leaves body as full content (scanner.ts parity)", () => {
+  const input = "---\n::: not yaml :::\n---\nBody";
+  const { metadata, body } = parseSkillMd(input);
+  expect(metadata.name).toBe("Unnamed Skill");
+  expect(body).toBe(input);
+});
+
 test("parses scalar fields and tool lists", () => {
   const { metadata } = parseSkillMd(
     "---\nname: x\nauthor: ada\nversion: 1.2.0\nlicense: MIT\nsource_url: https://github.com/o/r\ntools:\n  - Read\n  - Bash\nagents: [claude-code, cursor]\n---\n\nBody",

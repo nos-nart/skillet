@@ -144,8 +144,20 @@ function fieldAsString(fields: Record<string, string | string[]>, key: string): 
 export function parseSkillMd(content: string): ParsedSkillDoc {
   const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!m) return { metadata: { name: "Unnamed Skill", description: "" }, body: content };
-  const fields = parseFrontmatterFields(m[1]);
-  const name = fieldAsString(fields, "name") ?? "Unnamed Skill";
+  let fields: Record<string, string | string[]>;
+  try {
+    fields = parseFrontmatterFields(m[1]);
+  } catch {
+    // Parity with src/backend/scanner.ts: unparseable frontmatter leaves body as full content.
+    return { metadata: { name: "Unnamed Skill", description: "" }, body: content };
+  }
+  if (Object.keys(fields).length === 0) {
+    // No `key: value` fields recognized → treat as unparseable (parseYaml would
+    // throw or return a non-object), so body stays the full input.
+    return { metadata: { name: "Unnamed Skill", description: "" }, body: content };
+  }
+  const rawName = fieldAsString(fields, "name");
+  const name = rawName ?? "Unnamed Skill";
   return {
     metadata: {
       name,
@@ -154,7 +166,7 @@ export function parseSkillMd(content: string): ParsedSkillDoc {
       version: fieldAsString(fields, "version"),
       trigger:
         fieldAsString(fields, "trigger") ??
-        `/${name.toLowerCase().replace(/\s+/g, "-")}`,
+        `/${(rawName ?? "skill").toLowerCase().replace(/\s+/g, "-")}`,
       // SAFETY: tools entries are collected as strings by parseFrontmatterFields
       tools: (fields["tools"] as string[] | undefined) ?? [],
       // SAFETY: frontmatter agent entries are validated non-empty strings of the AgentId domain
