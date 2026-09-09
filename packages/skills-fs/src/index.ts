@@ -8,6 +8,8 @@ export function validateSafeSlug(slug: string): boolean {
   return /^[a-zA-Z0-9_.-]+$/.test(t);
 }
 
+// Contract: native `scanSkillsDir` returns a JSON string (string[] encoded);
+// the façade parses it to `string[]` (file-dialog pattern) for Task 3 consumers.
 export function scanSkillsDir(dir: string): Promise<string[]> {
   return NativeSkillsFs.scanSkillsDir(dir).then((json) => JSON.parse(json) as string[]);
 }
