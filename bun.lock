@@ -6,6 +6,7 @@
       "name": "skillet",
       "devDependencies": {
         "@babel/plugin-transform-modules-commonjs": "7.27.1",
+        "@babel/preset-react": "7.29.7",
         "@babel/preset-typescript": "7.29.7",
         "@types/jest": "29.5.14",
         "@types/node": "^22.10.0",
@@ -22,10 +23,13 @@
       "name": "@skillet/app-skillet",
       "version": "0.0.1",
       "dependencies": {
-        "@legend-apps/storage": "0.0.0",
+        "@legend-apps/appkit-split-view": "workspace:*",
+        "@legend-apps/file-dialog": "workspace:*",
+        "@legend-apps/storage": "workspace:*",
+        "@legend-apps/windows": "workspace:*",
         "@legendapp/list": "catalog:",
         "@legendapp/state": "catalog:",
-        "@skillet/skills-fs": "0.0.0",
+        "@skillet/skills-fs": "workspace:*",
         "react-native-enriched-markdown": "^0.7.4",
         "uniwind": "^1.6.3",
       },

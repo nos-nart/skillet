@@ -7,13 +7,17 @@ module.exports = {
       {
         babelrc: false,
         configFile: false,
-        presets: ["@babel/preset-typescript"],
+        presets: [
+          ["@babel/preset-react", { runtime: "automatic" }],
+          "@babel/preset-typescript",
+        ],
         plugins: ["@babel/plugin-transform-modules-commonjs"],
       },
     ],
   },
   moduleNameMapper: {
     "^react-native$": "<rootDir>/jest/reactNativeMock.cjs",
+    "^@legendapp/list/react-native$": "<rootDir>/jest/legendListMock.cjs",
     "^@legend-apps/storage$": "<rootDir>/src/services/__tests__/storageMock.ts",
   },
 };

@@ -4,7 +4,10 @@
   "private": true,
   "main": "src/index.ts",
   "dependencies": {
+    "@legend-apps/appkit-split-view": "workspace:*",
+    "@legend-apps/file-dialog": "workspace:*",
     "@legend-apps/storage": "workspace:*",
+    "@legend-apps/windows": "workspace:*",
     "@legendapp/list": "catalog:",
     "@legendapp/state": "catalog:",
     "@skillet/skills-fs": "workspace:*",
