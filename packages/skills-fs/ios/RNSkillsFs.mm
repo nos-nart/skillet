@@ -1,0 +1,104 @@
+#import "RNSkillsFs.h"
+
+#import <React/RCTBridgeModule.h>
+#import <React/RCTUtils.h>
+
+@implementation RNSkillsFs
+
+RCT_EXPORT_MODULE(NativeSkillsFs)
+
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params
+{
+  return std::make_shared<facebook::react::NativeSkillsFsSpecJSI>(params);
+}
+
+- (NSString *)jsonStringFromObject:(id)object
+{
+  id value = object ?: [NSNull null];
+  NSData *data = [NSJSONSerialization dataWithJSONObject:value options:0 error:nil];
+  return data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"null";
+}
+
+- (BOOL)isSafeSlug:(NSString *)slug
+{
+  if (slug.length == 0 || [slug isEqualToString:@"."] || [slug isEqualToString:@".."]) {
+    return NO;
+  }
+  if ([slug containsString:@".."] || [slug containsString:@"/"] || [slug containsString:@"\\"]) {
+    return NO;
+  }
+  NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-"];
+  return [[slug stringByTrimmingCharactersInSet:allowed] length] == 0;
+}
+
+- (void)scanSkillsDir:(NSString *)dir resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  NSString *expanded = [dir stringByExpandingTildeInPath];
+  NSError *error = nil;
+  NSArray<NSString *> *entries = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:expanded error:&error];
+  if (!entries) {
+    reject(@"invalid_path", error.localizedDescription ?: @"Cannot scan skills directory.", error);
+    return;
+  }
+  NSMutableArray<NSString *> *paths = [NSMutableArray arrayWithCapacity:entries.count];
+  for (NSString *entry in entries) {
+    if ([entry hasPrefix:@"."]) {
+      continue;
+    }
+    [paths addObject:[expanded stringByAppendingPathComponent:entry]];
+  }
+  resolve([self jsonStringFromObject:paths]);
+}
+
+- (void)readSkillMd:(NSString *)path resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  if (path.length == 0) {
+    reject(@"invalid_path", @"Cannot read skill without a path.", nil);
+    return;
+  }
+  NSError *error = nil;
+  NSString *contents = [NSString stringWithContentsOfFile:[path stringByExpandingTildeInPath]
+                                                 encoding:NSUTF8StringEncoding
+                                                    error:&error];
+  if (!contents) {
+    reject(@"read_failed", error.localizedDescription ?: @"Failed to read skill file.", error);
+    return;
+  }
+  resolve(contents);
+}
+
+- (void)symlink:(NSString *)source target:(NSString *)target resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  if (![self isSafeSlug:[target lastPathComponent]]) {
+    reject(@"slug_unsafe", @"Refusing to symlink to an unsafe slug path.", nil);
+    return;
+  }
+  NSError *error = nil;
+  [[NSFileManager defaultManager] removeItemAtPath:target error:nil];
+  BOOL ok = [[NSFileManager defaultManager] createSymbolicLinkAtPath:target
+                                                 withDestinationPath:source
+                                                               error:&error];
+  if (!ok) {
+    reject(@"write_failed", error.localizedDescription ?: @"Failed to create symlink.", error);
+    return;
+  }
+  resolve(@YES);
+}
+
+- (void)unlink:(NSString *)target resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  if (![self isSafeSlug:[target lastPathComponent]]) {
+    reject(@"slug_unsafe", @"Refusing to unlink an unsafe slug path.", nil);
+    return;
+  }
+  NSError *error = nil;
+  BOOL ok = [[NSFileManager defaultManager] removeItemAtPath:target error:&error];
+  if (!ok && error.code != NSFileNoSuchFileError) {
+    reject(@"write_failed", error.localizedDescription ?: @"Failed to remove symlink.", error);
+    return;
+  }
+  resolve(@YES);
+}
+
+@end

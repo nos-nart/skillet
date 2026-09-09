@@ -88,6 +88,11 @@ export const nativePackages: NativePackage[] = [
     platforms: ["macos", "ios", "android"],
   },
   {
+    name: "@skillet/skills-fs",
+    root: path.join(packagesDir, "skills-fs"),
+    platforms: ["macos", "ios", "android"],
+  },
+  {
     name: "@legend-apps/context-menu",
     root: path.join(packagesDir, "context-menu"),
     platforms: ["macos", "ios", "android"],
