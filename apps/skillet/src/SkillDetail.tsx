@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { EnrichedMarkdownText } from "react-native-enriched-markdown";
 import { InstallSkillDialog, UninstallSkillDialog } from "./dialogs";
 import { isSkillEnabled, type Skill } from "./services/skills";
@@ -38,7 +38,10 @@ export function SkillDetail({
   // `symlink`/`unlink` do NOT expand `~` (Task 3), and the workspace picker
   // only ever stores absolute file-dialog paths.
   onToggleInRepo: (workspace: Workspace, enable: boolean) => Promise<boolean>;
-  onInstallSkill?: (skill: Skill) => Promise<void>;
+  // Installs an arbitrary source collected by the InstallSkillDialog (not the
+  // selected skill — Task 7 fix: Task 6 discarded the dialog inputs and
+  // re-passed the selection, making the source field dead).
+  onInstallSkill?: (source: string, skillName?: string) => Promise<void>;
   onUninstallSkill?: (skill: Skill) => Promise<void>;
   onUpdateSkill?: (skill: Skill) => Promise<void>;
 }): React.JSX.Element {
@@ -129,6 +132,10 @@ export function SkillDetail({
     );
   };
 
+  // Hoisted so the source-URL row's `onPress` closure keeps the narrowing
+  // without a cast (`skill.sourceUrl` alone would widen inside the closure).
+  const sourceUrl = skill.sourceUrl;
+
   return (
     <View className="flex-1 bg-background" key={skill.id}>
       <View className="border-b border-border px-5 pb-4 pt-5">
@@ -210,6 +217,19 @@ export function SkillDetail({
                 : "None"}
             />
             <MetaRow label="Path on disk" mono muted value={skill.path} />
+            {sourceUrl ? (
+              <View>
+                <Text className="text-[10px] font-bold uppercase text-muted">Source URL</Text>
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => void Linking.openURL(sourceUrl)}
+                >
+                  <Text className="pt-0.5 text-[12px] text-primary" numberOfLines={2}>
+                    {`${sourceUrl} ↗`}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
 
           <View className="gap-2">
@@ -275,8 +295,8 @@ export function SkillDetail({
             setInstallOpen(false);
             setInstallError(null);
           }}
-          onInstall={(_source, _skillName) =>
-            runAction("installing", onInstallSkill, () => {
+          onInstall={(source, skillName) =>
+            runAction("installing", () => onInstallSkill(source, skillName), () => {
               setInstallOpen(false);
               setInstallError(null);
             }).catch((err: unknown) => {

@@ -3,7 +3,8 @@ import { openFileDialog } from "@legend-apps/file-dialog";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SkillList } from "./SkillList";
-import { getSkills, type Skill } from "./services/skills";
+import { DiscoverTab } from "./tabs/DiscoverTab";
+import { downloadSkill, getSkills, type Skill } from "./services/skills";
 import {
   addWorkspace,
   getWorkspaces,
@@ -40,16 +41,25 @@ export function Sidebar({
     setCurrentPath(list.find((w) => w.isCurrent)?.path ?? list[0]?.path);
   }, []);
 
+  const refreshSkills = useCallback(async () => {
+    const list = await getSkills();
+    setSkills(list);
+    onSkills?.(list);
+  }, [onSkills]);
+
   useEffect(() => {
-    void getSkills().then(
-      (list) => {
-        setSkills(list);
-        onSkills?.(list);
-      },
-      () => setSkills([]),
-    );
+    void refreshSkills().catch(() => setSkills([]));
     void refreshWorkspaces();
-  }, [refreshWorkspaces, onSkills]);
+  }, [refreshSkills, refreshWorkspaces]);
+
+  // Discover installs go through the real Task 7 `downloadSkill` (JS fetch +
+  // native write); failures throw so DiscoverTab can `Alert.alert` them, and a
+  // success re-scans so the new skill appears in the list immediately.
+  const handleDiscoverInstall = useCallback(async (source: string): Promise<void> => {
+    const res = await downloadSkill({ source });
+    if (!res.ok) throw new Error(res.error);
+    await refreshSkills();
+  }, [refreshSkills]);
 
   const handleSelectWorkspace = useCallback(async (id: string) => {
     await setCurrentWorkspace(id);
@@ -144,11 +154,7 @@ export function Sidebar({
         {nav === "skills" ? (
           <SkillList onSelect={onSelect} selectedId={selectedId} skills={skills} />
         ) : (
-          <View className="items-center px-6 pt-8">
-            <Text className="text-center text-[12px] text-muted">
-              Discover lands in Task 7.
-            </Text>
-          </View>
+          <DiscoverTab installedSkills={skills} onInstall={handleDiscoverInstall} />
         )}
       </View>
     </View>

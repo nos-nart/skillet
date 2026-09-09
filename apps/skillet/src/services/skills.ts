@@ -1,10 +1,21 @@
 import {
+  ensureDir,
   readSkillMd,
   scanSkillsDir,
   symlink,
   unlink,
   validateSafeSlug,
+  writeTextFile,
 } from "@skillet/skills-fs";
+import {
+  fetchLatestCommit,
+  fetchSkillMd,
+  loadSkillsLock,
+  parseGitHubRepo,
+  saveSkillsLock,
+  type FetchFn,
+} from "./github";
+import { storageJsonStore, type JsonStore } from "./workspaces";
 
 // Pure ports of the Deno backend (`src/backend/*.ts`) for the macOS app:
 // no Deno APIs, no new dependencies. Filesystem IO goes through the
@@ -75,7 +86,16 @@ export interface SkillsFs {
   unlink(target: string): Promise<boolean>;
 }
 
+// Narrow install surface: the Task 2 `skills-fs` module grew `ensureDir` +
+// `writeTextFile` for Task 7. Kept separate from `SkillsFs` so existing fakes
+// (scan/read/symlink/unlink only) keep typechecking untouched.
+export interface SkillWriter {
+  ensureDir(path: string): Promise<boolean>;
+  writeTextFile(path: string, contents: string): Promise<boolean>;
+}
+
 const defaultSkillsFs: SkillsFs = { scanSkillsDir, readSkillMd, symlink, unlink };
+const defaultSkillWriter: SkillWriter = { ensureDir, writeTextFile };
 
 // Global skill dirs per agent, verbatim from `src/backend/agents.ts`
 // (`globalDirName`). `~/.skills` first: it is the canonical universal home.
@@ -319,6 +339,148 @@ export async function toggleSkill(
       return await fs.symlink(req.sourcePath, target);
     }
     return await fs.unlink(target);
+  } catch {
+    return false;
+  }
+}
+
+export interface DownloadSkillOptions {
+  source: string; // e.g. "anthropics/skills/skills/eli5" or a GitHub/skills.sh URL
+  skillName?: string;
+  targetDir?: string;
+  token?: string;
+}
+
+export type DownloadSkillResult = { ok: true; path: string } | { ok: false; error: string };
+
+export interface DownloadSkillDeps {
+  writer?: SkillWriter;
+  fetchImpl?: FetchFn;
+  lockStore?: JsonStore;
+}
+
+// Agent-aware global dir heuristic, verbatim from `src/backend/installer.ts`
+// (`downloadSkillFromGitHub`). The universal `~/.skills` home stays default;
+// the writer expands `~` natively (same contract as scan/read).
+function globalDirForRepo(owner: string, repo: string): string {
+  const repoStr = `${owner}/${repo}`.toLowerCase();
+  if (repoStr.includes("cursor")) return ".cursor/skills";
+  if (repoStr.includes("gemini") || repoStr.includes("antigravity")) return ".gemini/config/skills";
+  if (
+    repoStr.includes("claude") ||
+    repoStr.includes("anthropic") ||
+    repoStr.includes("gstack") ||
+    repoStr.includes("garrytan")
+  ) {
+    return ".claude/skills";
+  }
+  if (repoStr.includes("windsurf")) return ".codeium/windsurf/skills";
+  if (repoStr.includes("copilot")) return ".github/skills";
+  return ".skills";
+}
+
+// Native port of `downloadSkillFromGitHub` (`src/backend/installer.ts`): pure
+// JS fetch (raw `main→master` SKILL.md via Task 3 `fetchSkillMd`, commit SHA
+// via `fetchLatestCommit`) + native writes through the Task 7 `skills-fs`
+// `ensureDir`/`writeTextFile` surface. Missing SKILL.md falls back to a
+// `source_url` template so the skill stays discoverable (installer parity).
+export async function downloadSkill(
+  options: DownloadSkillOptions,
+  deps: DownloadSkillDeps = {},
+): Promise<DownloadSkillResult> {
+  const writer = deps.writer ?? defaultSkillWriter;
+  const fetchImpl = deps.fetchImpl;
+  const lockStore = deps.lockStore ?? storageJsonStore();
+
+  const repoInfo = parseGitHubRepo(options.source);
+  if (!repoInfo) {
+    return { ok: false, error: "Invalid GitHub repository format" };
+  }
+  const pathParts = repoInfo.path?.split("/").filter(Boolean) ?? [];
+  const skillSlug = options.skillName ?? pathParts[pathParts.length - 1] ?? repoInfo.repo;
+  if (!validateSafeSlug(skillSlug)) {
+    return { ok: false, error: `Refusing to install unsafe skill slug: ${skillSlug}` };
+  }
+
+  const globalDir = globalDirForRepo(repoInfo.owner, repoInfo.repo);
+  const targetDir =
+    options.targetDir ?? `~/${globalDir}/${repoInfo.owner}/${skillSlug}`;
+  const repoUrl = `${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/tree/main/${repoInfo.path}` : ""}`;
+
+  try {
+    const skillContent =
+      (await fetchSkillMd(repoInfo, options.token, fetchImpl)) ??
+      `---\nname: ${skillSlug}\ndescription: Skill installed from ${repoUrl}\nsource_url: https://github.com/${repoUrl}\n---\n\n# ${skillSlug}\n\nInstalled from https://github.com/${repoUrl}\n`;
+
+    if (!(await writer.ensureDir(targetDir))) {
+      return { ok: false, error: `Could not create install directory: ${targetDir}` };
+    }
+    if (!(await writer.writeTextFile(`${targetDir}/SKILL.md`, skillContent))) {
+      return { ok: false, error: `Could not write SKILL.md to: ${targetDir}` };
+    }
+
+    // Non-fatal lockfile bookkeeping (updater.ts parity): records the source
+    // commit so a future update check can diff SHAs.
+    try {
+      const commitSha = await fetchLatestCommit(options.source, options.token, fetchImpl);
+      const lock = await loadSkillsLock(lockStore);
+      const pkgKey = `${repoInfo.owner}/${repoInfo.repo}`;
+      lock[pkgKey] = {
+        source: options.source,
+        commitSha: commitSha ?? "initial",
+        updatedAt: new Date().toISOString(),
+        skills: [skillSlug],
+      };
+      await saveSkillsLock(lock, lockStore);
+    } catch {
+      // Non-fatal lockfile update error
+    }
+
+    return { ok: true, path: targetDir };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: message };
+  }
+}
+
+export interface UninstallSkillRequest {
+  skillPath: string; // absolute path of the installed skill dir
+  skillSlug: string;
+  workspacePaths?: string[]; // absolute workspace paths to sweep for symlinks
+}
+
+// Native port of `uninstallSkill` (`src/backend/installer.ts`): unlinks the
+// skill dir itself plus any `<workspace>/.skills/<slug>` links pointing at it.
+// `removeItemAtPath` removes links without touching targets, so unlike the
+// Deno `lstat`/`realPath` dance there is no need to resolve first. Slug-guard
+// + absolute-path preconditions mirror `toggleSkill`.
+export async function uninstallSkill(
+  req: UninstallSkillRequest,
+  fs: SkillsFs = defaultSkillsFs,
+): Promise<boolean> {
+  if (!validateSafeSlug(req.skillSlug)) {
+    return false;
+  }
+  try {
+    for (const workspacePath of req.workspacePaths ?? []) {
+      const linksDir = `${workspacePath.replace(/\/+$/, "")}/${WORKSPACE_SKILLS_REL}`;
+      let entries: string[];
+      try {
+        entries = await fs.scanSkillsDir(linksDir);
+      } catch {
+        continue;
+      }
+      for (const full of entries) {
+        if ((full.split("/").pop() ?? full) === req.skillSlug.trim()) {
+          try {
+            await fs.unlink(full);
+          } catch {
+              // Best-effort sweep: one stuck link must not block the uninstall
+          }
+        }
+      }
+    }
+    return await fs.unlink(req.skillPath);
   } catch {
     return false;
   }

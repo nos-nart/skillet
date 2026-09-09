@@ -15,7 +15,7 @@ index 3e13bf94e80f8662a06c068fdc85ff06364fac0f..29a5f123d3fadd340105f672bc1fe3da
  @property (nonatomic, strong) StyleConfig *config;
  - (CGSize)measureSize:(CGFloat)maxWidth;
 diff --git a/ios/EnrichedMarkdown.mm b/ios/EnrichedMarkdown.mm
-index 7ad95d7f654904b28f341ff3adac61003d708f95..ca44612abd3218e0444b0b8408a8f5a4692d7629 100644
+index 7ad95d7f654904b28f341ff3adac61003d708f95..33db5b4792d2e7931dde6c2431add01f993eb3ca 100644
 --- a/ios/EnrichedMarkdown.mm
 +++ b/ios/EnrichedMarkdown.mm
 @@ -64,6 +64,39 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
@@ -58,7 +58,7 @@ index 7ad95d7f654904b28f341ff3adac61003d708f95..ca44612abd3218e0444b0b8408a8f5a4
  static char kENRMSegmentFadeAnimatorKey;
  
  @interface EnrichedMarkdown () <RCTEnrichedMarkdownViewProtocol, UITextViewDelegate>
-@@ -626,6 +659,20 @@ - (EnrichedMarkdownInternalText *)createTextViewForRenderedSegment:(ENRMRenderRe
+@@ -626,6 +659,20 @@ static char kENRMSegmentFadeAnimatorKey;
      return buildEditMenuForSelection(textView.textStorage, textView.selectedRange, segmentMarkdown, strongSelf->_config,
                                       @[ baseMenu ], customItems, strongSelf->_selectionMenuConfig);
    }];
@@ -79,7 +79,7 @@ index 7ad95d7f654904b28f341ff3adac61003d708f95..ca44612abd3218e0444b0b8408a8f5a4
  #endif
  
    return view;
-@@ -733,7 +780,10 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -733,7 +780,10 @@ static char kENRMSegmentFadeAnimatorKey;
    const auto &oldViewProps = *std::static_pointer_cast<EnrichedMarkdownProps const>(_props);
    const auto &newViewProps = *std::static_pointer_cast<EnrichedMarkdownProps const>(props);
  
@@ -91,7 +91,7 @@ index 7ad95d7f654904b28f341ff3adac61003d708f95..ca44612abd3218e0444b0b8408a8f5a4
    if (markdownChanged) {
      _dirtyFlags |= ENRMDirtyRender;
    }
-@@ -803,7 +853,6 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -803,7 +853,6 @@ static char kENRMSegmentFadeAnimatorKey;
      _md4cFlags.highlight = newViewProps.md4cFlags.highlight;
      _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
    }
@@ -99,7 +99,7 @@ index 7ad95d7f654904b28f341ff3adac61003d708f95..ca44612abd3218e0444b0b8408a8f5a4
    _enableLinkPreview = newViewProps.enableLinkPreview;
  
    if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {
-@@ -902,7 +951,7 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -902,7 +951,7 @@ static char kENRMSegmentFadeAnimatorKey;
    if (_dirtyFlags & ENRMDirtyRender) {
      _pendingStyleFingerprint =
          computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
@@ -108,15 +108,17 @@ index 7ad95d7f654904b28f341ff3adac61003d708f95..ca44612abd3218e0444b0b8408a8f5a4
      [self renderMarkdownContent:markdownString];
      _dirtyFlags &= ~ENRMDirtyRender;
    }
-@@ -1049,5 +1098,5 @@ - (void)emitTaskListItemPress:(NSInteger)index checked:(BOOL)checked text:(NSString *)text
+@@ -1049,7 +1098,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
  {
    auto emitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(_eventEmitter);
    if (emitter)
 -    emitter->onTaskListItemPress({.index = (int)index, .checked = checked, .text = std::string(text.UTF8String ?: "")});
 +    emitter->onTaskListItemPress({.index = (int)index, .checked = static_cast<bool>(checked), .text = std::string(text.UTF8String ?: "")});
  }
+ 
+ - (void)emitContextMenuItemPress:(NSString *)itemText
 diff --git a/ios/EnrichedMarkdownText.mm b/ios/EnrichedMarkdownText.mm
-index 1dc1097549f90ef8bcaff83526a808104de4d986..d4d8be9d8e7eaa73d046e69d56e802fec47c2513 100644
+index 1dc1097549f90ef8bcaff83526a808104de4d986..eee9a2d2ef8e1126de99329012261fa605161452 100644
 --- a/ios/EnrichedMarkdownText.mm
 +++ b/ios/EnrichedMarkdownText.mm
 @@ -6,6 +6,7 @@
@@ -143,7 +145,7 @@ index 1dc1097549f90ef8bcaff83526a808104de4d986..d4d8be9d8e7eaa73d046e69d56e802fe
  @interface EnrichedMarkdownText () <RCTEnrichedMarkdownTextViewProtocol, UITextViewDelegate>
  - (void)setupTextView;
  - (void)renderMarkdownContent:(NSString *)markdownString;
-@@ -255,6 +265,20 @@ - (void)setupTextView
+@@ -255,6 +265,20 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
      return buildEditMenuForSelection(textView.textStorage, textView.selectedRange, strongSelf->_cachedMarkdown,
                                       strongSelf->_config, @[ baseMenu ], customItems, strongSelf->_selectionMenuConfig);
    };
@@ -164,7 +166,7 @@ index 1dc1097549f90ef8bcaff83526a808104de4d986..d4d8be9d8e7eaa73d046e69d56e802fe
  #endif
  
    ENRMTapRecognizer *tapRecognizer = [[ENRMTapRecognizer alloc] initWithTarget:self action:@selector(textTapped:)];
-@@ -443,7 +467,9 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -443,7 +467,9 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
    const auto &oldViewProps = *std::static_pointer_cast<EnrichedMarkdownTextProps const>(_props);
    const auto &newViewProps = *std::static_pointer_cast<EnrichedMarkdownTextProps const>(props);
  
@@ -175,7 +177,7 @@ index 1dc1097549f90ef8bcaff83526a808104de4d986..d4d8be9d8e7eaa73d046e69d56e802fe
      _dirtyFlags |= ENRMDirtyRender;
    }
  
-@@ -528,7 +554,6 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -528,7 +554,6 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
      _forceHeightUpdateOnNextRender = YES;
      _dirtyFlags |= ENRMDirtyRender;
    }
@@ -183,7 +185,7 @@ index 1dc1097549f90ef8bcaff83526a808104de4d986..d4d8be9d8e7eaa73d046e69d56e802fe
    _enableLinkPreview = newViewProps.enableLinkPreview;
  
    if (ENRMContextMenuItemsChanged(oldViewProps.contextMenuItems, newViewProps.contextMenuItems)) {
-@@ -601,7 +626,7 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -601,7 +626,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
    if (_dirtyFlags & ENRMDirtyRender) {
      _pendingStyleFingerprint =
          computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
@@ -192,13 +194,15 @@ index 1dc1097549f90ef8bcaff83526a808104de4d986..d4d8be9d8e7eaa73d046e69d56e802fe
      [self renderMarkdownContent:markdownString];
      _dirtyFlags &= ~ENRMDirtyRender;
    }
-@@ -686,5 +711,5 @@ - (void)emitTaskListItemPress:(NSInteger)index checked:(BOOL)checked text:(NSString *)text
+@@ -686,7 +711,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
  {
    auto emitter = std::static_pointer_cast<EnrichedMarkdownTextEventEmitter const>(_eventEmitter);
    if (emitter)
 -    emitter->onTaskListItemPress({.index = (int)index, .checked = checked, .text = std::string(text.UTF8String ?: "")});
 +    emitter->onTaskListItemPress({.index = (int)index, .checked = static_cast<bool>(checked), .text = std::string(text.UTF8String ?: "")});
  }
+ 
+ - (void)emitContextMenuItemPress:(NSString *)itemText
 diff --git a/ios/generated/ReactCodegen/EnrichedMarkdownTextSpec/EventEmitters.cpp b/ios/generated/ReactCodegen/EnrichedMarkdownTextSpec/EventEmitters.cpp
 index 8d30370e6ee7775b8bd72b7cb6619b880db89fc6..9779537571c68ec63aded19e68574b90b2851acb 100644
 --- a/ios/generated/ReactCodegen/EnrichedMarkdownTextSpec/EventEmitters.cpp
@@ -741,7 +745,7 @@ diff --git a/ios/input/ENRMInputFormatter.mm b/ios/input/ENRMInputFormatter.mm
 index d07e20352441aff8b190bd5eb6dd5852b326647b..bc2a584ad6ef820b1c810c43feb40464879c761f 100644
 --- a/ios/input/ENRMInputFormatter.mm
 +++ b/ios/input/ENRMInputFormatter.mm
-@@ -21,6 +21,7 @@ - (instancetype)init
+@@ -21,6 +21,7 @@
      _baseFont = [UIFont systemFontOfSize:16.0];
      _baseTextColor = [RCTUIColor labelColor];
      _linkVariants = @[];
@@ -749,7 +753,7 @@ index d07e20352441aff8b190bd5eb6dd5852b326647b..bc2a584ad6ef820b1c810c43feb40464
      _fontCache = [NSMutableDictionary dictionary];
    }
    return self;
-@@ -31,6 +32,7 @@ - (id)copyWithZone:(NSZone *)zone
+@@ -31,6 +32,7 @@
    ENRMInputFormatterStyle *copy = [[ENRMInputFormatterStyle allocWithZone:zone] init];
    copy.baseFont = _baseFont;
    copy.baseTextColor = _baseTextColor;
@@ -757,7 +761,7 @@ index d07e20352441aff8b190bd5eb6dd5852b326647b..bc2a584ad6ef820b1c810c43feb40464
    copy.boldColor = _boldColor;
    copy.italicColor = _italicColor;
    copy.linkColor = _linkColor;
-@@ -125,6 +127,14 @@ - (void)applyFormattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+@@ -125,6 +127,14 @@
  
    [textStorage addAttribute:NSFontAttributeName value:style.baseFont range:fullTextRange];
    [textStorage addAttribute:NSForegroundColorAttributeName value:style.baseTextColor range:fullTextRange];
@@ -776,7 +780,7 @@ diff --git a/ios/input/ENRMInputTextView.mm b/ios/input/ENRMInputTextView.mm
 index 55e6a5a0e35316f2a9534e7d8e0cf9a9a12d5b40..b7d86bc07cacf70537d2e828249758f4bfd82079 100644
 --- a/ios/input/ENRMInputTextView.mm
 +++ b/ios/input/ENRMInputTextView.mm
-@@ -80,6 +80,12 @@ - (void)layoutSubviews
+@@ -80,6 +80,12 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
  
  #else // TARGET_OS_OSX
  
@@ -789,7 +793,7 @@ index 55e6a5a0e35316f2a9534e7d8e0cf9a9a12d5b40..b7d86bc07cacf70537d2e828249758f4
  @implementation ENRMInputTextView
  
  - (void)copy:(id)sender
-@@ -136,14 +142,185 @@ - (BOOL)acceptsFirstResponder
+@@ -136,14 +142,185 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
    return self.isEditable;
  }
  
@@ -975,18 +979,6 @@ index 55e6a5a0e35316f2a9534e7d8e0cf9a9a12d5b40..b7d86bc07cacf70537d2e828249758f4
  - (NSMenu *)menuForEvent:(NSEvent *)event
  {
    NSMenu *menu = [super menuForEvent:event];
-diff --git a/ios/input/EnrichedMarkdownTextInput.h b/ios/input/EnrichedMarkdownTextInput.h
-index 4717f74fbd0bf56fbcf95684dfd59a24c8ff126d..872707201c7d8bf5a7fc3e63bcd81f098503ef93 100644
---- a/ios/input/EnrichedMarkdownTextInput.h
-+++ b/ios/input/EnrichedMarkdownTextInput.h
-@@ -10,6 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
- @property (nonatomic, assign) BOOL blockEmitting;
- - (CGSize)measureSize:(CGFloat)maxWidth;
- - (nullable NSString *)markdownForSelectedRange;
-+- (NSArray<NSString *> *)markdownSplitAtSelectedRange;
- - (void)copyToClipboard;
- - (void)pasteMarkdown:(NSString *)markdown;
- - (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray *)ranges;
 diff --git a/ios/input/EnrichedMarkdownTextInput+Internal.h b/ios/input/EnrichedMarkdownTextInput+Internal.h
 index 2f50d3f789ba443d6bbc298cd777e5fe0e0ff361..5bb3946e29994dc4da45652c5a951a5c8f002ba2 100644
 --- a/ios/input/EnrichedMarkdownTextInput+Internal.h
@@ -1000,8 +992,20 @@ index 2f50d3f789ba443d6bbc298cd777e5fe0e0ff361..5bb3946e29994dc4da45652c5a951a5c
  #endif
  
  @end
+diff --git a/ios/input/EnrichedMarkdownTextInput.h b/ios/input/EnrichedMarkdownTextInput.h
+index 4717f74fbdd0e877ff3c455739d723e15c166125..872707201c594d0d3f87d0064758059ec65136a1 100644
+--- a/ios/input/EnrichedMarkdownTextInput.h
++++ b/ios/input/EnrichedMarkdownTextInput.h
+@@ -10,6 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
+ @property (nonatomic, assign) BOOL blockEmitting;
+ - (CGSize)measureSize:(CGFloat)maxWidth;
+ - (nullable NSString *)markdownForSelectedRange;
++- (NSArray<NSString *> *)markdownSplitAtSelectedRange;
+ - (void)copyToClipboard;
+ - (void)pasteMarkdown:(NSString *)markdown;
+ - (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray *)ranges;
 diff --git a/ios/input/EnrichedMarkdownTextInput.mm b/ios/input/EnrichedMarkdownTextInput.mm
-index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d237ea4f3e 100644
+index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..17a97c643186f73b65bf4bd680163ac559a79841 100644
 --- a/ios/input/EnrichedMarkdownTextInput.mm
 +++ b/ios/input/EnrichedMarkdownTextInput.mm
 @@ -26,7 +26,6 @@
@@ -1012,7 +1016,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  #import <ReactNativeEnrichedMarkdown/EnrichedMarkdownTextInputComponentDescriptor.h>
  #import <ReactNativeEnrichedMarkdown/EventEmitters.h>
  #import <ReactNativeEnrichedMarkdown/Props.h>
-@@ -46,6 +45,13 @@ @interface EnrichedMarkdownTextInput () <RCTEnrichedMarkdownTextInputViewProtoco
+@@ -46,6 +45,13 @@ using namespace facebook::react;
  #endif
  - (void)setupTextView;
  - (void)applyFormatting;
@@ -1026,7 +1030,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  - (void)toggleInlineStyle:(ENRMInputStyleType)styleType;
  - (void)resetBaseTypingAttributes;
  @end
-@@ -78,7 +84,10 @@ @implementation EnrichedMarkdownTextInput {
+@@ -78,7 +84,10 @@ using namespace facebook::react;
    std::optional<CGRect> _prevCaretRect;
  
  #if TARGET_OS_OSX
@@ -1037,7 +1041,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  #endif
  
    NSArray<NSString *> *_contextMenuItemTexts;
-@@ -200,6 +209,9 @@ - (void)setupTextView
+@@ -200,6 +209,9 @@ using namespace facebook::react;
  #else
    _textView.selectable = YES;
  
@@ -1047,7 +1051,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
    _scrollView = [[NSScrollView alloc] initWithFrame:CGRectZero];
    _scrollView.backgroundColor = [RCTUIColor clearColor];
    _scrollView.drawsBackground = NO;
-@@ -214,7 +226,8 @@ - (void)setupTextView
+@@ -214,7 +226,8 @@ using namespace facebook::react;
    _textView.textContainer.widthTracksTextView = YES;
  
    _scrollView.documentView = _textView;
@@ -1057,7 +1061,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  #endif
  
    _placeholderLabel = ENRMCreatePlaceholderLabel(_textView, _formatterStyle.baseFont);
-@@ -265,7 +278,110 @@ - (void)updateLayoutMetrics:(const LayoutMetrics &)layoutMetrics
+@@ -265,7 +278,110 @@ using namespace facebook::react;
    }
  }
  
@@ -1169,7 +1173,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  
  - (CGSize)measureSize:(CGFloat)maxWidth
  {
-@@ -289,8 +405,10 @@ - (CGSize)measureSize:(CGFloat)maxWidth
+@@ -289,8 +405,10 @@ using namespace facebook::react;
      }
    }
  
@@ -1181,7 +1185,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
                                   options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading
                                   context:nil];
  
-@@ -445,7 +563,7 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -445,7 +563,7 @@ using namespace facebook::react;
  
      [self resetBaseTypingAttributes];
  
@@ -1190,7 +1194,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
        [self applyFormatting];
      }
  
-@@ -462,7 +580,7 @@ - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &
+@@ -462,7 +580,7 @@ using namespace facebook::react;
  - (void)scheduleRelayoutIfNeeded
  {
    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_performRelayout) object:nil];
@@ -1199,7 +1203,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  }
  
  - (void)_performRelayout
-@@ -471,20 +589,30 @@ - (void)_performRelayout
+@@ -471,20 +589,30 @@ using namespace facebook::react;
      return;
    }
  
@@ -1242,7 +1246,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  }
  
  #pragma mark - Window attachment
-@@ -495,6 +623,9 @@ - (void)didMoveToWindow
+@@ -495,6 +623,9 @@ using namespace facebook::react;
  
    if (self.window) {
      // Don't override the contentView frame set by RCTViewComponentView.
@@ -1252,7 +1256,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
      ENRMRefreshTextViewLayout(_textView);
  
      [self applyFormatting];
-@@ -571,6 +702,7 @@ - (void)importMarkdown:(NSString *)markdown
+@@ -571,6 +702,7 @@ using namespace facebook::react;
  {
    ENRMInputParser *parser = [[ENRMInputParser alloc] init];
    ENRMParseResult *parsed = [parser parseToPlainTextAndRanges:markdown];
@@ -1260,7 +1264,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  
    _blockEmitting = YES;
  
-@@ -581,7 +713,11 @@ - (void)importMarkdown:(NSString *)markdown
+@@ -581,7 +713,11 @@ using namespace facebook::react;
    [_formattingStore setRanges:parsed.formattingRanges];
    _lastTextLength = parsed.plainText.length;
    _lastSelectedRange = _textView.selectedRange;
@@ -1272,7 +1276,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
    [self updatePlaceholderVisibility];
  
    _blockEmitting = NO;
-@@ -634,12 +770,93 @@ - (void)pasteMarkdown:(NSString *)markdown
+@@ -634,12 +770,93 @@ using namespace facebook::react;
  
  #pragma mark - Formatting
  
@@ -1368,7 +1372,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  }
  
  - (void)applyFormatting
-@@ -657,6 +874,9 @@ - (void)applyFormatting
+@@ -657,6 +874,9 @@ using namespace facebook::react;
    [_formatter applyFormattingRanges:_formattingStore.allRanges toTextView:_textView style:_formatterStyle];
    [_detectorPipeline refreshAllStyling];
    [self applyWritingDirection];
@@ -1378,7 +1382,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  
    NSUInteger textLen = ENRMGetPlainText(_textView).length;
    if (savedSelection.location + savedSelection.length <= textLen) {
-@@ -699,6 +919,23 @@ - (void)setValue:(NSString *)markdown
+@@ -699,6 +919,23 @@ using namespace facebook::react;
    [self requestHeightUpdate];
  }
  
@@ -1402,7 +1406,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  - (void)setSelection:(NSInteger)start end:(NSInteger)end
  {
    NSInteger textLen = (NSInteger)ENRMGetPlainText(_textView).length;
-@@ -709,6 +946,121 @@ - (void)setSelection:(NSInteger)start end:(NSInteger)end
+@@ -709,6 +946,121 @@ using namespace facebook::react;
    [self emitOnChangeState];
  }
  
@@ -1524,11 +1528,10 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  - (void)toggleBold
  {
    [self toggleInlineStyle:ENRMInputStyleTypeStrong];
-@@ -899,36 +1251,53 @@ - (void)showLinkPrompt
+@@ -899,36 +1251,53 @@ using namespace facebook::react;
    ENRMShowLinkPrompt(self, existingURL, ^(NSString *url) { [weakSelf setLink:url]; });
  }
--
-+
+ 
 -- (nullable NSString *)markdownForSelectedRange
 +- (NSString *)markdownForPlainTextRange:(NSRange)range
  {
@@ -1544,8 +1547,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
 +  NSUInteger rangeEnd = MIN(NSMaxRange(range), fullText.length);
 +  NSRange clampedRange = NSMakeRange(rangeStart, rangeEnd - rangeStart);
 +  NSString *selectedText = [fullText substringWithRange:clampedRange];
--
-+
+ 
    NSMutableArray<ENRMFormattingRange *> *clippedRanges = [NSMutableArray array];
 -  for (ENRMFormattingRange *range in [self allRangesIncludingTransient]) {
 -    NSUInteger rangeStart = range.range.location;
@@ -1553,33 +1555,28 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
 +  for (ENRMFormattingRange *formattingRange in [self allRangesIncludingTransient]) {
 +    NSUInteger formattingStart = formattingRange.range.location;
 +    NSUInteger formattingEnd = NSMaxRange(formattingRange.range);
--
-+
+ 
 -    if (rangeEnd <= selection.location || rangeStart >= selEnd) {
 +    if (formattingEnd <= rangeStart || formattingStart >= rangeEnd) {
        continue;
      }
--
-+
+ 
 -    NSUInteger clippedStart = MAX(rangeStart, selection.location);
 -    NSUInteger clippedEnd = MIN(rangeEnd, selEnd);
 -    NSRange shifted = NSMakeRange(clippedStart - selection.location, clippedEnd - clippedStart);
 +    NSUInteger clippedStart = MAX(formattingStart, rangeStart);
 +    NSUInteger clippedEnd = MIN(formattingEnd, rangeEnd);
 +    NSRange shifted = NSMakeRange(clippedStart - rangeStart, clippedEnd - clippedStart);
--
-+
+ 
 -    [clippedRanges addObject:[ENRMFormattingRange rangeWithType:range.type range:shifted url:range.url]];
 +    [clippedRanges addObject:[ENRMFormattingRange rangeWithType:formattingRange.type
 +                                                         range:shifted
 +                                                           url:formattingRange.url]];
    }
--
-+
+ 
    return [ENRMMarkdownSerializer serializePlainText:selectedText ranges:clippedRanges];
  }
--
-+
+ 
 +- (nullable NSString *)markdownForSelectedRange
 +{
 +  NSRange selection = _textView.selectedRange;
@@ -1601,7 +1598,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  - (void)copyToClipboard
  {
    NSString *plainText = ENRMGetPlainText(_textView);
-@@ -969,11 +1338,22 @@ - (CGRect)computeCaretRect
+@@ -969,11 +1338,22 @@ using namespace facebook::react;
  #else
    NSRange selection = _textView.selectedRange;
    if (selection.location != NSNotFound) {
@@ -1629,7 +1626,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
    }
  #endif
    return caretRect;
-@@ -1233,6 +1613,33 @@ - (void)emitOnChangeSelection
+@@ -1233,6 +1613,33 @@ using namespace facebook::react;
    });
  }
  
@@ -1663,7 +1660,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  - (void)emitOnChangeState
  {
    auto emitter = [self getEventEmitter];
-@@ -1263,12 +1670,12 @@ - (void)emitOnChangeState
+@@ -1263,12 +1670,12 @@ using namespace facebook::react;
    _prevState.initialized = YES;
  
    emitter->onChangeState({
@@ -1682,7 +1679,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
    });
  }
  
-@@ -1347,12 +1754,12 @@ - (void)emitContextMenuItemPress:(NSString *)itemText
+@@ -1347,12 +1754,12 @@ using namespace facebook::react;
        .selectionEnd = static_cast<int>(NSMaxRange(selectedRange)),
        .styleState =
            {
@@ -1701,7 +1698,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
            },
    });
  }
-@@ -1496,7 +1903,13 @@ - (void)handleTextChanged
+@@ -1496,7 +1903,13 @@ using namespace facebook::react;
    }
  #endif
  
@@ -1715,7 +1712,7 @@ index 4cd71776ad375f94b23308e78bc7c4a6b03ea6f6..cb96afa7eeb9ac201973c60e11dd66d2
  
    NSUInteger clampedEditLocation = MIN(editLocation, newLength);
    NSUInteger clampedInsertedLength = MIN(insertedLength, newLength - clampedEditLocation);
-@@ -1558,6 +1971,12 @@ - (void)manageSelectionBasedChanges
+@@ -1558,6 +1971,12 @@ using namespace facebook::react;
          NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
          attrs[NSFontAttributeName] = _formatterStyle.baseFont;
          attrs[NSForegroundColorAttributeName] = _formatterStyle.baseTextColor;
@@ -1810,7 +1807,7 @@ diff --git a/ios/internals/EnrichedMarkdownShadowNode.mm b/ios/internals/Enriche
 index fa9a8b6fc9f088d18c424db4b24622ddc6fcaf93..3e9f5e42a1945e4bcb2a23fb3b97d3ea6e17ca76 100644
 --- a/ios/internals/EnrichedMarkdownShadowNode.mm
 +++ b/ios/internals/EnrichedMarkdownShadowNode.mm
-@@ -42,16 +42,16 @@
+@@ -42,16 +42,16 @@ void EnrichedMarkdownShadowNode::dirtyLayoutIfNeeded()
    }
  }
  
@@ -1831,7 +1828,7 @@ index fa9a8b6fc9f088d18c424db4b24622ddc6fcaf93..3e9f5e42a1945e4bcb2a23fb3b97d3ea
      [mockView renderMarkdownSynchronously:markdown];
    }
  
-@@ -67,7 +67,9 @@
+@@ -67,7 +67,9 @@ Size EnrichedMarkdownShadowNode::measureContent(const LayoutContext &layoutConte
    return ENRMMeasureMarkdownContent<EnrichedMarkdownProps, EnrichedMarkdown>(
        typedProps, getStateData().getComponentViewRef(), receivedCounter, lastExactMeasurementCounter_,
        MarkdownFlavor::GitHub, layoutConstraints,
@@ -1865,7 +1862,7 @@ index 60f5f6c871baa2d0d562c11014611720bc847ffe..9e091800ca5b5f08c58ae49f1506629f
  #import "EnrichedMarkdownText.h"
  #import "ShadowMeasurementUtils.h"
  #import <yoga/Yoga.h>
-@@ -43,16 +44,16 @@
+@@ -43,16 +44,16 @@ void EnrichedMarkdownTextShadowNode::dirtyLayoutIfNeeded()
    }
  }
  
@@ -1886,7 +1883,7 @@ index 60f5f6c871baa2d0d562c11014611720bc847ffe..9e091800ca5b5f08c58ae49f1506629f
      [mockView renderMarkdownSynchronously:markdown];
    }
  
-@@ -68,7 +69,9 @@
+@@ -68,7 +69,9 @@ Size EnrichedMarkdownTextShadowNode::measureContent(const LayoutContext &layoutC
    return ENRMMeasureMarkdownContent<EnrichedMarkdownTextProps, EnrichedMarkdownText>(
        typedProps, getStateData().getComponentViewRef(), receivedCounter, lastExactMeasurementCounter_,
        MarkdownFlavor::CommonMark, layoutConstraints,
@@ -1898,7 +1895,7 @@ index 60f5f6c871baa2d0d562c11014611720bc847ffe..9e091800ca5b5f08c58ae49f1506629f
  
  } // namespace facebook::react
 diff --git a/ios/internals/MeasurementCache.h b/ios/internals/MeasurementCache.h
-index 7b4d953562490661e1639edfe9ef34518ef0cef4..d5f9c530eb545d7e7de3bb41ce695c6166360c0e 100644
+index 7b4d953562490661e1639edfe9ef34518ef0cef4..0e0fbc3c028ea9be1966015a0b209e2da0f1c089 100644
 --- a/ios/internals/MeasurementCache.h
 +++ b/ios/internals/MeasurementCache.h
 @@ -31,6 +31,8 @@ enum class MarkdownFlavor : uint8_t {
@@ -2025,7 +2022,7 @@ diff --git a/ios/renderer/CodeRenderer.m b/ios/renderer/CodeRenderer.m
 index 74248631b6a8f3eca83eb9aa1e4ebb34fdcc200e..3b807ab17365fdbe56619a6b6a8e9fc3f730d3c5 100644
 --- a/ios/renderer/CodeRenderer.m
 +++ b/ios/renderer/CodeRenderer.m
-@@ -58,6 +58,10 @@ - (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)out
+@@ -58,6 +58,10 @@
      codeAttributes[@"BlockLineHeight"] = @(UIFontLineHeight(blockFont));
  
      [output setAttributes:codeAttributes range:range];
@@ -2054,7 +2051,7 @@ index 5e5d5bf06370c9a94ed5645ccba4436894fe2bdb..24b68203df04cda29e9453d858a3172a
  
  @implementation CodeBackground {
    StyleConfig *_config;
-@@ -100,6 +104,18 @@ - (void)drawCodeBackgroundForRange:(NSRange)range
+@@ -100,6 +104,18 @@ static const CGFloat kCodeBackgroundBorderWidth = 0.5;
                                     finalRect.size.height = referenceHeight;
                                   }
  
@@ -2073,7 +2070,7 @@ index 5e5d5bf06370c9a94ed5645ccba4436894fe2bdb..24b68203df04cda29e9453d858a3172a
                                   [self drawBackgroundAndBorders:finalRect
                                                  backgroundColor:backgroundColor
                                                      borderColor:borderColor
-@@ -120,14 +136,6 @@ - (void)drawBackgroundAndBorders:(CGRect)rect
+@@ -120,14 +136,6 @@ static const CGFloat kCodeBackgroundBorderWidth = 0.5;
    [backgroundColor setFill];
    [path fill];
  
@@ -2092,7 +2089,7 @@ diff --git a/ios/utils/CodeBlockBackground.m b/ios/utils/CodeBlockBackground.m
 index 736e9a4ddf669c37b74fd908c8f7c3c127cc604b..c69a39b2ca30412ce20ed5cafb001535fc770785 100644
 --- a/ios/utils/CodeBlockBackground.m
 +++ b/ios/utils/CodeBlockBackground.m
-@@ -69,6 +69,9 @@ - (void)drawCodeBlockBackgroundForRange:(NSRange)range
+@@ -69,6 +69,9 @@
    CGFloat inset = borderWidth / 2.0;
  
    CGRect insetRect = CGRectInset(blockRect, inset, inset);
@@ -2172,7 +2169,7 @@ index 3da7fe63229a552292bf616e3bddb17b0ed534ca..d187bc7df67d444db64b9ae8ec1786e7
  @implementation ENRMContextMenuTextView
  
  - (NSScrollView *)enclosingScrollView
-@@ -31,6 +35,7 @@ - (void)deselectAllInContainer
+@@ -31,6 +35,7 @@
  - (void)mouseDown:(NSEvent *)event
  {
    [self deselectAllInContainer];
@@ -2180,7 +2177,7 @@ index 3da7fe63229a552292bf616e3bddb17b0ed534ca..d187bc7df67d444db64b9ae8ec1786e7
    [super mouseDown:event];
  
    if (self.selectedRange.length > 0) {
-@@ -48,6 +53,61 @@ - (void)rightMouseDown:(NSEvent *)event
+@@ -48,6 +53,61 @@
    [super rightMouseDown:event];
  }
  
@@ -2258,7 +2255,7 @@ diff --git a/ios/views/EnrichedMarkdownInternalText.m b/ios/views/EnrichedMarkdo
 index 93eef7ac4edf45f001a93ebb230588817e3e921b..9e38d54bd2f8bdba56a56a922e226ae2580ef8ec 100644
 --- a/ios/views/EnrichedMarkdownInternalText.m
 +++ b/ios/views/EnrichedMarkdownInternalText.m
-@@ -158,6 +158,11 @@ - (void)setContextMenuProvider:(ENRMContextMenuProvider)provider
+@@ -158,6 +158,11 @@
  {
    ((ENRMContextMenuTextView *)_textView).contextMenuProvider = provider;
  }
@@ -2476,7 +2473,7 @@ index 5026b9a04f1f81333298054655ed22771b75ea5e..67665797ab991bccb1f2afe77dd7f880
  
  export default codegenNativeComponent<NativeProps>('EnrichedMarkdownText', {
 diff --git a/lib/module/native/EnrichedMarkdownText.js b/lib/module/native/EnrichedMarkdownText.js
-index f90286d82a3199671c98330199d8ba2605e0f418..d8be4f3ac07de1b3528538cfdaa3cc3ee2c31fb5 100644
+index f90286d82a3199671c98330199d8ba2605e0f418..dd871a078d3d0be76623437a2eeabe4876082d49 100644
 --- a/lib/module/native/EnrichedMarkdownText.js
 +++ b/lib/module/native/EnrichedMarkdownText.js
 @@ -88,6 +88,9 @@ export const EnrichedMarkdownText = ({
@@ -2519,7 +2516,7 @@ index f90286d82a3199671c98330199d8ba2605e0f418..d8be4f3ac07de1b3528538cfdaa3cc3e
    };
    if (flavor === 'github') {
 diff --git a/lib/module/normalizeMarkdownTextInputStyle.js b/lib/module/normalizeMarkdownTextInputStyle.js
-index eb322395dd4f18b270de65b78fa36e0015d75cd1..6fe16e44369b8914fd0e29f43237184af6eea038 100644
+index eb322395dd4f18b270de65b78fa36e0015d75cd1..34881b0c1c6b3cb0800c34f9677141d8f97ff395 100644
 --- a/lib/module/normalizeMarkdownTextInputStyle.js
 +++ b/lib/module/normalizeMarkdownTextInputStyle.js
 @@ -2,12 +2,29 @@
@@ -2585,7 +2582,7 @@ index 722afe85c06d8bfff095e669ae34b4d03ba5c053..790ae8b0cb7e95ae169d018e62677946
       * Internal style configuration for markdown elements.
       * Always provided with complete defaults via normalizeMarkdownStyle.
 diff --git a/lib/typescript/src/EnrichedMarkdownTextInput.d.ts b/lib/typescript/src/EnrichedMarkdownTextInput.d.ts
-index dec543f85bf7f35c16aa8d8210ecd09e8cf74fc5..499b5530a87aec47c0d11afa67a761cc927d8287 100644
+index dec543f85bf7f35c16aa8d8210ecd09e8cf74fc5..4b1ef7fa504327f68f6f46dc01f5cdc8c1e87597 100644
 --- a/lib/typescript/src/EnrichedMarkdownTextInput.d.ts
 +++ b/lib/typescript/src/EnrichedMarkdownTextInput.d.ts
 @@ -2,12 +2,13 @@ import { type OnLinkDetected, type OnStartMentionEvent, type OnChangeMentionEven
@@ -2718,7 +2715,7 @@ index f10bc0a0fd9b6a8474fdd312a3519d1ac04d0031..940690d66b8ff3fd648f56427873f7b9
       * Internal style configuration for markdown elements.
       * Always provided with complete defaults via normalizeMarkdownStyle.
 diff --git a/lib/typescript/src/normalizeMarkdownTextInputStyle.d.ts b/lib/typescript/src/normalizeMarkdownTextInputStyle.d.ts
-index 080f6072253bb6a29bba19c953509401729bf10d..38e5d4788bf8db2aafc84121afc35e6b5bf976c4 100644
+index 080f6072253bb6a29bba19c953509401729bf10d..91c41d3ca38d62da21ae2335e54ec5fbc822e030 100644
 --- a/lib/typescript/src/normalizeMarkdownTextInputStyle.d.ts
 +++ b/lib/typescript/src/normalizeMarkdownTextInputStyle.d.ts
 @@ -6,7 +6,23 @@ interface LinkVariantEntryInternal {
@@ -2746,7 +2743,7 @@ index 080f6072253bb6a29bba19c953509401729bf10d..38e5d4788bf8db2aafc84121afc35e6b
          color?: ColorValue;
      };
 diff --git a/lib/typescript/src/types/MarkdownTextProps.d.ts b/lib/typescript/src/types/MarkdownTextProps.d.ts
-index 18735d4192ebe05a63d0c36b9921bff167345a23..0250fadacbdb0f5adcc397c763101a8fa6e351dd 100644
+index 18735d4192ebe05a63d0c36b9921bff167345a23..a4c4ee2a8ef530a634b5443531d33c1d1636dad4 100644
 --- a/lib/typescript/src/types/MarkdownTextProps.d.ts
 +++ b/lib/typescript/src/types/MarkdownTextProps.d.ts
 @@ -1,7 +1,7 @@

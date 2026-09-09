@@ -32,6 +32,21 @@ const manifest = {
     ios: [],
     android: [],
   },
+  // No `signing.macos.developmentTeam`: no Apple Developer team is available
+  // for this MVP, so Release builds ad-hoc sign (`--skip-sign` packaging).
+  // `release.macos.sparkle.publicEdKey` is REQUIRED by `package-macos-app.ts`
+  // even for unsigned locals (it lands in Info.plist as SUPublicEDKey).
+  // DEV-ONLY PLACEHOLDER: generated locally for Task 7, private key discarded
+  // and never stored — MUST be replaced with the real release keypair before
+  // any signed/notarized distribution (nobody can publish valid appcasts for
+  // this key, so rotation is enforced, not just advised).
+  release: {
+    macos: {
+      sparkle: {
+        publicEdKey: "eqeP/1QrZIHfyEkhUlVZXL+MSIea5bTxfY+vj7C+tms=",
+      },
+    },
+  },
 } satisfies AppManifest;
 
 export default manifest;

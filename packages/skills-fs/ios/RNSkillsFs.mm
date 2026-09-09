@@ -101,4 +101,54 @@ RCT_EXPORT_MODULE(NativeSkillsFs)
   resolve(@YES);
 }
 
+// Install surface for Task 7 `downloadSkill`: `~` expands natively (same as
+// `scanSkillsDir`/`readSkillMd`), parents are created, and `..` is rejected so
+// a crafted slug can never escape the skills home.
+- (void)ensureDir:(NSString *)path resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  if (path.length == 0) {
+    reject(@"invalid_path", @"Cannot create directory without a path.", nil);
+    return;
+  }
+  if ([path containsString:@".."]) {
+    reject(@"slug_unsafe", @"Refusing to create a directory with '..' in its path.", nil);
+    return;
+  }
+  NSString *expanded = [path stringByExpandingTildeInPath];
+  NSError *error = nil;
+  BOOL ok = [[NSFileManager defaultManager] createDirectoryAtPath:expanded
+                                      withIntermediateDirectories:YES
+                                                       attributes:nil
+                                                            error:&error];
+  if (!ok) {
+    reject(@"write_failed", error.localizedDescription ?: @"Failed to create directory.", error);
+    return;
+  }
+  resolve(@YES);
+}
+
+- (void)writeTextFile:(NSString *)path contents:(NSString *)contents resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  if (path.length == 0) {
+    reject(@"invalid_path", @"Cannot write file without a path.", nil);
+    return;
+  }
+  if ([path containsString:@".."]) {
+    reject(@"slug_unsafe", @"Refusing to write to a path containing '..'.", nil);
+    return;
+  }
+  NSString *expanded = [path stringByExpandingTildeInPath];
+  NSError *error = nil;
+  [[NSFileManager defaultManager] createDirectoryAtPath:[expanded stringByDeletingLastPathComponent]
+                            withIntermediateDirectories:YES
+                                             attributes:nil
+                                                  error:nil];
+  BOOL ok = [[contents ?: @"" dataUsingEncoding:NSUTF8StringEncoding] writeToFile:expanded options:NSDataWritingAtomic error:&error];
+  if (!ok) {
+    reject(@"write_failed", error.localizedDescription ?: @"Failed to write file.", error);
+    return;
+  }
+  resolve(@YES);
+}
+
 @end

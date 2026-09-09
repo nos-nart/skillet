@@ -3,6 +3,7 @@
 // packages/skills-fs/jest/reactNativeMock.cjs). View/Text/Pressable/StyleSheet
 // stubs cover the Task 5 screens (SkillList/Sidebar import them at module
 // scope); Switch/Modal/TextInput/ScrollView cover the Task 6 detail + dialogs;
+// Alert/Image/Linking cover the Task 7 discover tab + source-URL row;
 // components are never rendered in unit tests.
 const React = require("react");
 
@@ -27,4 +28,7 @@ module.exports = {
   Modal: createComponent("Modal"),
   TextInput: createComponent("TextInput"),
   ScrollView: createComponent("ScrollView"),
+  Image: createComponent("Image"),
+  Alert: { alert: () => {} },
+  Linking: { openURL: async () => true, canOpenURL: async () => true },
 };

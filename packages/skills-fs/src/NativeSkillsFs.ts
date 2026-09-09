@@ -6,6 +6,8 @@ export interface Spec extends TurboModule {
   readSkillMd(path: string): Promise<string>;
   symlink(source: string, target: string): Promise<boolean>;
   unlink(target: string): Promise<boolean>;
+  ensureDir(path: string): Promise<boolean>;
+  writeTextFile(path: string, contents: string): Promise<boolean>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>("NativeSkillsFs");

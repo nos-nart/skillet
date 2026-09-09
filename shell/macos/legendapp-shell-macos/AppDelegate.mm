@@ -16,7 +16,6 @@ double LegendMainWindowFirstVisibleTimeMs = 0;
 double LegendMainWindowReactRootAttachedTimeMs = 0;
 
 extern "C" void LegendPrecreateRestorableWindows(void) __attribute__((weak_import));
-extern "C" void LegendStartChatHistoryLoad(void) __attribute__((weak_import));
 extern "C" void LegendPrepareSidebarSplitViewStartup(NSWindow *window, NSDictionary *configuration)
   __attribute__((weak_import));
 extern "C" BOOL LegendAttachSidebarSplitViewStartupRoot(NSWindow *window, NSView *rootView,
@@ -311,9 +310,11 @@ static NSView *LegendCreateMusicGlassHostView(NSRect frame, NSView **contentView
   // AppKit shells do not depend on React, so present and restore them while
   // the JavaScript runtime initializes instead of serializing the two phases.
   [self prepareHostWindowIfNeeded];
-  if ([LegendCurrentAppId() isEqualToString:@"chat-history"] && LegendStartChatHistoryLoad) {
-    LegendStartChatHistoryLoad();
-  }
+  // NOTE (skillet MVP): the chat-history preload hook lived here
+  // (`LegendStartChatHistoryLoad`, weak-imported). The new toolchain linker
+  // rejects that pattern even for missing-OK symbols, and no app in this repo
+  // defines it — so the hook is removed rather than worked around. The other
+  // weak hooks above stay: their symbols resolve from linked native packages.
   if (LegendPrecreateRestorableWindows) {
     LegendPrecreateRestorableWindows();
   }
