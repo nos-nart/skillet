@@ -1,0 +1,35 @@
+{
+  "name": "shell",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "premacos": "node ./scripts/ensure-xcode-env.js",
+    "macos": "react-native run-macos"
+  },
+  "dependencies": {
+    "@legend-apps/appkit-split-view": "0.0.0",
+    "expo": "~54.0.33",
+    "expo-status-bar": "~3.0.9",
+    "react": "catalog:",
+    "react-native": "catalog:",
+    "react-native-macos": "0.81.7",
+    "react-native-nitro-modules": "0.35.6",
+    "tailwindcss": "^4.2.4",
+    "uniwind": "^1.6.3"
+  },
+  "devDependencies": {
+    "@react-native-community/cli": "^20.1.1",
+    "@react-native-community/cli-platform-apple": "^20.1.3",
+    "@react-native-community/cli-platform-android": "^20.1.1",
+    "@react-native-community/cli-platform-ios": "^20.1.1",
+    "@expo/metro-config": "~54.0.14",
+    "@react-native/metro-config": "~0.81.0",
+    "@rnx-kit/metro-config": "^2.2.4",
+    "@types/react": "~19.1.0",
+    "babel-preset-expo": "~54.0.7"
+  }
+}

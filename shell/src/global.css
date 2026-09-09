@@ -1,0 +1,79 @@
+@import 'tailwindcss';
+@import 'uniwind';
+
+@source "../../apps";
+@source "../../packages";
+@source "./";
+
+.inset-0 {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+@layer theme {
+  :root {
+    @variant light {
+      --color-background: #f5f6f8;
+      --color-foreground: #111827;
+      --color-muted: #6b7280;
+      --color-surface: #ffffff;
+      --color-surface-muted: #f3f4f6;
+      --color-border: #d1d5db;
+      --color-primary: #2563eb;
+      --color-danger: #b42318;
+      --color-selection: Highlight;
+      --color-code: #111827;
+      --color-code-foreground: #f9fafb;
+      --color-blockquote-background: #f8fafc;
+      --color-blockquote-border: #94a3b8;
+      --color-table-header: #f3f4f6;
+      --color-table-row-alt: #f9fafb;
+      --color-window-background: #f5f6f8;
+      --color-background-primary: #f5f6f8;
+      --color-background-secondary: #ffffff;
+      --color-background-tertiary: #f3f4f6;
+      --color-background-destructive: #8b0000;
+      --color-background-inverse: #111827;
+      --color-text-primary: #111827;
+      --color-text-secondary: #6b7280;
+      --color-text-tertiary: #6b7280;
+      --color-accent-primary: #2563eb;
+      --color-accent-secondary: #2563eb;
+      --color-border-primary: #d1d5db;
+      --color-border-popup: #d1d5db;
+    }
+
+    @variant dark {
+      --color-background: #191A1B;
+      --color-foreground: #f5f5f5;
+      --color-muted: #a3a3a3;
+      --color-surface: #242526;
+      --color-surface-muted: #2d2e30;
+      --color-border: #3e4042;
+      --color-primary: #60a5fa;
+      --color-danger: #f87171;
+      --color-selection: Highlight;
+      --color-code: #111213;
+      --color-code-foreground: #f5f5f5;
+      --color-blockquote-background: #202122;
+      --color-blockquote-border: #6f7377;
+      --color-table-header: #2a2b2d;
+      --color-table-row-alt: #1f2021;
+      --color-window-background: #191A1B;
+      --color-background-primary: #191A1B;
+      --color-background-secondary: #242526;
+      --color-background-tertiary: #2d2e30;
+      --color-background-destructive: #8b0000;
+      --color-background-inverse: #f5f5f5;
+      --color-text-primary: #f5f5f5;
+      --color-text-secondary: #a3a3a3;
+      --color-text-tertiary: #a3a3a3;
+      --color-accent-primary: #60a5fa;
+      --color-accent-secondary: #60a5fa;
+      --color-border-primary: #3e4042;
+      --color-border-popup: #3e4042;
+    }
+  }
+}

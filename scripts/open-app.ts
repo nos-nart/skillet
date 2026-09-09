@@ -1,0 +1,171 @@
+#!/usr/bin/env bun
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { assertSupportedPlatform, loadAppManifest, resolveDevServerPort, shellDir } from "./lib/apps";
+import { parseAppCommand } from "./lib/apps";
+import { splitLaunchArgs, type OptionSpecs } from "./lib/launchArgs";
+import { macOSSchemeName, macOSWorkspaceName } from "./lib/macosShell";
+import {
+  ensureMacOSDevWorkspace,
+  getMacOSDevDerivedDataPath,
+  getMacOSReleaseDerivedDataPath,
+  getMacOSEnv,
+  getMacOSReleaseWorkspaceDir,
+} from "./lib/macosWorkspaces";
+import { writeGeneratedConfig } from "./lib/nativeModules";
+import { runCommand } from "./lib/run";
+import type { Platform } from "./lib/types";
+
+const openOptionSpecs: OptionSpecs = {
+  "--configuration": "value",
+  "--mode": "value",
+  "--print": "boolean",
+  "--port": "value",
+  "--release": "boolean",
+  "--arch": "value",
+};
+
+type MacOSBuildArch = "arm" | "x86";
+
+function readMode(args: string[]) {
+  if (args.includes("--release")) {
+    return "Release";
+  }
+
+  const modeIndex = args.findIndex((arg) => arg === "--mode" || arg === "--configuration");
+  const mode = modeIndex >= 0 ? args[modeIndex + 1] : undefined;
+  return mode === "Release" ? "Release" : "Debug";
+}
+
+function readMacOSBuildArch(args: string[]): MacOSBuildArch {
+  const archEqualsArg = args.find((arg) => arg.startsWith("--arch="));
+  const archIndex = args.findIndex((arg) => arg === "--arch");
+  const arch = archEqualsArg
+    ? archEqualsArg.slice("--arch=".length)
+    : archIndex >= 0
+      ? args[archIndex + 1]
+      : "arm";
+
+  if (arch !== "arm" && arch !== "x86") {
+    throw new Error(`Invalid macOS release architecture "${arch}". Expected "arm" or "x86".`);
+  }
+
+  return arch;
+}
+
+function shouldPrintOnly(args: string[]) {
+  return args.includes("--print");
+}
+
+function parseBuildSettings(output: string) {
+  const jsonStart = output.indexOf("[");
+  if (jsonStart < 0) {
+    throw new Error("Could not parse xcodebuild settings output.");
+  }
+
+  return JSON.parse(output.slice(jsonStart)) as Array<{
+    buildSettings?: Record<string, string | undefined>;
+  }>;
+}
+
+function getBuiltMacAppPath(workspaceDir: string, mode: string, arch: MacOSBuildArch) {
+  const macosWorkspace = path.join(workspaceDir, macOSWorkspaceName);
+  const buildSettingsArgs = [
+    "-workspace",
+    macosWorkspace,
+    "-scheme",
+    macOSSchemeName,
+    "-configuration",
+    mode,
+    "-showBuildSettings",
+    "-json",
+  ];
+  const args = mode === "Release"
+    ? [...buildSettingsArgs, "-derivedDataPath", getMacOSReleaseDerivedDataPath(workspaceDir, arch)]
+    : [...buildSettingsArgs, "-derivedDataPath", getMacOSDevDerivedDataPath(workspaceDir)];
+  const result = spawnSync(
+    "xcodebuild",
+    args,
+    {
+      cwd: shellDir,
+      encoding: "utf8",
+    },
+  );
+
+  if (result.status !== 0) {
+    throw new Error(result.stderr || "Failed to read macOS build settings.");
+  }
+
+  const targets = parseBuildSettings(result.stdout);
+  const appSettings = targets
+    .map((target) => target.buildSettings)
+    .find((settings) => settings?.WRAPPER_NAME?.endsWith(".app") || settings?.FULL_PRODUCT_NAME?.endsWith(".app"));
+
+  const productsDir = appSettings?.BUILT_PRODUCTS_DIR;
+  const wrapperName = appSettings?.WRAPPER_NAME ?? appSettings?.FULL_PRODUCT_NAME;
+
+  if (!productsDir || !wrapperName) {
+    throw new Error("Could not find the built macOS app path in Xcode build settings.");
+  }
+
+  return path.join(productsDir, wrapperName);
+}
+
+function getOpenEnvironmentArgs(appId: string, generated: ReturnType<typeof writeGeneratedConfig>, metroPort?: number) {
+  const env = {
+    ...getMacOSEnv(appId, generated.configPath),
+    LEGEND_MACOS_INFOPLIST_FILE: generated.macosInfoPlistPath,
+    RCT_METRO_PORT: metroPort === undefined ? undefined : String(metroPort),
+  };
+
+  return Object.entries(env)
+    .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].length > 0)
+    .flatMap(([key, value]) => ["--env", `${key}=${value}`]);
+}
+
+async function openOne(appId: string, platform: Platform, args: string[]) {
+  if (platform !== "macos") {
+    throw new Error("Opening an already built app is currently implemented for macos only.");
+  }
+
+  const { launchArgs, runnerArgs } = splitLaunchArgs(args, openOptionSpecs);
+  const manifest = await loadAppManifest(appId);
+  assertSupportedPlatform(manifest, platform);
+
+  const mode = readMode(runnerArgs);
+  const arch = readMacOSBuildArch(runnerArgs);
+  const graphMode = mode === "Release" ? "release" : "dev";
+  const generated = writeGeneratedConfig(manifest, platform, graphMode);
+  const workspaceDir = mode === "Release" ? getMacOSReleaseWorkspaceDir(appId) : ensureMacOSDevWorkspace(manifest);
+  const metroPort = mode === "Release" ? undefined : resolveDevServerPort(appId, runnerArgs);
+
+  const appPath = getBuiltMacAppPath(workspaceDir, mode, arch);
+
+  if (!fs.existsSync(appPath)) {
+    throw new Error(`No built macOS app found at ${appPath}. Run bun run ${appId} macos first.`);
+  }
+
+  if (shouldPrintOnly(runnerArgs)) {
+    console.log(appPath);
+    return;
+  }
+
+  const envArgs = getOpenEnvironmentArgs(appId, generated, metroPort);
+  runCommand("open", launchArgs.length > 0 ? ["-n", ...envArgs, appPath, "--args", ...launchArgs] : [...envArgs, appPath]);
+}
+
+async function main() {
+  const command = parseAppCommand(process.argv.slice(2));
+
+  if (command.all) {
+    throw new Error("Opening all apps is not supported. Open one app/platform at a time.");
+  }
+
+  await openOne(command.appId, command.platform, command.extraArgs);
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+});

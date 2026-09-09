@@ -1,0 +1,36 @@
+{
+  "name": "skillet",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "shell",
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "skillet": "bun scripts/run-app.ts skillet",
+    "typecheck": "tsc --noEmit -p tsconfig.legend.json"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.14",
+    "@types/node": "^22.10.0",
+    "@types/react": "~19.1.0",
+    "babel-plugin-react-compiler": "1.0.0",
+    "react": "catalog:",
+    "react-native": "catalog:",
+    "typescript": "~7.0.2"
+  },
+  "patchedDependencies": {
+    "expo-modules-core@3.0.29": "patches/expo-modules-core@3.0.29.patch",
+    "react-native-macos@0.81.7": "patches/react-native-macos@0.81.7.patch"
+  },
+  "catalog": {
+    "react": "19.1.4",
+    "react-native": "0.81.6",
+    "@legendapp/list": "3.3.5-sparse-layout.67a3cbc9",
+    "@legendapp/motion": "^2.5.3",
+    "@legendapp/state": "^3.0.0-beta.42"
+  }
+}

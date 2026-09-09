@@ -1,0 +1,70 @@
+import path from "node:path";
+import { rootDir } from "./apps";
+import type { AppManifest, AppPackageMetadata, MacOSReleaseArch } from "./types";
+
+export const githubOwner = "LegendApp";
+export const githubRepo = "legend-apps";
+export const githubBranch = "main";
+
+export function getGitHubRepositorySlug() {
+  return `${githubOwner}/${githubRepo}`;
+}
+
+export function getMacOSReleaseVersion(appPackage: AppPackageMetadata) {
+  const releaseVersion = appPackage.version.split(/[+-]/)[0];
+  if (/^\d+(?:\.\d+){0,2}$/.test(releaseVersion)) {
+    return releaseVersion;
+  }
+
+  throw new Error(`App version "${appPackage.version}" must start with one to three dot-separated numeric segments.`);
+}
+
+export function getMacOSReleaseBuild(appPackage: AppPackageMetadata) {
+  const [major, minor = 0, patch = 0] = getMacOSReleaseVersion(appPackage).split(".").map(Number);
+  // Keep package-derived builds above the legacy manually assigned builds (1 and 2).
+  return `${1000 + major}.${minor}.${patch}`;
+}
+
+export function getMacOSSparkleFeedPath(manifest: AppManifest, arch: MacOSReleaseArch) {
+  const configuredPath = manifest.release?.macos?.sparkle.feedPath ?? `updates/${manifest.id}/appcast.xml`;
+  const extension = path.extname(configuredPath);
+  const basePath = extension ? configuredPath.slice(0, -extension.length) : configuredPath;
+  return `${basePath}-${arch}${extension || ".xml"}`;
+}
+
+export function getMacOSSparkleFeedUrl(manifest: AppManifest, arch: MacOSReleaseArch) {
+  return `https://raw.githubusercontent.com/${githubOwner}/${githubRepo}/${githubBranch}/${getMacOSSparkleFeedPath(manifest, arch)}`;
+}
+
+export function getMacOSSparklePublicEdKey(manifest: AppManifest) {
+  const publicEdKey = manifest.release?.macos?.sparkle.publicEdKey;
+  if (!publicEdKey) {
+    throw new Error(`${manifest.id}/macos release metadata must define sparkle.publicEdKey.`);
+  }
+
+  return publicEdKey;
+}
+
+export function getGitHubReleaseTag(manifest: AppManifest, appPackage: AppPackageMetadata) {
+  return `${manifest.id}-v${getMacOSReleaseVersion(appPackage)}`;
+}
+
+export function getGitHubReleaseDownloadUrlPrefix(manifest: AppManifest, appPackage: AppPackageMetadata) {
+  return `https://github.com/${githubOwner}/${githubRepo}/releases/download/${getGitHubReleaseTag(manifest, appPackage)}/`;
+}
+
+export function getReleaseAssetStem(manifest: AppManifest) {
+  return manifest.displayName.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+export function getMacOSReleaseArchiveName(manifest: AppManifest, appPackage: AppPackageMetadata, arch: string) {
+  return `${getReleaseAssetStem(manifest)}-${getMacOSReleaseVersion(appPackage)}-${arch}.zip`;
+}
+
+export function getMacOSReleaseDistDir(manifest: AppManifest) {
+  return path.join(rootDir, "dist", manifest.id, "macos");
+}
+
+export function getMacOSSparkleAppcastPath(manifest: AppManifest, arch: MacOSReleaseArch) {
+  return path.join(rootDir, getMacOSSparkleFeedPath(manifest, arch));
+}

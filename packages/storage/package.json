@@ -1,0 +1,27 @@
+{
+  "name": "@legend-apps/storage",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "codegenConfig": {
+    "name": "RNStorageSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "so.legend.apps.storage"
+    },
+    "ios": {
+      "modulesProvider": {
+        "NativeStorage": "RNStorage"
+      }
+    }
+  },
+  "dependencies": {
+    "@legendapp/state": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-native": "catalog:"
+  }
+}

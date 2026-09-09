@@ -1,0 +1,722 @@
+#import "AppDelegate.h"
+
+#import <React/RCTBundleURLProvider.h>
+#import <React/RCTLinkingManager.h>
+#import <React/RCTUIKit.h>
+#import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
+#import <Carbon/Carbon.h>
+#import <QuartzCore/QuartzCore.h>
+
+#include <cxxreact/ReactMarker.h>
+
+static NSString * const LegendApplicationReopenRequestedNotification = @"LegendApplicationReopenRequestedNotification";
+static NSString * const LegendMainWindowCloseRequestedNotification = @"LegendMainWindowCloseRequestedNotification";
+
+double LegendMainWindowFirstVisibleTimeMs = 0;
+double LegendMainWindowReactRootAttachedTimeMs = 0;
+
+extern "C" void LegendPrecreateRestorableWindows(void) __attribute__((weak_import));
+extern "C" void LegendStartChatHistoryLoad(void) __attribute__((weak_import));
+extern "C" void LegendPrepareSidebarSplitViewStartup(NSWindow *window, NSDictionary *configuration)
+  __attribute__((weak_import));
+extern "C" BOOL LegendAttachSidebarSplitViewStartupRoot(NSWindow *window, NSView *rootView,
+                                                        void (^installRoot)(void)) __attribute__((weak_import));
+extern "C" NSDictionary *LegendMainWindowStartupSplitViewConfiguration(void) __attribute__((weak_import));
+
+static BOOL LegendIsMarkdownPath(NSString *value)
+{
+  if (![value isKindOfClass:NSString.class] || value.length == 0) {
+    return NO;
+  }
+
+  NSSet<NSString *> *extensions = [NSSet setWithArray:@[@"md", @"markdown", @"mdown", @"mkd", @"mdx"]];
+  return [extensions containsObject:value.pathExtension.lowercaseString];
+}
+
+static NSString *LegendInitialMarkdownWindowTitle(void)
+{
+  for (NSString *argument in NSProcessInfo.processInfo.arguments) {
+    if (LegendIsMarkdownPath(argument)) {
+      return argument.lastPathComponent.stringByDeletingPathExtension ?: @"Untitled";
+    }
+  }
+
+  return @"Untitled";
+}
+
+static NSString *LegendMainWindowFrameAutoSaveName(NSString *appId)
+{
+  if ([appId isEqualToString:@"music"]) {
+    return @"MainWindow";
+  }
+
+  NSString *normalizedAppId = appId.length > 0 ? appId : @"default";
+  return [NSString stringWithFormat:@"RCTAppDelegateMainWindow.%@", normalizedAppId];
+}
+
+static NSString *LegendCurrentAppId(void)
+{
+  return NSProcessInfo.processInfo.environment[@"LEGEND_APP"] ?: NSBundle.mainBundle.infoDictionary[@"LegendAppId"];
+}
+
+
+static NSString *LegendCurrentDisplayName(void)
+{
+  NSDictionary *info = NSBundle.mainBundle.infoDictionary;
+  NSString *bundleDisplayName = [info[@"CFBundleDisplayName"] isKindOfClass:NSString.class] ? info[@"CFBundleDisplayName"] : nil;
+  NSString *legendDisplayName = [info[@"LegendAppDisplayName"] isKindOfClass:NSString.class] ? info[@"LegendAppDisplayName"] : nil;
+  NSString *bundleName = [info[@"CFBundleName"] isKindOfClass:NSString.class] ? info[@"CFBundleName"] : nil;
+  NSString *displayName = NSProcessInfo.processInfo.processName;
+
+  if (bundleName.length > 0) {
+    displayName = bundleName;
+  }
+  if (legendDisplayName.length > 0) {
+    displayName = legendDisplayName;
+  }
+  if (bundleDisplayName.length > 0) {
+    displayName = bundleDisplayName;
+  }
+
+  return displayName;
+}
+
+static BOOL LegendHostWindowHidden(void)
+{
+  id value = NSBundle.mainBundle.infoDictionary[@"LegendHostWindowHidden"];
+  return [value respondsToSelector:@selector(boolValue)] && [value boolValue];
+}
+
+static BOOL LegendUsesExpoModules(void)
+{
+  id value = NSBundle.mainBundle.infoDictionary[@"LegendUseExpoModules"];
+  return ![value respondsToSelector:@selector(boolValue)] || [value boolValue];
+}
+
+static BOOL LegendAppearanceIsDark(NSAppearance *appearance)
+{
+  if (@available(macOS 10.14, *)) {
+    NSAppearanceName match = [appearance bestMatchFromAppearancesWithNames:@[
+      NSAppearanceNameDarkAqua,
+      NSAppearanceNameAqua,
+    ]];
+    return [match isEqualToString:NSAppearanceNameDarkAqua];
+  }
+
+  return NO;
+}
+
+static NSColor *LegendColorFromHexString(NSString *value)
+{
+  if (![value isKindOfClass:NSString.class] || value.length == 0) {
+    return nil;
+  }
+
+  NSString *hex = [value hasPrefix:@"#"] ? [value substringFromIndex:1] : value;
+  if (hex.length != 6 && hex.length != 8) {
+    return nil;
+  }
+
+  unsigned long long raw = 0;
+  if (![[NSScanner scannerWithString:hex] scanHexLongLong:&raw]) {
+    return nil;
+  }
+
+  CGFloat red = hex.length == 8 ? ((raw >> 24) & 0xff) / 255.0 : ((raw >> 16) & 0xff) / 255.0;
+  CGFloat green = hex.length == 8 ? ((raw >> 16) & 0xff) / 255.0 : ((raw >> 8) & 0xff) / 255.0;
+  CGFloat blue = hex.length == 8 ? ((raw >> 8) & 0xff) / 255.0 : (raw & 0xff) / 255.0;
+  CGFloat alpha = hex.length == 8 ? (raw & 0xff) / 255.0 : 1;
+  return [NSColor colorWithSRGBRed:red green:green blue:blue alpha:alpha];
+}
+
+static BOOL LegendHostWindowUsesDarkAppearance(NSWindow *window)
+{
+  if (window.appearance != nil) {
+    return LegendAppearanceIsDark(window.appearance);
+  }
+  if (NSApp.appearance != nil) {
+    return LegendAppearanceIsDark(NSApp.appearance);
+  }
+
+  // AppKit initially reports Aqua before an unshown window joins the app's
+  // appearance hierarchy, so consult the current system style at launch.
+  NSString *interfaceStyle = [NSUserDefaults.standardUserDefaults stringForKey:@"AppleInterfaceStyle"];
+  return [interfaceStyle caseInsensitiveCompare:@"Dark"] == NSOrderedSame ||
+    LegendAppearanceIsDark(NSApp.effectiveAppearance);
+}
+
+static NSColor *LegendHostWindowStartupBackgroundColor(NSWindow *window)
+{
+  BOOL isDark = LegendHostWindowUsesDarkAppearance(window);
+  NSString *key = isDark ? @"LegendHostWindowDarkBackgroundColor" : @"LegendHostWindowLightBackgroundColor";
+  NSColor *configuredColor = LegendColorFromHexString(NSBundle.mainBundle.infoDictionary[key]);
+  if (configuredColor != nil) {
+    return configuredColor;
+  }
+
+  return isDark
+    ? [NSColor colorWithSRGBRed:25.0 / 255.0 green:26.0 / 255.0 blue:27.0 / 255.0 alpha:1]
+    : [NSColor colorWithSRGBRed:245.0 / 255.0 green:246.0 / 255.0 blue:248.0 / 255.0 alpha:1];
+}
+
+static BOOL LegendCanFocusManagedReopenWindow(NSWindow *window, NSWindow *hostWindow)
+{
+  return window != nil && window != hostWindow && window.isVisible && !window.sheet && ![window isKindOfClass:NSPanel.class];
+}
+
+static void LegendRetitleMenuItemsWithPrefix(NSMenu *menu, NSString *prefix, NSString *displayName)
+{
+  for (NSMenuItem *item in menu.itemArray) {
+    if ([item.title hasPrefix:prefix]) {
+      item.title = [prefix stringByAppendingString:displayName];
+    }
+  }
+}
+
+static void LegendRetitleMenuItemsWithSuffix(NSMenu *menu, NSString *suffix, NSString *displayName)
+{
+  for (NSMenuItem *item in menu.itemArray) {
+    if ([item.title hasSuffix:suffix]) {
+      item.title = [displayName stringByAppendingString:suffix];
+    }
+  }
+}
+
+static void LegendConfigureApplicationMenuTitles(void)
+{
+  NSString *displayName = LegendCurrentDisplayName();
+  NSMenu *mainMenu = NSApp.mainMenu;
+
+  if (displayName.length > 0 && mainMenu.numberOfItems > 0) {
+    NSMenuItem *appMenuItem = [mainMenu itemAtIndex:0];
+    appMenuItem.title = displayName;
+    appMenuItem.submenu.title = displayName;
+
+    if (appMenuItem.submenu) {
+      LegendRetitleMenuItemsWithPrefix(appMenuItem.submenu, @"About ", displayName);
+      LegendRetitleMenuItemsWithPrefix(appMenuItem.submenu, @"Hide ", displayName);
+      LegendRetitleMenuItemsWithPrefix(appMenuItem.submenu, @"Quit ", displayName);
+    }
+
+    for (NSMenuItem *rootItem in mainMenu.itemArray) {
+      if ([rootItem.title isEqualToString:@"Help"] && rootItem.submenu) {
+        LegendRetitleMenuItemsWithSuffix(rootItem.submenu, @" Help", displayName);
+      }
+    }
+  }
+}
+
+static void LegendConfigureMusicWindow(NSWindow *window)
+{
+  [window setTitleVisibility:NSWindowTitleHidden];
+  [window setTitlebarAppearsTransparent:YES];
+  [window setStyleMask:[window styleMask] | NSWindowStyleMaskFullSizeContentView];
+  [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+  [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+  [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
+}
+
+static void LegendConfigureChatHistoryWindow(NSWindow *window)
+{
+  window.title = @"Legend Chat History";
+  window.minSize = NSMakeSize(640, 460);
+  window.styleMask = NSWindowStyleMaskTitled
+    | NSWindowStyleMaskClosable
+    | NSWindowStyleMaskMiniaturizable
+    | NSWindowStyleMaskResizable
+    | NSWindowStyleMaskFullSizeContentView
+    | NSWindowStyleMaskUnifiedTitleAndToolbar;
+  window.titleVisibility = NSWindowTitleVisible;
+  window.titlebarAppearsTransparent = YES;
+  if (!window.toolbar) {
+    NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"LegendMainWindowToolbar"];
+    toolbar.displayMode = NSToolbarDisplayModeIconOnly;
+    toolbar.showsBaselineSeparator = NO;
+    window.toolbar = toolbar;
+  }
+  if (@available(macOS 11.0, *)) {
+    window.toolbarStyle = NSWindowToolbarStyleUnified;
+    window.titlebarSeparatorStyle = NSTitlebarSeparatorStyleShadow;
+  }
+}
+
+static void LegendConfigureDiffWindow(NSWindow *window)
+{
+  window.title = @"Legend Diff";
+  window.minSize = NSMakeSize(640, 460);
+  window.styleMask = NSWindowStyleMaskTitled
+    | NSWindowStyleMaskClosable
+    | NSWindowStyleMaskMiniaturizable
+    | NSWindowStyleMaskResizable
+    | NSWindowStyleMaskFullSizeContentView
+    | NSWindowStyleMaskUnifiedTitleAndToolbar;
+  window.titleVisibility = NSWindowTitleVisible;
+  window.titlebarAppearsTransparent = YES;
+  if (!window.toolbar) {
+    NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"main"];
+    toolbar.displayMode = NSToolbarDisplayModeIconOnly;
+    toolbar.showsBaselineSeparator = NO;
+    window.toolbar = toolbar;
+  }
+  if (@available(macOS 11.0, *)) {
+    window.toolbarStyle = NSWindowToolbarStyleUnified;
+    window.titlebarSeparatorStyle = NSTitlebarSeparatorStyleShadow;
+  }
+}
+
+static void LegendMakeViewTransparent(NSView *view)
+{
+  view.wantsLayer = YES;
+  view.layer.backgroundColor = NSColor.clearColor.CGColor;
+  view.layer.masksToBounds = NO;
+}
+
+static NSView *LegendCreateMusicGlassHostView(NSRect frame, NSView **contentView)
+{
+  NSRect bounds = NSMakeRect(0, 0, NSWidth(frame), NSHeight(frame));
+  NSView *content = [[NSView alloc] initWithFrame:bounds];
+  content.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+  LegendMakeViewTransparent(content);
+
+  NSView *hostView = content;
+  if (@available(macOS 26.0, *)) {
+    NSGlassEffectView *glassView = [[NSGlassEffectView alloc] initWithFrame:bounds];
+    glassView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    glassView.contentView = content;
+    LegendMakeViewTransparent(glassView);
+    hostView = glassView;
+  }
+
+  *contentView = content;
+  return hostView;
+}
+
+@interface AppDelegate ()
+
+@property (nonatomic, weak) NSWindow *lastFocusedManagedWindow;
+@property (nonatomic, strong) NSColor *startupBackgroundColor;
+
+- (void)prepareHostWindowIfNeeded;
+
+@end
+
+@implementation AppDelegate
+
+- (void)applicationWillFinishLaunching:(NSNotification *)notification
+{
+  facebook::react::ReactMarker::logMarkerDone(
+    facebook::react::ReactMarker::APP_STARTUP_START,
+    CACurrentMediaTime() * 1000);
+
+  // AppKit shells do not depend on React, so present and restore them while
+  // the JavaScript runtime initializes instead of serializing the two phases.
+  [self prepareHostWindowIfNeeded];
+  if ([LegendCurrentAppId() isEqualToString:@"chat-history"] && LegendStartChatHistoryLoad) {
+    LegendStartChatHistoryLoad();
+  }
+  if (LegendPrecreateRestorableWindows) {
+    LegendPrecreateRestorableWindows();
+  }
+
+  LegendConfigureApplicationMenuTitles();
+
+  Class documentControllerClass = NSClassFromString(@"RNRecentDocumentController");
+  if (documentControllerClass && [documentControllerClass isSubclassOfClass:[NSDocumentController class]]) {
+    (void)[[documentControllerClass alloc] init];
+  }
+
+  [[NSAppleEventManager sharedAppleEventManager] setEventHandler:RCTLinkingManager.class
+                                                    andSelector:@selector(getUrlEventHandler:withReplyEvent:)
+                                                  forEventClass:kInternetEventClass
+                                                     andEventID:kAEGetURL];
+}
+
+- (void)applicationDidFinishLaunching:(NSNotification *)notification
+{
+  self.moduleName = @"main";
+  self.initialProps = @{
+    @"launchArguments": [[NSProcessInfo processInfo] arguments] ?: @[],
+  };
+  self.dependencyProvider = [RCTAppDependencyProvider new];
+
+  [[NSNotificationCenter defaultCenter] addObserver:self
+                                           selector:@selector(windowDidBecomeKey:)
+                                               name:NSWindowDidBecomeKeyNotification
+                                             object:nil];
+
+  facebook::react::ReactMarker::logMarkerDone(
+    facebook::react::ReactMarker::INIT_REACT_RUNTIME_START,
+    CACurrentMediaTime() * 1000);
+  [super applicationDidFinishLaunching:notification];
+
+  if ([LegendCurrentAppId() isEqualToString:@"music"]) {
+    NSAppearance *darkAppearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+    if (darkAppearance) {
+      [NSApp setAppearance:darkAppearance];
+    }
+  }
+}
+
+- (void)dealloc
+{
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
+{
+  Class appExitClass = NSClassFromString(@"RNAppExit");
+  SEL selector = NSSelectorFromString(@"applicationShouldTerminate");
+  if (!appExitClass || ![appExitClass respondsToSelector:selector]) {
+    return NSTerminateNow;
+  }
+
+  NSMethodSignature *signature = [appExitClass methodSignatureForSelector:selector];
+  if (!signature) {
+    return NSTerminateNow;
+  }
+
+  NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+  invocation.target = appExitClass;
+  invocation.selector = selector;
+  [invocation invoke];
+
+  NSApplicationTerminateReply reply = NSTerminateNow;
+  [invocation getReturnValue:&reply];
+  return reply;
+}
+
+- (BOOL)applicationShouldHandleReopen:(NSApplication *)sender hasVisibleWindows:(BOOL)flag
+{
+  NSString *appId = LegendCurrentAppId();
+  BOOL isMusic = [appId isEqualToString:@"music"];
+  BOOL isChatHistory = [appId isEqualToString:@"chat-history"];
+  BOOL isDiff = [appId isEqualToString:@"diff"];
+  BOOL hostWindowHidden = LegendHostWindowHidden();
+  BOOL shouldHandleReopen = YES;
+
+  if (isChatHistory) {
+    BOOL wasVisible = self.window.isVisible;
+    if (self.window.isMiniaturized) {
+      [self.window deminiaturize:self];
+    }
+    [self.window makeKeyAndOrderFront:self];
+    [NSApp activateIgnoringOtherApps:YES];
+    if (!wasVisible) {
+      [NSNotificationCenter.defaultCenter postNotificationName:LegendApplicationReopenRequestedNotification
+                                                        object:self
+                                                      userInfo:@{@"hasVisibleWindows": @NO}];
+    }
+    shouldHandleReopen = NO;
+  } else if (isMusic) {
+    if (self.window == nil) {
+      [self loadReactNativeWindow:nil];
+    } else if (!self.window.isVisible) {
+      [self.window makeKeyAndOrderFront:self];
+    } else {
+      [self.window makeKeyAndOrderFront:self];
+    }
+    [NSApp activateIgnoringOtherApps:YES];
+  } else if (isDiff && !self.window.isVisible) {
+    NSWindow *targetWindow = flag ? [self reopenTargetWindow] : nil;
+    if (targetWindow) {
+      [targetWindow makeKeyAndOrderFront:self];
+    } else {
+      [NSNotificationCenter.defaultCenter postNotificationName:LegendApplicationReopenRequestedNotification
+                                                        object:self
+                                                      userInfo:@{@"hasVisibleWindows": @NO}];
+    }
+    [NSApp activateIgnoringOtherApps:YES];
+    shouldHandleReopen = NO;
+  } else if (hostWindowHidden) {
+    [self.window orderOut:self];
+
+    NSWindow *targetWindow = [self reopenTargetWindow];
+
+    if (targetWindow) {
+      [targetWindow makeKeyAndOrderFront:self];
+    } else {
+      [NSNotificationCenter.defaultCenter postNotificationName:LegendApplicationReopenRequestedNotification
+                                                        object:self
+                                                      userInfo:@{@"hasVisibleWindows": @NO}];
+    }
+    [NSApp activateIgnoringOtherApps:YES];
+    shouldHandleReopen = NO;
+  }
+
+  return shouldHandleReopen;
+}
+
+- (NSWindow *)reopenTargetWindow
+{
+  NSWindow *targetWindow = nil;
+  NSWindow *keyWindow = NSApp.keyWindow;
+  NSWindow *mainWindow = NSApp.mainWindow;
+
+  if (LegendCanFocusManagedReopenWindow(keyWindow, self.window)) {
+    targetWindow = keyWindow;
+  } else if (LegendCanFocusManagedReopenWindow(mainWindow, self.window)) {
+    targetWindow = mainWindow;
+  } else if (LegendCanFocusManagedReopenWindow(self.lastFocusedManagedWindow, self.window)) {
+    targetWindow = self.lastFocusedManagedWindow;
+  } else {
+    for (NSWindow *window in NSApp.windows) {
+      if (LegendCanFocusManagedReopenWindow(window, self.window)) {
+        targetWindow = window;
+        break;
+      }
+    }
+  }
+
+  return targetWindow;
+}
+
+- (BOOL)windowShouldClose:(NSWindow *)sender
+{
+  NSString *appId = LegendCurrentAppId();
+  BOOL shouldHideHostWindow = ([appId isEqualToString:@"music"] || [appId isEqualToString:@"chat-history"])
+    && sender == self.window;
+  BOOL shouldRequestDiffWindowClose = [appId isEqualToString:@"diff"] && sender == self.window;
+
+  if (shouldHideHostWindow) {
+    // Keep the root view and JavaScript runtime alive for the next Dock reopen.
+    [self.window orderOut:self];
+  }
+
+  if (shouldRequestDiffWindowClose) {
+    [NSNotificationCenter.defaultCenter postNotificationName:LegendMainWindowCloseRequestedNotification
+                                                      object:self];
+  }
+
+  return !shouldHideHostWindow && !shouldRequestDiffWindowClose;
+}
+
+- (void)windowDidBecomeKey:(NSNotification *)notification
+{
+  NSWindow *window = [notification.object isKindOfClass:NSWindow.class] ? notification.object : nil;
+  BOOL isMusicMainWindow = [LegendCurrentAppId() isEqualToString:@"music"] && window == self.window;
+
+  if (LegendCanFocusManagedReopenWindow(window, self.window)) {
+    self.lastFocusedManagedWindow = window;
+  }
+
+  if (isMusicMainWindow) {
+    if (!self.mainWindowFrameAdjusted) {
+      CGFloat titleBarHeight = NSHeight(window.frame) - NSHeight(window.contentLayoutRect);
+      if (titleBarHeight > 0.0) {
+        NSRect frame = window.frame;
+        frame.size.height += titleBarHeight;
+        frame.origin.y -= titleBarHeight;
+        [window setFrame:frame display:NO animate:NO];
+      }
+      self.mainWindowFrameAdjusted = YES;
+    }
+
+    LegendConfigureMusicWindow(window);
+    [window setDelegate:self];
+  }
+}
+
+- (void)loadReactNativeWindow:(NSDictionary *)launchOptions
+{
+  // Normally prepared in applicationWillFinishLaunching; keep this idempotent
+  // for alternate launch paths and direct test invocation.
+  [self prepareHostWindowIfNeeded];
+
+  NSString *appId = LegendCurrentAppId();
+  BOOL isMarkdown = [appId isEqualToString:@"markdown"];
+  BOOL isMusic = [appId isEqualToString:@"music"];
+  BOOL hostWindowHidden = LegendHostWindowHidden();
+  NSRect frame = self.window.contentView.bounds;
+
+  RCTPlatformView *rootView = [self.rootViewFactory viewWithModuleName:self.moduleName
+                                                     initialProperties:self.initialProps
+                                                         launchOptions:launchOptions];
+
+  rootView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+  if (self.startupBackgroundColor != nil) {
+    ((RCTUIView *)rootView).backgroundColor = self.startupBackgroundColor;
+  }
+
+  if (isMusic) {
+    NSView *glassContentView = nil;
+    NSView *glassHostView = LegendCreateMusicGlassHostView(frame, &glassContentView);
+    self.musicGlassContentView = glassContentView;
+
+    NSViewController *glassViewController = [NSViewController new];
+    glassViewController.view = glassHostView;
+    self.window.contentViewController = glassViewController;
+
+    self.musicRootViewController = [NSViewController new];
+    self.musicRootViewController.view = rootView;
+    [glassViewController addChildViewController:self.musicRootViewController];
+
+    rootView.frame = glassContentView.bounds;
+    [glassContentView addSubview:rootView];
+  } else {
+    __weak NSWindow *window = self.window;
+    void (^installRoot)(void) = ^{
+      [rootView removeFromSuperview];
+      NSViewController *rootViewController = [NSViewController new];
+      rootView.frame = window.contentView.bounds;
+      rootViewController.view = rootView;
+      window.contentViewController = rootViewController;
+    };
+    if (!LegendAttachSidebarSplitViewStartupRoot ||
+        !LegendAttachSidebarSplitViewStartupRoot(self.window, rootView, installRoot)) {
+      installRoot();
+    }
+  }
+  LegendMainWindowReactRootAttachedTimeMs = CACurrentMediaTime() * 1000;
+
+  if (isMarkdown || isMusic) {
+    NSColor *backgroundColor = isMusic
+      ? NSColor.clearColor
+      : [NSColor colorWithSRGBRed:0.960784 green:0.964706 blue:0.972549 alpha:1];
+    LegendMakeViewTransparent(self.window.contentView);
+    if (isMarkdown) {
+      self.window.contentView.layer.backgroundColor = backgroundColor.CGColor;
+    }
+    if (isMusic && [rootView respondsToSelector:@selector(setBackgroundColor:)]) {
+      [(id)rootView setBackgroundColor:[NSColor clearColor]];
+    }
+    LegendMakeViewTransparent(rootView);
+    rootView.layer.backgroundColor = backgroundColor.CGColor;
+  }
+  if (hostWindowHidden) {
+    [self.window orderOut:self];
+  } else {
+    [self.window makeKeyAndOrderFront:self];
+  }
+}
+
+- (void)prepareHostWindowIfNeeded
+{
+  if (self.window != nil) {
+    return;
+  }
+
+  NSString *appId = LegendCurrentAppId();
+  BOOL isMarkdown = [appId isEqualToString:@"markdown"];
+  BOOL isMusic = [appId isEqualToString:@"music"];
+  BOOL isChatHistory = [appId isEqualToString:@"chat-history"];
+  BOOL isDiff = [appId isEqualToString:@"diff"];
+  BOOL hostWindowHidden = LegendHostWindowHidden();
+  NSRect frame = isMusic
+    ? NSMakeRect(0, 0, 360, 640)
+    : (isDiff ? NSMakeRect(0, 0, 1180, 780) : NSMakeRect(0, 0, 1280, 720));
+  self.window = [[NSWindow alloc] initWithContentRect:frame
+                                           styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskResizable | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable
+                                             backing:NSBackingStoreBuffered
+                                               defer:NO];
+
+  if (isMarkdown) {
+    NSColor *backgroundColor = [NSColor colorWithSRGBRed:0.960784 green:0.964706 blue:0.972549 alpha:1];
+    self.window.title = LegendInitialMarkdownWindowTitle();
+    self.window.backgroundColor = backgroundColor;
+    self.window.opaque = YES;
+    self.window.titleVisibility = NSWindowTitleVisible;
+    self.window.titlebarAppearsTransparent = YES;
+    self.window.styleMask = self.window.styleMask | NSWindowStyleMaskFullSizeContentView;
+    if (@available(macOS 11.0, *)) {
+      self.window.titlebarSeparatorStyle = NSTitlebarSeparatorStyleNone;
+    }
+  } else if (isMusic) {
+    self.window.title = @"Legend Music";
+    self.window.backgroundColor = NSColor.clearColor;
+    self.window.opaque = NO;
+    self.window.minSize = NSMakeSize(200, 300);
+    if (@available(macOS 10.14, *)) {
+      self.window.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+    }
+    LegendConfigureMusicWindow(self.window);
+    [self.window setDelegate:self];
+  } else if (isChatHistory) {
+    LegendConfigureChatHistoryWindow(self.window);
+    [self.window setDelegate:self];
+  } else if (isDiff) {
+    LegendConfigureDiffWindow(self.window);
+    [self.window setDelegate:self];
+  } else {
+    self.window.title = LegendCurrentDisplayName();
+  }
+
+  self.window.autorecalculatesKeyViewLoop = YES;
+
+  BOOL isChatHistoryBenchmark = isChatHistory && [NSProcessInfo.processInfo.arguments
+    indexOfObjectPassingTest:^BOOL(NSString *argument, NSUInteger index, BOOL *stop) {
+      return [argument hasPrefix:@"--chat-history-benchmark="];
+    }] != NSNotFound;
+  if (isChatHistoryBenchmark) {
+    // Fixed benchmark geometry must not override a normal user's saved window frame.
+    [self.window setContentSize:frame.size];
+    [self.window center];
+  } else {
+    NSString *autosaveName = LegendMainWindowFrameAutoSaveName(appId);
+    [self.window setFrameAutosaveName:autosaveName];
+    if (![self.window setFrameUsingName:autosaveName]) {
+      [self.window center];
+    }
+  }
+
+  if (!hostWindowHidden) {
+    self.startupBackgroundColor = LegendHostWindowStartupBackgroundColor(self.window);
+    NSView *placeholderView = [[NSView alloc] initWithFrame:self.window.contentView.bounds];
+    placeholderView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    placeholderView.wantsLayer = YES;
+    placeholderView.layer.backgroundColor = self.startupBackgroundColor.CGColor;
+    self.window.backgroundColor = self.startupBackgroundColor;
+    self.window.contentView = placeholderView;
+    NSDictionary *splitConfiguration = LegendMainWindowStartupSplitViewConfiguration
+      ? LegendMainWindowStartupSplitViewConfiguration() : nil;
+    if (isChatHistory) {
+      BOOL dark = LegendHostWindowUsesDarkAppearance(self.window);
+      splitConfiguration = @{
+        @"sidebarWidth": @260,
+        @"sidebarMinWidth": @220,
+        @"contentMinWidth": @420,
+        @"contentTitlebarHeight": @52,
+        @"appearance": dark ? @"dark" : @"light",
+        // Match ChatHistoryWindow and the shared display theme on the first frame.
+        @"backgroundColor": dark ? @"#191A1B" : @"#f5f6f8",
+        @"sidebarBackgroundColor": dark ? @"#2d2e30" : @"#f3f4f6",
+      };
+    }
+    if (LegendPrepareSidebarSplitViewStartup && splitConfiguration) {
+      LegendPrepareSidebarSplitViewStartup(self.window, splitConfiguration);
+    }
+    [self.window makeKeyAndOrderFront:self];
+    [self.window displayIfNeeded];
+    LegendMainWindowFirstVisibleTimeMs = CACurrentMediaTime() * 1000;
+  }
+}
+
+- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
+{
+  return [self bundleURL];
+}
+
+- (NSURL *)bundleURL
+{
+#if DEBUG
+  NSString *bundleRoot = LegendUsesExpoModules() ? @".expo/.virtual-metro-entry" : @"shell/index.native";
+  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:bundleRoot];
+#else
+  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
+#endif
+}
+
+/// This method controls whether the `concurrentRoot`feature of React18 is turned on or off.
+///
+/// @see: https://reactjs.org/blog/2022/03/29/react-v18.html
+/// @note: This requires to be rendering on Fabric (i.e. on the New Architecture).
+/// @return: `true` if the `concurrentRoot` feature is enabled. Otherwise, it returns `false`.
+- (BOOL)concurrentRootEnabled
+{
+#ifdef RN_FABRIC_ENABLED
+  return true;
+#else
+  return false;
+#endif
+}
+
+@end

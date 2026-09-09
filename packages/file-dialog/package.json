@@ -1,0 +1,24 @@
+{
+  "name": "@legend-apps/file-dialog",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "codegenConfig": {
+    "name": "RNFileDialogSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "so.legend.apps.filedialog"
+    },
+    "ios": {
+      "modulesProvider": {
+        "NativeFileDialog": "RNFileDialog"
+      }
+    }
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-native": "catalog:"
+  }
+}

@@ -1,0 +1,23 @@
+diff --git a/ReactCommon/react/runtime/hermes/HermesInstance.cpp b/ReactCommon/react/runtime/hermes/HermesInstance.cpp
+index 485912d..121a80c 100644
+--- a/ReactCommon/react/runtime/hermes/HermesInstance.cpp
++++ b/ReactCommon/react/runtime/hermes/HermesInstance.cpp
+@@ -110,7 +110,9 @@ class HermesJSRuntime : public JSRuntime {
+   }
+ 
+   void unstable_initializeOnJsThread() override {
++#ifndef NDEBUG
+     runtime_->registerForProfiling();
++#endif
+   }
+ 
+  private:
+diff --git a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
+--- a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
++++ b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
+@@ -309,5 +309,4 @@
+   _contentInset = contentInset;
+   _scrollView.contentInset = contentInset;
+-  _scrollView.scrollIndicatorInsets = contentInset;
+ }
+ #endif // macOS]

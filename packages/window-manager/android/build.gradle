@@ -1,0 +1,21 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+}
+
+apply plugin: "com.android.library"
+
+android {
+  namespace "so.legend.apps.windowmanager"
+  compileSdk 35
+
+  defaultConfig {
+    minSdk 24
+  }
+}
+
+dependencies {
+  implementation "com.facebook.react:react-android"
+}

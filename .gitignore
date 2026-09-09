@@ -6,3 +6,6 @@ docs
 *.app/
 .scratch/
 .DS_Store
+
+# legend shell generated config (metro/native codegen output)
+shell/.legend/

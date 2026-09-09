@@ -1,0 +1,12 @@
+{
+  "name": "@skillet/app-skillet",
+  "version": "0.0.1",
+  "private": true,
+  "main": "src/index.ts",
+  "dependencies": {
+    "@legendapp/list": "catalog:",
+    "@legendapp/state": "catalog:",
+    "react-native-enriched-markdown": "^0.7.4",
+    "uniwind": "^1.6.3"
+  }
+}
