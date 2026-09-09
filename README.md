@@ -51,6 +51,37 @@ deno task desktop
 deno task desktop:app
 ```
 
+### Native macOS App (MVP)
+
+A native macOS build exists alongside the web app, powered by
+[react-native-macos](https://microsoft.github.io/react-native-macos/)
+following the [Legend Apps](https://github.com/LegendApp/legend-apps)
+shell pattern (`apps/skillet/`, `packages/skills-fs/`, `shell/`).
+See `docs/superpowers/specs/2026-09-09-skillet-macos-design.md` for the design.
+
+Prerequisites: [Bun](https://bun.sh/), Xcode, CocoaPods.
+
+```bash
+bun install
+
+# Terminal 1 — Metro dev server
+bun run skillet start
+
+# Terminal 2 — configure, build, and launch the macOS app
+bun run skillet run macos
+
+# After native-module or manifest changes, refresh pods before rebuilding
+bun run skillet pods macos
+
+# Verify generated config and native linking
+bun run skillet verify macos
+```
+
+MVP scope is macOS-only and unsigned (`dist/skillet/macos/Skillet.app`).
+Known gaps before a signed release: file-watcher refresh, token settings,
+update-check wiring, Sparkle key rotation + signing team
+(see `apps/skillet/app.manifest.ts` release checklist).
+
 ## Tech Stack
 
 - **Runtime & Desktop**: Deno & `deno desktop`
