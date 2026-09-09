@@ -1,23 +1,46 @@
 import { SidebarSplitView } from "@legend-apps/appkit-split-view";
 import { WindowProvider } from "@legend-apps/windows";
-import { useState } from "react";
-import { Text, View } from "react-native";
+import { useCallback, useState } from "react";
 import { Sidebar } from "./Sidebar";
+import { SkillDetail } from "./SkillDetail";
+import { toggleSkill, type Skill } from "./services/skills";
+import type { Workspace } from "./services/workspaces";
 
-// Single main window (global constraint: no multi-window at MVP). The
-// detail pane is a placeholder showing the Task 5 selection — Task 6
-// replaces it with SkillDetail + toggles.
+// Single main window (global constraint: no multi-window at MVP). Task 6
+// wires the detail pane to SkillDetail: selection resolves to the loaded
+// Skill (lifted from Sidebar via `onSkills`), toggles go through the Task 3
+// `toggleSkill` service. Install/uninstall execution is Task 7 (needs
+// `downloadSkill` + a delete API that the skills-fs surface does not have
+// yet), so those callbacks stay unwired and their buttons stay hidden.
 export function App(): React.JSX.Element {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const selectedSkill = skills.find((s) => s.id === selectedId) ?? null;
+
+  const handleToggle = useCallback(
+    async (workspace: Workspace, enable: boolean): Promise<boolean> => {
+      const skill = skills.find((s) => s.id === selectedId) ?? null;
+      if (!skill) return false;
+      return toggleSkill({
+        skillSlug: skill.slug,
+        sourcePath: skill.path,
+        workspacePath: workspace.path,
+        agent: skill.agent,
+        enable,
+      });
+    },
+    [skills, selectedId],
+  );
+
   return (
     <WindowProvider id="main">
       <SidebarSplitView contentMinWidth={320} sidebarMinWidth={220} sidebarWidth={280}>
-        <Sidebar onSelect={setSelectedId} selectedId={selectedId} />
-        <View className="flex-1 items-center justify-center bg-background px-10">
-          <Text className="text-center text-sm text-muted">
-            {selectedId ?? "Select a skill"}
-          </Text>
-        </View>
+        <Sidebar onSelect={setSelectedId} onSkills={setSkills} selectedId={selectedId} />
+        <SkillDetail
+          key={selectedSkill?.id ?? "none"}
+          onToggleInRepo={handleToggle}
+          skill={selectedSkill}
+        />
       </SidebarSplitView>
     </WindowProvider>
   );

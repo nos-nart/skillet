@@ -18,6 +18,7 @@ module.exports = {
   moduleNameMapper: {
     "^react-native$": "<rootDir>/jest/reactNativeMock.cjs",
     "^@legendapp/list/react-native$": "<rootDir>/jest/legendListMock.cjs",
+    "^react-native-enriched-markdown$": "<rootDir>/jest/enrichedMarkdownMock.cjs",
     "^@legend-apps/storage$": "<rootDir>/src/services/__tests__/storageMock.ts",
   },
 };

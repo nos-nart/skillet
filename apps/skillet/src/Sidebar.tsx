@@ -21,9 +21,13 @@ function workspaceName(path: string): string {
 export function Sidebar({
   selectedId,
   onSelect,
+  onSkills,
 }: {
   selectedId?: string;
   onSelect?: (id: string) => void;
+  // Task 6 lift: App needs the loaded skills to resolve the selected Skill
+  // for the detail pane. Reported once per successful fetch (not per render).
+  onSkills?: (skills: Skill[]) => void;
 }): React.JSX.Element {
   const [nav, setNav] = useState<SidebarNav>("skills");
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -37,9 +41,15 @@ export function Sidebar({
   }, []);
 
   useEffect(() => {
-    void getSkills().then(setSkills, () => setSkills([]));
+    void getSkills().then(
+      (list) => {
+        setSkills(list);
+        onSkills?.(list);
+      },
+      () => setSkills([]),
+    );
     void refreshWorkspaces();
-  }, [refreshWorkspaces]);
+  }, [refreshWorkspaces, onSkills]);
 
   const handleSelectWorkspace = useCallback(async (id: string) => {
     await setCurrentWorkspace(id);
