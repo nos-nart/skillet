@@ -227,14 +227,8 @@ export function writeGeneratedConfig(
   const appPackage = loadAppPackageMetadata(manifest.id);
   fs.mkdirSync(dir, { recursive: true });
 
-  const activePackages =
-    mode === "dev"
-      ? getAllNativePackages(platform)
-      : getActiveNativePackages(manifest, platform);
-  const excludedPackages =
-    mode === "dev"
-      ? []
-      : getExcludedNativePackages(manifest, platform);
+  const activePackages = getActiveNativePackages(manifest, platform);
+  const excludedPackages = getExcludedNativePackages(manifest, platform);
 
   const activeNativePackages = activePackages.map((pkg) => ({
     ...pkg,
