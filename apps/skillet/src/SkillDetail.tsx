@@ -9,10 +9,10 @@ import { getWorkspaces, type Workspace } from "./services/workspaces";
 // where the skill is enabled and applies this reducer per `Switch` flip,
 // rolling back when the native call reports failure. Pure so it stays
 // unit-testable without the RN runtime.
-export function toggleReducer(prev: Set<string>, t: { slug: string; enable: boolean }): Set<string> {
+export function toggleReducer(prev: Set<string>, t: { workspaceId: string; enable: boolean }): Set<string> {
   const next = new Set(prev);
-  if (t.enable) next.add(t.slug);
-  else next.delete(t.slug);
+  if (t.enable) next.add(t.workspaceId);
+  else next.delete(t.workspaceId);
   return next;
 }
 
@@ -101,16 +101,16 @@ export function SkillDetail({
   }
 
   const handleToggle = (ws: Workspace, enable: boolean): void => {
-    setOptimistic((prev) => toggleReducer(prev, { slug: ws.id, enable }));
+    setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable }));
     void Promise.resolve()
       .then(() => onToggleInRepo(ws, enable))
       .then((ok) => {
         if (!ok) {
-          setOptimistic((prev) => toggleReducer(prev, { slug: ws.id, enable: !enable }));
+          setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable: !enable }));
         }
       })
       .catch(() => {
-        setOptimistic((prev) => toggleReducer(prev, { slug: ws.id, enable: !enable }));
+        setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable: !enable }));
       });
   };
 

@@ -1,5 +1,6 @@
 import { createStorage } from "@legend-apps/storage";
 import {
+  buildGitHubHeaders,
   compareCommitShas,
   fetchLatestCommit,
   fetchSkillMd,
@@ -33,6 +34,19 @@ test("parses known owner shorthand to default repo", () => {
 test("returns null for empty or garbage input", () => {
   expect(parseGitHubRepo("")).toBeNull();
   expect(parseGitHubRepo("not a repo?!")).toBeNull();
+});
+
+test("buildGitHubHeaders includes Authorization only when token passed", () => {
+  expect(buildGitHubHeaders("SECRET")).toEqual({
+    "User-Agent": "Skillet-Desktop-App",
+    Accept: "application/vnd.github.v3+json",
+    Authorization: "token SECRET",
+  });
+  expect(buildGitHubHeaders()).toEqual({
+    "User-Agent": "Skillet-Desktop-App",
+    Accept: "application/vnd.github.v3+json",
+  });
+  expect(buildGitHubHeaders() as Record<string, string>).not.toHaveProperty("Authorization");
 });
 
 test("compareCommitShas detects drift", () => {

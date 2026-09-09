@@ -60,6 +60,22 @@ test("installs a fetched SKILL.md under owner/slug and records the lock", async 
   });
 });
 
+test("routes installs to the agent skill dir matching the repo", async () => {
+  const { writer } = fakeWriter();
+  const deps = { writer, fetchImpl: stubFetch(null), lockStore: memoryStore().store };
+  const cases: Array<[string, string]> = [
+    ["cursor/plugins/myskill", "~/.cursor/skills/cursor/myskill"],
+    ["gemini-team/skills/cool", "~/.gemini/config/skills/gemini-team/cool"],
+    ["anthropics/skills/skills/eli5", "~/.claude/skills/anthropics/eli5"],
+    ["windsurf-team/skills/cool", "~/.codeium/windsurf/skills/windsurf-team/cool"],
+    ["copilot-team/skills/cool", "~/.github/skills/copilot-team/cool"],
+    ["vercel-labs/skills/frontend/design", "~/.skills/vercel-labs/design"],
+  ];
+  for (const [source, path] of cases) {
+    await expect(downloadSkill({ source }, deps)).resolves.toEqual({ ok: true, path });
+  }
+});
+
 test("writes a source_url template when SKILL.md is missing", async () => {
   const { files, writer } = fakeWriter();
   const res = await downloadSkill(

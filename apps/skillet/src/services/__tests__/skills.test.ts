@@ -138,7 +138,6 @@ test("toggleSkill enables via symlink and disables via unlink", async () => {
     skillSlug: "eli5",
     sourcePath: "/Users/x/.skills/eli5",
     workspacePath: "/ws/proj",
-    agent: "generic" as const,
     enable: true,
   };
   await expect(toggleSkill(req, fs)).resolves.toBe(true);
@@ -155,7 +154,6 @@ test("toggleSkill rejects unsafe slugs without touching fs", async () => {
         skillSlug: "..",
         sourcePath: "/src",
         workspacePath: "/ws",
-        agent: "generic",
         enable: true,
       },
       fs,

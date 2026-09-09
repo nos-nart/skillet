@@ -1,11 +1,19 @@
 import {
   browseRepoForSkills,
-  buildGitHubApiHeaders,
+  buildGitHubHeaders,
   buildInstallSource,
   mapTreeToSkillItems,
+  parseGitHubRepo,
   POPULAR_REPOS,
-} from "../tabs/DiscoverTab";
-import type { FetchFn } from "../services/github";
+  type FetchFn,
+  type GitHubRepoInfo,
+} from "../github";
+
+function mustParse(source: string): GitHubRepoInfo {
+  const info = parseGitHubRepo(source);
+  if (!info) throw new Error(`test source did not parse: ${source}`);
+  return info;
+}
 
 test("popular repos seed the discover list", () => {
   expect(POPULAR_REPOS.map((r) => r.fullName)).toContain("anthropics/skills");
@@ -54,11 +62,11 @@ test("sends the token auth header on both api calls", async () => {
       text: () => Promise.resolve(""),
     });
   };
-  expect(buildGitHubApiHeaders("SECRET")).toMatchObject({
+  expect(buildGitHubHeaders("SECRET")).toMatchObject({
     Authorization: "token SECRET",
     Accept: "application/vnd.github.v3+json",
   });
-  const found = await browseRepoForSkills("anthropics/skills", {
+  const found = await browseRepoForSkills(mustParse("anthropics/skills"), {
     token: "SECRET",
     fetchImpl,
   });
@@ -70,13 +78,14 @@ test("sends the token auth header on both api calls", async () => {
 });
 
 test("surfaces repository-not-found and rate-limit errors", async () => {
+  const info = mustParse("anthropics/skills");
   const notFound: FetchFn = () =>
     Promise.resolve({
       ok: false,
       json: () => Promise.resolve({}),
       text: () => Promise.resolve(""),
     });
-  await expect(browseRepoForSkills("anthropics/skills", { fetchImpl: notFound })).rejects.toThrow(
+  await expect(browseRepoForSkills(info, { fetchImpl: notFound })).rejects.toThrow(
     "Repository not found",
   );
   const rateLimited: FetchFn = () =>
@@ -86,7 +95,7 @@ test("surfaces repository-not-found and rate-limit errors", async () => {
       json: () => Promise.resolve({}),
       text: () => Promise.resolve(""),
     } as never);
-  await expect(
-    browseRepoForSkills("anthropics/skills", { fetchImpl: rateLimited }),
-  ).rejects.toThrow("rate limit");
+  await expect(browseRepoForSkills(info, { fetchImpl: rateLimited })).rejects.toThrow(
+    "rate limit",
+  );
 });

@@ -39,7 +39,6 @@ export function App(): React.JSX.Element {
         skillSlug: skill.slug,
         sourcePath: skill.path,
         workspacePath: workspace.path,
-        agent: skill.agent,
         enable,
       });
     },

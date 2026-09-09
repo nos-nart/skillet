@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SkillList } from "../SkillList";
-import { parseGitHubRepo, type FetchFn, type FetchResponse } from "../services/github";
+import {
+  browseRepoForSkills,
+  buildInstallSource,
+  parseGitHubRepo,
+  POPULAR_REPOS,
+  type DiscoveredSkillItem,
+  type FetchFn,
+  type GitHubRepoInfo,
+} from "../services/github";
 import type { Skill } from "../services/skills";
 
 // Native port of the web `DiscoverTab` (`src/components/tabs/DiscoverTab.tsx`):
@@ -11,179 +19,9 @@ import type { Skill } from "../services/skills";
 // (`github.com/<owner>.png`, hidden on load error); StyleX cards → Uniwind
 // rows. Deliberately out of scope: bookmarks dialog + per-item description
 // prefetch (one fetch per row is too chatty for the MVP; rows show the path).
-
-export interface PopularRepo {
-  owner: string;
-  repo: string;
-  fullName: string;
-  desc: string;
-}
-
-export const POPULAR_REPOS: PopularRepo[] = [
-  { owner: "anthropics", repo: "skills", fullName: "anthropics/skills", desc: "Official Anthropic agent skills and guidelines." },
-  { owner: "cursor", repo: "plugins", fullName: "cursor/plugins", desc: "Official Cursor community skills repository." },
-  { owner: "vercel-labs", repo: "skills", fullName: "vercel-labs/skills", desc: "Foundational skills and examples from Vercel." },
-  { owner: "cloudflare", repo: "skills", fullName: "cloudflare/skills", desc: "Skills for teaching agents to build on Cloudflare." },
-  { owner: "expo", repo: "skills", fullName: "expo/skills", desc: "Official AI agent skills for Expo & React Native." },
-  { owner: "mattpocock", repo: "skills", fullName: "mattpocock/skills", desc: "Skills for Real Engineers by Matt Pocock." },
-  { owner: "addyosmani", repo: "agent-skills", fullName: "addyosmani/agent-skills", desc: "Production-grade engineering skills by Addy Osmani." },
-  { owner: "garrytan", repo: "gstack", fullName: "garrytan/gstack", desc: "Garry Tan's Claude Code setup with 23+ skills & tools." },
-];
-
-export interface DiscoveredSkillItem {
-  name: string;
-  path: string;
-  htmlUrl: string;
-}
-
-export interface DiscoverRepo {
-  owner: string;
-  repo: string;
-  path?: string;
-  branch: string;
-}
-
-interface TreeEntry {
-  type: string;
-  path: string;
-}
-
-// Pure mapping of a recursive GitHub trees response to installable rows:
-// keeps SKILL.md-bearing dirs (plus cursor-rules files, web parity), scopes to
-// the searched subpath when one was given, dedups by dir path. Pure so the
-// discover flow stays unit-testable without the RN runtime or network.
-export function mapTreeToSkillItems(
-  tree: TreeEntry[],
-  repo: DiscoverRepo,
-): DiscoveredSkillItem[] {
-  const seen = new Map<string, DiscoveredSkillItem>();
-  for (const entry of tree) {
-    if (entry.type !== "blob") continue;
-    if (
-      !entry.path.endsWith("SKILL.md") &&
-      !entry.path.endsWith(".cursorrules") &&
-      !entry.path.endsWith("cursorrules")
-    ) {
-      continue;
-    }
-    if (repo.path) {
-      const scope = repo.path.replace(/\/+$/, "");
-      if (entry.path !== scope && !entry.path.startsWith(`${scope}/`)) continue;
-    }
-    const parts = entry.path.split("/");
-    parts.pop();
-    const dirPath = parts.join("/");
-    if (seen.has(dirPath)) continue;
-    const name = parts.length > 0 ? parts[parts.length - 1] : repo.repo;
-    seen.set(dirPath, {
-      name,
-      path: dirPath,
-      htmlUrl: `https://github.com/${repo.owner}/${repo.repo}/tree/${repo.branch}${dirPath === "" ? "" : `/${dirPath}`}`,
-    });
-  }
-  return [...seen.values()];
-}
-
-// GitHub API headers shared with Task 3 `services/github.ts` (`fetchLatestCommit`
-// / `fetchSkillMd` contract: UA + v3 Accept, `token` auth when provided) so the
-// Discover search gets the same token/rate-limit behavior instead of an
-// unauthenticated bare fetch.
-export function buildGitHubApiHeaders(token?: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    "User-Agent": "Skillet-Desktop-App",
-    Accept: "application/vnd.github.v3+json",
-  };
-  if (token) {
-    headers["Authorization"] = `token ${token}`;
-  }
-  return headers;
-}
-
-type ApiResponse = FetchResponse & { status?: number };
-
-const defaultDiscoverFetch: FetchFn = (url, init) =>
-  globalThis.fetch(url, init) as unknown as Promise<FetchResponse>;
-
-export interface BrowseRepoOptions {
-  token?: string;
-  fetchImpl?: FetchFn;
-}
-
-export interface BrowseRepoResult {
-  repo: DiscoverRepo;
-  items: DiscoveredSkillItem[];
-}
-
-function rateLimitError(status?: number): boolean {
-  return status === 403 || status === 429;
-}
-
-// Service-routed Discover search: repo metadata → default branch → recursive
-// tree → `mapTreeToSkillItems`. Injectable `fetchImpl`/`token` (Task 3 `FetchFn`
-// contract) so tests pin headers and callers can pass an authed fetch later.
-export async function browseRepoForSkills(
-  source: string,
-  options: BrowseRepoOptions = {},
-): Promise<BrowseRepoResult> {
-  const info = parseGitHubRepo(source);
-  if (!info) {
-    throw new Error("Invalid format. Use owner/repo or a GitHub URL.");
-  }
-  const fetchImpl = options.fetchImpl ?? defaultDiscoverFetch;
-  const headers = buildGitHubApiHeaders(options.token);
-  let repoRes: ApiResponse;
-  try {
-    repoRes = (await fetchImpl(
-      `https://api.github.com/repos/${info.owner}/${info.repo}`,
-      { headers },
-    )) as ApiResponse;
-  } catch {
-    throw new Error("Failed to fetch repository");
-  }
-  if (!repoRes.ok) {
-    if (rateLimitError(repoRes.status)) {
-      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
-    }
-    throw new Error("Repository not found");
-  }
-  const repoData = (await repoRes.json()) as { default_branch?: unknown };
-  const branch = typeof repoData.default_branch === "string" ? repoData.default_branch : "main";
-  let treeRes: ApiResponse;
-  try {
-    treeRes = (await fetchImpl(
-      `https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`,
-      { headers },
-    )) as ApiResponse;
-  } catch {
-    throw new Error("Failed to fetch repository tree");
-  }
-  if (!treeRes.ok) {
-    if (rateLimitError(treeRes.status)) {
-      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
-    }
-    throw new Error("Failed to fetch repository tree");
-  }
-  const treeData = (await treeRes.json()) as { tree?: unknown };
-  const tree = Array.isArray(treeData.tree)
-    ? (treeData.tree as { type?: unknown; path?: unknown }[]).filter(
-      (e): e is { type: string; path: string } =>
-        typeof e.type === "string" && typeof e.path === "string",
-    )
-    : [];
-  const repo: DiscoverRepo = { owner: info.owner, repo: info.repo, path: info.path, branch };
-  const rows = mapTreeToSkillItems(tree, repo);
-  if (rows.length === 0) throw new Error("No skills found in this repository");
-  return { repo, items: rows };
-}
-
-// Source string the installer consumes for a discovered row
-// (`owner/repo[/path]` shorthand, same acceptance as `parseGitHubRepo`).
-export function buildInstallSource(
-  repo: { owner: string; repo: string },
-  itemPath: string,
-): string {
-  return itemPath === "" ? `${repo.owner}/${repo.repo}` : `${repo.owner}/${repo.repo}/${itemPath}`;
-}
+// Repo search itself lives in `services/github.ts` (`browseRepoForSkills` +
+// `mapTreeToSkillItems` + `POPULAR_REPOS`); this file keeps the component and
+// selection state.
 
 export function DiscoverTab({
   installedSkills,
@@ -200,7 +38,7 @@ export function DiscoverTab({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<DiscoveredSkillItem[]>([]);
-  const [repo, setRepo] = useState<DiscoverRepo | null>(null);
+  const [repo, setRepo] = useState<GitHubRepoInfo | null>(null);
   const [installing, setInstalling] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
@@ -218,7 +56,7 @@ export function DiscoverTab({
     setRepo(null);
     setAvatarFailed(false);
     try {
-      const found = await browseRepoForSkills(trimmed, { token, fetchImpl });
+      const found = await browseRepoForSkills(info, { token, fetchImpl });
       setRepo(found.repo);
       setItems(found.items);
     } catch (err: unknown) {

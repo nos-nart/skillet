@@ -75,7 +75,6 @@ export interface ToggleSkillRequest {
   skillSlug: string;
   sourcePath: string;
   workspacePath: string;
-  agent: AgentId;
   enable: boolean;
 }
 
@@ -198,12 +197,17 @@ export function parseSkillMd(content: string): ParsedSkillDoc {
   };
 }
 
+// Strips trailing slashes so workspace paths compare/join consistently.
+export function normalizeWs(p: string): string {
+  return p.replace(/\/+$/, "");
+}
+
 // Verbatim port of `resolveSafeTarget` from `src/backend/symlinker.ts`.
 export function resolveSkillTarget(workspacePath: string, skillSlug: string): string | null {
   if (!validateSafeSlug(skillSlug)) {
     return null;
   }
-  const normalizedWs = workspacePath.replace(/\/+$/, "");
+  const normalizedWs = normalizeWs(workspacePath);
   const target = `${normalizedWs}/${WORKSPACE_SKILLS_REL}/${skillSlug}`;
 
   // Ensure resolved path doesn't escape workspace
@@ -313,7 +317,7 @@ export async function isSkillEnabled(
   fs: SkillsFs = defaultSkillsFs,
 ): Promise<boolean> {
   if (!validateSafeSlug(skillSlug)) return false;
-  const normalizedWs = workspacePath.replace(/\/+$/, "");
+  const normalizedWs = normalizeWs(workspacePath);
   let entries: string[];
   try {
     entries = await fs.scanSkillsDir(`${normalizedWs}/${WORKSPACE_SKILLS_REL}`);
@@ -362,21 +366,25 @@ export interface DownloadSkillDeps {
 // Agent-aware global dir heuristic, verbatim from `src/backend/installer.ts`
 // (`downloadSkillFromGitHub`). The universal `~/.skills` home stays default;
 // the writer expands `~` natively (same contract as scan/read).
+// Ordered keyword rules (first match wins) resolve to an agent whose dir is
+// looked up in `AGENT_SKILL_DIRS`, preserving the original if-cascade order:
+// cursor → gemini/antigravity → claude/anthropic/gstack/garrytan →
+// windsurf → copilot → default.
+const REPO_DIR_RULES: ReadonlyArray<{ keywords: string[]; agent: AgentId }> = [
+  { keywords: ["cursor"], agent: "cursor" },
+  { keywords: ["gemini", "antigravity"], agent: "gemini" },
+  { keywords: ["claude", "anthropic", "gstack", "garrytan"], agent: "claude-code" },
+  { keywords: ["windsurf"], agent: "windsurf" },
+  { keywords: ["copilot"], agent: "copilot" },
+];
+
 function globalDirForRepo(owner: string, repo: string): string {
   const repoStr = `${owner}/${repo}`.toLowerCase();
-  if (repoStr.includes("cursor")) return ".cursor/skills";
-  if (repoStr.includes("gemini") || repoStr.includes("antigravity")) return ".gemini/config/skills";
-  if (
-    repoStr.includes("claude") ||
-    repoStr.includes("anthropic") ||
-    repoStr.includes("gstack") ||
-    repoStr.includes("garrytan")
-  ) {
-    return ".claude/skills";
-  }
-  if (repoStr.includes("windsurf")) return ".codeium/windsurf/skills";
-  if (repoStr.includes("copilot")) return ".github/skills";
-  return ".skills";
+  const rule = REPO_DIR_RULES.find(({ keywords }) =>
+    keywords.some((k) => repoStr.includes(k)),
+  );
+  const agent: AgentId = rule?.agent ?? "generic";
+  return AGENT_SKILL_DIRS.find(({ agent: a }) => a === agent)?.dir ?? ".skills";
 }
 
 // Native port of `downloadSkillFromGitHub` (`src/backend/installer.ts`): pure
@@ -463,7 +471,7 @@ export async function uninstallSkill(
   }
   try {
     for (const workspacePath of req.workspacePaths ?? []) {
-      const linksDir = `${workspacePath.replace(/\/+$/, "")}/${WORKSPACE_SKILLS_REL}`;
+      const linksDir = `${normalizeWs(workspacePath)}/${WORKSPACE_SKILLS_REL}`;
       let entries: string[];
       try {
         entries = await fs.scanSkillsDir(linksDir);

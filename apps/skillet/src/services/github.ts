@@ -9,6 +9,7 @@ export interface GitHubRepoInfo {
   owner: string;
   repo: string;
   path?: string; // Subdirectory path within the repo
+  branch?: string; // Resolved default branch (set by browseRepoForSkills)
 }
 
 export type RepoInfo = GitHubRepoInfo;
@@ -33,7 +34,7 @@ export type FetchFn = (
   init?: { headers?: Record<string, string> },
 ) => Promise<FetchResponse>;
 
-const defaultFetch: FetchFn = (url, init) => globalThis.fetch(url, init);
+export const defaultFetch: FetchFn = (url, init) => globalThis.fetch(url, init);
 
 const SKILLS_LOCK_FILE = "skills-lock.json";
 
@@ -118,6 +119,20 @@ export function compareCommitShas(localSha?: string, remoteSha?: string): boolea
 }
 
 /**
+ * Shared GitHub API headers: UA + v3 Accept, plus `token` auth when provided.
+ */
+export function buildGitHubHeaders(token?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    "User-Agent": "Skillet-Desktop-App",
+    Accept: "application/vnd.github.v3+json",
+  };
+  if (token) {
+    headers["Authorization"] = `token ${token}`;
+  }
+  return headers;
+}
+
+/**
  * Fetches the latest commit SHA for a GitHub repository using the GitHub REST API.
  */
 export async function fetchLatestCommit(
@@ -128,13 +143,7 @@ export async function fetchLatestCommit(
   const parsed = parseGitHubRepo(source);
   if (!parsed) return null;
 
-  const headers: Record<string, string> = {
-    "User-Agent": "Skillet-Desktop-App",
-    Accept: "application/vnd.github.v3+json",
-  };
-  if (token) {
-    headers["Authorization"] = `token ${token}`;
-  }
+  const headers = buildGitHubHeaders(token);
 
   try {
     const res = await fetchImpl(
@@ -161,12 +170,7 @@ export async function fetchSkillMd(
   token?: string,
   fetchImpl: FetchFn = defaultFetch,
 ): Promise<string | null> {
-  const headers: Record<string, string> = {
-    "User-Agent": "Skillet-Desktop-App",
-  };
-  if (token) {
-    headers["Authorization"] = `token ${token}`;
-  }
+  const headers = buildGitHubHeaders(token);
 
   const subpath = info.path ? `/${info.path}` : "";
   for (const branch of ["main", "master"]) {
@@ -214,4 +218,153 @@ export async function saveSkillsLock(
   } catch {
     return false;
   }
+}
+
+// --- Discover service (moved from `tabs/DiscoverTab.tsx`): search any
+// GitHub repo for skills via the trees API plus a curated popular list. ---
+
+export interface PopularRepo {
+  owner: string;
+  repo: string;
+  fullName: string;
+  desc: string;
+}
+
+export const POPULAR_REPOS: PopularRepo[] = [
+  { owner: "anthropics", repo: "skills", fullName: "anthropics/skills", desc: "Official Anthropic agent skills and guidelines." },
+  { owner: "cursor", repo: "plugins", fullName: "cursor/plugins", desc: "Official Cursor community skills repository." },
+  { owner: "vercel-labs", repo: "skills", fullName: "vercel-labs/skills", desc: "Foundational skills and examples from Vercel." },
+  { owner: "cloudflare", repo: "skills", fullName: "cloudflare/skills", desc: "Skills for teaching agents to build on Cloudflare." },
+  { owner: "expo", repo: "skills", fullName: "expo/skills", desc: "Official AI agent skills for Expo & React Native." },
+  { owner: "mattpocock", repo: "skills", fullName: "mattpocock/skills", desc: "Skills for Real Engineers by Matt Pocock." },
+  { owner: "addyosmani", repo: "agent-skills", fullName: "addyosmani/agent-skills", desc: "Production-grade engineering skills by Addy Osmani." },
+  { owner: "garrytan", repo: "gstack", fullName: "garrytan/gstack", desc: "Garry Tan's Claude Code setup with 23+ skills & tools." },
+];
+
+export interface DiscoveredSkillItem {
+  name: string;
+  path: string;
+  htmlUrl: string;
+}
+
+interface TreeEntry {
+  type: string;
+  path: string;
+}
+
+// Pure mapping of a recursive GitHub trees response to installable rows:
+// keeps SKILL.md-bearing dirs (plus cursor-rules files, web parity), scopes to
+// the searched subpath when one was given, dedups by dir path. Pure so the
+// discover flow stays unit-testable without the RN runtime or network.
+export function mapTreeToSkillItems(
+  tree: TreeEntry[],
+  repo: GitHubRepoInfo,
+): DiscoveredSkillItem[] {
+  const seen = new Map<string, DiscoveredSkillItem>();
+  for (const entry of tree) {
+    if (entry.type !== "blob") continue;
+    if (
+      !entry.path.endsWith("SKILL.md") &&
+      !entry.path.endsWith(".cursorrules") &&
+      !entry.path.endsWith("cursorrules")
+    ) {
+      continue;
+    }
+    if (repo.path) {
+      const scope = repo.path.replace(/\/+$/, "");
+      if (entry.path !== scope && !entry.path.startsWith(`${scope}/`)) continue;
+    }
+    const parts = entry.path.split("/");
+    parts.pop();
+    const dirPath = parts.join("/");
+    if (seen.has(dirPath)) continue;
+    const name = parts.length > 0 ? parts[parts.length - 1] : repo.repo;
+    seen.set(dirPath, {
+      name,
+      path: dirPath,
+      htmlUrl: `https://github.com/${repo.owner}/${repo.repo}/tree/${repo.branch}${dirPath === "" ? "" : `/${dirPath}`}`,
+    });
+  }
+  return [...seen.values()];
+}
+
+type ApiResponse = FetchResponse & { status?: number };
+
+export interface BrowseRepoOptions {
+  token?: string;
+  fetchImpl?: FetchFn;
+}
+
+export interface BrowseRepoResult {
+  repo: GitHubRepoInfo;
+  items: DiscoveredSkillItem[];
+}
+
+function rateLimitError(status?: number): boolean {
+  return status === 403 || status === 429;
+}
+
+// Service-routed Discover search: repo metadata → default branch → recursive
+// tree → `mapTreeToSkillItems`. Takes an already-parsed `GitHubRepoInfo`
+// (callers validate with `parseGitHubRepo` first). Injectable
+// `fetchImpl`/`token` (`FetchFn` contract) so tests pin headers and callers
+// can pass an authed fetch later.
+export async function browseRepoForSkills(
+  info: GitHubRepoInfo,
+  options: BrowseRepoOptions = {},
+): Promise<BrowseRepoResult> {
+  const fetchImpl = options.fetchImpl ?? defaultFetch;
+  const headers = buildGitHubHeaders(options.token);
+  let repoRes: ApiResponse;
+  try {
+    repoRes = (await fetchImpl(
+      `https://api.github.com/repos/${info.owner}/${info.repo}`,
+      { headers },
+    )) as ApiResponse;
+  } catch {
+    throw new Error("Failed to fetch repository");
+  }
+  if (!repoRes.ok) {
+    if (rateLimitError(repoRes.status)) {
+      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
+    }
+    throw new Error("Repository not found");
+  }
+  const repoData = (await repoRes.json()) as { default_branch?: unknown };
+  const branch = typeof repoData.default_branch === "string" ? repoData.default_branch : "main";
+  let treeRes: ApiResponse;
+  try {
+    treeRes = (await fetchImpl(
+      `https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`,
+      { headers },
+    )) as ApiResponse;
+  } catch {
+    throw new Error("Failed to fetch repository tree");
+  }
+  if (!treeRes.ok) {
+    if (rateLimitError(treeRes.status)) {
+      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
+    }
+    throw new Error("Failed to fetch repository tree");
+  }
+  const treeData = (await treeRes.json()) as { tree?: unknown };
+  const tree = Array.isArray(treeData.tree)
+    ? (treeData.tree as { type?: unknown; path?: unknown }[]).filter(
+      (e): e is { type: string; path: string } =>
+        typeof e.type === "string" && typeof e.path === "string",
+    )
+    : [];
+  const repo: GitHubRepoInfo = { owner: info.owner, repo: info.repo, path: info.path, branch };
+  const rows = mapTreeToSkillItems(tree, repo);
+  if (rows.length === 0) throw new Error("No skills found in this repository");
+  return { repo, items: rows };
+}
+
+// Source string the installer consumes for a discovered row
+// (`owner/repo[/path]` shorthand, same acceptance as `parseGitHubRepo`).
+export function buildInstallSource(
+  repo: { owner: string; repo: string },
+  itemPath: string,
+): string {
+  return itemPath === "" ? `${repo.owner}/${repo.repo}` : `${repo.owner}/${repo.repo}/${itemPath}`;
 }
