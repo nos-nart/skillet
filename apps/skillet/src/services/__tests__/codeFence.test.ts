@@ -1,5 +1,6 @@
 import {
   highlightFence,
+  isWellFormedHighlightResult,
   splitMarkdownFences,
   syntaxThemeForAppearance,
 } from "../codeFence";
@@ -8,6 +9,10 @@ import {
 // console.warn when the RN __DEV__ global is truthy, and __DEV__ is absent
 // under jest — so simulate a dev host. Read at call time by the module.
 Object.assign(globalThis, { __DEV__: true });
+
+afterAll(() => {
+  Reflect.deleteProperty(globalThis, "__DEV__");
+});
 
 test("splits prose and fenced blocks with languages", () => {
   const spans = splitMarkdownFences("# T\n\n```ts\nconst a = 1;\n```\n\ndone\n");
@@ -72,6 +77,59 @@ test("highlightFence returns null when highlighting throws", async () => {
 test("highlightFence returns token runs on success", async () => {
   const ensureGrammar = jest.fn().mockResolvedValue(undefined);
   const result = { lines: [], styles: [] };
+  const highlight = jest.fn().mockResolvedValue(result);
+  await expect(
+    highlightFence("code", "ts", "dark-plus", { ensureGrammar, highlight }),
+  ).resolves.toBe(result);
+  expect(highlight).toHaveBeenCalledWith("code", "ts", "dark-plus");
+});
+
+test("isWellFormedHighlightResult accepts only well-formed shapes", () => {
+  expect(isWellFormedHighlightResult(null)).toBe(false);
+  expect(isWellFormedHighlightResult({})).toBe(false);
+  expect(isWellFormedHighlightResult({ lines: [], styles: [] })).toBe(true);
+  expect(
+    isWellFormedHighlightResult({
+      lines: [{ index: 0, text: "hi", tokens: [{ startColumn: 0, length: 2 }] }],
+      styles: [],
+    }),
+  ).toBe(true);
+  expect(
+    isWellFormedHighlightResult({
+      lines: [{ index: 0, text: "hi", tokens: [{ startColumn: 0 }] }],
+      styles: [],
+    }),
+  ).toBe(false);
+});
+
+test("highlightFence returns null for malformed highlight shapes", async () => {
+  const ensureGrammar = jest.fn().mockResolvedValue(undefined);
+  const malformedValues = [
+    null,
+    {},
+    { lines: "nope", styles: [] },
+    { lines: [], styles: "nope" },
+    { lines: [{ index: 0, text: "hi", tokens: "nope" }], styles: [] },
+    { lines: [{ index: "0", text: "hi", tokens: [] }], styles: [] },
+    {
+      lines: [{ index: 0, text: "hi", tokens: [{ startColumn: "0", length: 2 }] }],
+      styles: [],
+    },
+  ];
+  for (const malformed of malformedValues) {
+    const highlight = jest.fn().mockResolvedValue(malformed);
+    await expect(
+      highlightFence("code", "ts", "dark-plus", { ensureGrammar, highlight }),
+    ).resolves.toBeNull();
+  }
+});
+
+test("highlightFence passes through a well-formed highlight result", async () => {
+  const ensureGrammar = jest.fn().mockResolvedValue(undefined);
+  const result = {
+    lines: [{ index: 0, text: "hi", tokens: [{ startColumn: 0, length: 2, styleId: 1 }] }],
+    styles: [{ id: 1, foreground: "#ffffff" }],
+  };
   const highlight = jest.fn().mockResolvedValue(result);
   await expect(
     highlightFence("code", "ts", "dark-plus", { ensureGrammar, highlight }),

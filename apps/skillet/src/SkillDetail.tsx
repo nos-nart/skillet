@@ -59,21 +59,28 @@ export function SkillDetail({
   const appearance = theme === "dark" ? "dark" : "light";
   const markdownStyle = useMemo(() => createSkilletMarkdownStyle(appearance), [appearance]);
   const fenceThemeName = syntaxThemeForAppearance(appearance);
+  // Memoized with the other hooks (above the early return): the fence spans
+  // derive from the markdown input, the fence styles from `markdownStyle`.
+  const rawMarkdown = skill?.rawMarkdown ?? "";
+  const spans = useMemo(
+    () => splitMarkdownFences(rawMarkdown === "" ? "# No body content in SKILL.md" : rawMarkdown),
+    [rawMarkdown],
+  );
   // codeBlock is optional in MarkdownStyle: per-field ?. keeps undefined as
   // the RN default instead of asserting a shape the type does not promise.
-  const fenceBlockStyle = {
+  const fenceBlockStyle = useMemo(() => ({
     backgroundColor: markdownStyle.codeBlock?.backgroundColor,
     borderColor: markdownStyle.codeBlock?.borderColor,
     borderRadius: markdownStyle.codeBlock?.borderRadius,
     borderWidth: markdownStyle.codeBlock?.borderWidth,
     padding: markdownStyle.codeBlock?.padding,
-  } as const;
-  const fenceTextStyle = {
+  } as const), [markdownStyle]);
+  const fenceTextStyle = useMemo(() => ({
     color: markdownStyle.codeBlock?.color,
     fontFamily: markdownStyle.codeBlock?.fontFamily,
     fontSize: markdownStyle.codeBlock?.fontSize,
     lineHeight: markdownStyle.codeBlock?.lineHeight,
-  } as const;
+  } as const), [markdownStyle]);
 
   useEffect(() => {
     let cancelled = false;
@@ -300,7 +307,7 @@ export function SkillDetail({
               SKILL.MD documentation
             </Text>
             <View className="rounded-lg border border-border bg-surface-muted p-4">
-              {splitMarkdownFences(skill.rawMarkdown === "" ? "# No body content in SKILL.md" : skill.rawMarkdown).map(
+              {spans.map(
                 (span, index) =>
                   span.type === "prose" ? (
                     <EnrichedMarkdownText
