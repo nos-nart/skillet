@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { useUniwind } from "uniwind";
+import { createSkilletMarkdownStyle } from "./services/markdownStyle";
 import { EnrichedMarkdownText } from "react-native-enriched-markdown";
 import { InstallSkillDialog, UninstallSkillDialog } from "./dialogs";
 import { isSkillEnabled, type Skill } from "./services/skills";
@@ -51,6 +53,9 @@ export function SkillDetail({
   const [installOpen, setInstallOpen] = useState(false);
   const [uninstallOpen, setUninstallOpen] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
+  const { theme } = useUniwind();
+  const appearance = theme === "dark" ? "dark" : "light";
+  const markdownStyle = useMemo(() => createSkilletMarkdownStyle(appearance), [appearance]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,9 +130,9 @@ export function SkillDetail({
         setAction("idle");
         close?.();
       },
-      (err: unknown) => {
+      (cause: unknown) => {
         setAction("idle");
-        throw err;
+        throw cause;
       },
     );
   };
@@ -167,8 +172,8 @@ export function SkillDetail({
               className="rounded-md bg-primary px-3 py-1.5"
               disabled={action !== "idle"}
               onPress={() =>
-                runAction("updating", onUpdateSkill).catch((err: unknown) => {
-                  console.error("Update failed:", err);
+                runAction("updating", onUpdateSkill).catch((cause: unknown) => {
+                  console.error("Update failed:", cause);
                 })}
             >
               <Text className="text-[12px] font-semibold text-white">
@@ -280,6 +285,7 @@ export function SkillDetail({
               <EnrichedMarkdownText
                 flavor="github"
                 markdown={skill.rawMarkdown === "" ? "# No body content in SKILL.md" : skill.rawMarkdown}
+                markdownStyle={markdownStyle}
                 selectable
               />
             </View>
@@ -299,8 +305,8 @@ export function SkillDetail({
             runAction("installing", () => onInstallSkill(source, skillName), () => {
               setInstallOpen(false);
               setInstallError(null);
-            }).catch((err: unknown) => {
-              setInstallError(err instanceof Error ? err.message : "Install failed.");
+            }).catch((cause: unknown) => {
+              setInstallError(cause instanceof Error ? cause.message : "Install failed.");
             })}
         />
       ) : null}
@@ -309,8 +315,8 @@ export function SkillDetail({
           onClose={() => setUninstallOpen(false)}
           onConfirm={() =>
             runAction("uninstalling", onUninstallSkill, () => setUninstallOpen(false)).catch(
-              (err: unknown) => {
-                console.error("Uninstall failed:", err);
+              (cause: unknown) => {
+                console.error("Uninstall failed:", cause);
               },
             )}
           skillName={skill.name}
