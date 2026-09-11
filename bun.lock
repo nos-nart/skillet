@@ -26,6 +26,7 @@
         "@legend-apps/appkit-split-view": "workspace:*",
         "@legend-apps/file-dialog": "workspace:*",
         "@legend-apps/storage": "workspace:*",
+        "@legend-apps/theme": "workspace:*",
         "@legend-apps/windows": "workspace:*",
         "@legendapp/list": "catalog:",
         "@legendapp/state": "catalog:",
@@ -89,6 +90,17 @@
       "version": "0.0.0",
       "dependencies": {
         "@legendapp/state": "catalog:",
+      },
+      "peerDependencies": {
+        "react": "catalog:",
+        "react-native": "catalog:",
+      },
+    },
+    "packages/theme": {
+      "name": "@legend-apps/theme",
+      "version": "0.0.0",
+      "dependencies": {
+        "react-native-enriched-markdown": "0.7.4",
       },
       "peerDependencies": {
         "react": "catalog:",
@@ -457,6 +469,8 @@
     "@legend-apps/native-menu": ["@legend-apps/native-menu@workspace:packages/native-menu"],
 
     "@legend-apps/storage": ["@legend-apps/storage@workspace:packages/storage"],
+
+    "@legend-apps/theme": ["@legend-apps/theme@workspace:packages/theme"],
 
     "@legend-apps/window-manager": ["@legend-apps/window-manager@workspace:packages/window-manager"],
 

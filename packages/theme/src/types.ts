@@ -1,9 +1,9 @@
-// Minimal theme chain for scripts/generate-theme-css.ts (Task 4 carry).
-// Shapes are verbatim from legend-apps packages/theme/src/types.ts, except the
-// @legend-apps/markdown-document + react-native-enriched-markdown references,
-// which are structural stand-ins here so this file needs zero new workspace
-// dependencies. The full @legend-apps/theme package (index, appTheme,
-// generatedThemes) lands with the task that first imports it by name.
+// Theme chain: shapes verbatim from legend-apps packages/theme/src/types.ts.
+// MarkdownStyle is the real react-native-enriched-markdown type (the theme
+// package ships style objects the native renderer consumes directly).
+import type { MarkdownStyle } from "react-native-enriched-markdown";
+
+export type { MarkdownStyle };
 
 export type MarkdownDocumentLayout = {
   content?: {
@@ -18,8 +18,6 @@ export type MarkdownDocumentLayout = {
 };
 
 export type MarkdownDocumentTheme = Record<string, unknown>;
-
-export type MarkdownStyle = Record<string, unknown>;
 
 export type LegendDisplayThemeName = "light" | "dark" | (string & {});
 export type LegendDisplayThemeAppearance = "light" | "dark";
