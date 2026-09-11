@@ -1,0 +1,16 @@
+{
+  "name": "@legend-apps/virtualized-document",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.tsx",
+  "react-native": "src/index.tsx",
+  "dependencies": {
+    "@legend-apps/instrumentation": "workspace:*",
+    "@legendapp/list": "catalog:",
+    "@legendapp/state": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-native": "catalog:"
+  }
+}

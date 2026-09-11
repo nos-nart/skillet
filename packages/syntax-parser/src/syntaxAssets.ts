@@ -1,0 +1,599 @@
+import { createObservableFile, createStorage, getPersistPlugin, readTextFile } from "@legend-apps/storage";
+
+import darkPlusTheme from "../vendor/TextMateLib/thirdparty/textmate-grammars-themes/packages/tm-themes/themes/dark-plus.json";
+import githubLightTheme from "../vendor/TextMateLib/thirdparty/textmate-grammars-themes/packages/tm-themes/themes/github-light.json";
+
+export type SyntaxAssetKind = "grammar" | "theme";
+export type SyntaxAssetStatus = "available" | "installed" | "seeded";
+export type SyntaxThemeAppearance = "dark" | "light";
+
+export type SyntaxTheme = {
+  appearance: SyntaxThemeAppearance;
+  background: string;
+  foreground: string;
+  label: string;
+  name: string;
+};
+
+export type SyntaxAssetEntry = {
+  filename: string;
+  kind: SyntaxAssetKind;
+  label: string;
+  name: string;
+  removable: boolean;
+  status: SyntaxAssetStatus;
+};
+
+export type SyntaxThemeAssetEntry = SyntaxAssetEntry & SyntaxTheme & {
+  kind: "theme";
+};
+
+export type SyntaxGrammarAssetEntry = SyntaxAssetEntry & {
+  dependencies: string[];
+  kind: "grammar";
+  scopeName?: string;
+};
+
+type TextMateThemeFile = {
+  colors?: Record<string, unknown>;
+  displayName?: unknown;
+  name?: unknown;
+  tokenColors?: unknown;
+  type?: unknown;
+};
+
+type TextMateGrammarFile = {
+  displayName?: unknown;
+  name?: unknown;
+  patterns?: unknown;
+  scopeName?: unknown;
+};
+
+type SyntaxAssetSource = {
+  filename: string;
+  kind: SyntaxAssetKind;
+};
+
+type SyntaxAssetFileValue = Record<string, unknown> | null;
+type SyntaxAssetFileStore = ReturnType<typeof createObservableFile<SyntaxAssetFileValue>>;
+
+const syntaxAssetStorage = createStorage({
+  root: "applicationSupport",
+  subfolder: "syntax-assets",
+});
+const syntaxAssetFileStores = new Map<string, SyntaxAssetFileStore>();
+const installedSyntaxThemeCache = new Map<string, SyntaxTheme | null>();
+const installedSyntaxGrammarCache = new Map<string, ReturnType<typeof parseSyntaxGrammarFile>>();
+
+export const syntaxAssetFolder = {
+  grammars: "grammars",
+  themes: "themes",
+} as const;
+
+export const defaultSyntaxThemeName = "dark-plus";
+
+const seededThemeFiles = {
+  "dark-plus": darkPlusTheme,
+  "github-light": githubLightTheme,
+} as const;
+
+const seededSyntaxThemeNames = Object.keys(seededThemeFiles);
+const devSyntaxAssetSourceRoot = process.env.EXPO_PUBLIC_LEGEND_SYNTAX_ASSET_SOURCE;
+
+const fallbackTheme: SyntaxTheme = {
+  appearance: "dark",
+  background: "#1E1E1E",
+  foreground: "#D4D4D4",
+  label: "Dark Plus",
+  name: defaultSyntaxThemeName,
+};
+
+function syntaxAssetDirectory(kind: SyntaxAssetKind) {
+  return kind === "grammar" ? syntaxAssetFolder.grammars : syntaxAssetFolder.themes;
+}
+
+function syntaxAssetStoreKey(kind: SyntaxAssetKind, filename: string) {
+  return `${kind}:${filenameForAssetName(normalizeAssetName(filename))}`;
+}
+
+function getSyntaxAssetFileStore(kind: SyntaxAssetKind, filename: string) {
+  const name = normalizeAssetName(filename);
+  const normalizedFilename = filenameForAssetName(name);
+  const key = syntaxAssetStoreKey(kind, normalizedFilename);
+  let store = syntaxAssetFileStores.get(key);
+  if (!store) {
+    store = createObservableFile<SyntaxAssetFileValue>({
+      filename: name,
+      initialValue: null,
+      saveTimeout: 0,
+      subfolder: `syntax-assets/${syntaxAssetDirectory(kind)}`,
+    });
+    syntaxAssetFileStores.set(key, store);
+  }
+  return store;
+}
+
+function getSyntaxAssetFileValue(kind: SyntaxAssetKind, filename: string) {
+  return getSyntaxAssetFileStore(kind, filename).peek();
+}
+
+async function setSyntaxAssetFileValue(kind: SyntaxAssetKind, filename: string, value: SyntaxAssetFileValue) {
+  const store = getSyntaxAssetFileStore(kind, filename);
+  store.set(value);
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  await getPersistPlugin(store)?.flush();
+}
+
+export const popularSyntaxThemes = [
+  { name: "github-dark-dimmed", label: "GitHub Dark Dimmed", appearance: "dark", background: "#22272e", foreground: "#adbac7" },
+  { name: "github-light", label: "GitHub Light", appearance: "light", background: "#fff", foreground: "#24292e" },
+  { name: "dark-plus", label: "Dark Plus", appearance: "dark", background: "#1E1E1E", foreground: "#D4D4D4" },
+  { name: "light-plus", label: "Light Plus", appearance: "light", background: "#FFFFFF", foreground: "#000000" },
+  { name: "catppuccin-mocha", label: "Catppuccin Mocha", appearance: "dark", background: "#1e1e2e", foreground: "#cdd6f4" },
+  { name: "catppuccin-latte", label: "Catppuccin Latte", appearance: "light", background: "#eff1f5", foreground: "#4c4f69" },
+  { name: "dracula", label: "Dracula Theme", appearance: "dark", background: "#282A36", foreground: "#F8F8F2" },
+  { name: "one-dark-pro", label: "One Dark Pro", appearance: "dark", background: "#282c34", foreground: "#abb2bf" },
+  { name: "one-light", label: "One Light", appearance: "light", background: "#FAFAFA", foreground: "#383A42" },
+  { name: "tokyo-night", label: "Tokyo Night", appearance: "dark", background: "#1a1b26", foreground: "#a9b1d6" },
+  { name: "vitesse-dark", label: "Vitesse Dark", appearance: "dark", background: "#121212", foreground: "#dbd7caee" },
+  { name: "vitesse-light", label: "Vitesse Light", appearance: "light", background: "#ffffff", foreground: "#393a34" },
+  { name: "monokai", label: "Monokai", appearance: "dark", background: "#272822", foreground: "#f8f8f2" },
+  { name: "nord", label: "Nord", appearance: "dark", background: "#2e3440", foreground: "#d8dee9" },
+  { name: "rose-pine", label: "Rose Pine", appearance: "dark", background: "#191724", foreground: "#e0def4" },
+] as const satisfies readonly SyntaxTheme[];
+
+export const popularSyntaxGrammars = [
+  { name: "tsx", label: "TSX", filename: "tsx.json", dependencies: ["javascript.json", "typescript.json", "jsx.json", "tsx.json"] },
+  { name: "typescript", label: "TypeScript", filename: "typescript.json", dependencies: ["javascript.json", "typescript.json"] },
+  { name: "javascript", label: "JavaScript", filename: "javascript.json", dependencies: ["javascript.json"] },
+  { name: "jsx", label: "JSX", filename: "jsx.json", dependencies: ["javascript.json", "jsx.json"] },
+  { name: "json", label: "JSON", filename: "json.json", dependencies: ["json.json"] },
+  { name: "markdown", label: "Markdown", filename: "markdown.json", dependencies: ["markdown.json"] },
+  { name: "yaml", label: "YAML", filename: "yaml.json", dependencies: ["yaml.json"] },
+  { name: "css", label: "CSS", filename: "css.json", dependencies: ["css.json"] },
+  { name: "scss", label: "SCSS", filename: "scss.json", dependencies: ["css.json", "scss.json"] },
+  { name: "html", label: "HTML", filename: "html.json", dependencies: ["html.json"] },
+  { name: "xml", label: "XML", filename: "xml.json", dependencies: ["xml.json"] },
+  { name: "shellscript", label: "Shell", filename: "shellscript.json", dependencies: ["shellscript.json"] },
+  { name: "python", label: "Python", filename: "python.json", dependencies: ["python.json"] },
+  { name: "ruby", label: "Ruby", filename: "ruby.json", dependencies: ["ruby.json"] },
+  { name: "go", label: "Go", filename: "go.json", dependencies: ["go.json"] },
+  { name: "rust", label: "Rust", filename: "rust.json", dependencies: ["rust.json"] },
+  { name: "swift", label: "Swift", filename: "swift.json", dependencies: ["swift.json"] },
+  { name: "kotlin", label: "Kotlin", filename: "kotlin.json", dependencies: ["kotlin.json"] },
+  { name: "java", label: "Java", filename: "java.json", dependencies: ["java.json"] },
+  { name: "cpp", label: "C++", filename: "cpp.json", dependencies: ["cpp.json"] },
+  { name: "c", label: "C", filename: "c.json", dependencies: ["c.json"] },
+  { name: "objective-c", label: "Objective-C", filename: "objective-c.json", dependencies: ["c.json", "objective-c.json"] },
+  { name: "objective-cpp", label: "Objective-C++", filename: "objective-cpp.json", dependencies: ["cpp.json", "objective-cpp.json"] },
+  { name: "toml", label: "TOML", filename: "toml.json", dependencies: ["toml.json"] },
+  { name: "dockerfile", label: "Dockerfile", filename: "docker.json", dependencies: ["docker.json"] },
+] as const;
+
+function filenameForAssetName(name: string) {
+  return `${name}.json`;
+}
+
+function normalizeAssetName(value: string) {
+  return value.replace(/\.json$/i, "");
+}
+
+function joinPath(...parts: string[]) {
+  return parts
+    .map((part, index) => index === 0 ? part.replace(/\/+$/g, "") : part.replace(/^\/+|\/+$/g, ""))
+    .filter(Boolean)
+    .join("/");
+}
+
+function labelFromAssetName(name: string) {
+  return name
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-f]{3,8}$/i.test(value);
+}
+
+function appearanceFromBackground(background: string): SyntaxThemeAppearance {
+  const hex = background.replace("#", "");
+  const normalized = hex.length === 3
+    ? hex.split("").map((digit) => `${digit}${digit}`).join("")
+    : hex.slice(0, 6);
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
+  return luminance < 140 ? "dark" : "light";
+}
+
+export function getSyntaxAssetStorage() {
+  return syntaxAssetStorage;
+}
+
+export function getSyntaxAssetDirectoryUri(kind: SyntaxAssetKind) {
+  return syntaxAssetStorage.directory(syntaxAssetDirectory(kind)).uri;
+}
+
+export function parseSyntaxThemeFile(filename: string, value: unknown): SyntaxTheme | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  const theme = value as TextMateThemeFile;
+  const colors = isObject(theme.colors) ? theme.colors : {};
+  const background = isHexColor(colors["editor.background"]) ? colors["editor.background"] : null;
+  const foreground = isHexColor(colors["editor.foreground"]) ? colors["editor.foreground"] : null;
+  const tokenColors = Array.isArray(theme.tokenColors) ? theme.tokenColors : null;
+  if (!background || !foreground || !tokenColors) {
+    return null;
+  }
+
+  const name = normalizeAssetName(filename);
+  const label = asString(theme.displayName) ?? labelFromAssetName(name);
+  const type = theme.type === "light" || theme.type === "dark" ? theme.type : appearanceFromBackground(background);
+  return { appearance: type, background, foreground, label, name };
+}
+
+export function parseSyntaxGrammarFile(filename: string, value: unknown): { label: string; name: string; scopeName: string } | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  const grammar = value as TextMateGrammarFile;
+  const scopeName = asString(grammar.scopeName);
+  const patterns = Array.isArray(grammar.patterns) ? grammar.patterns : null;
+  if (!scopeName || !patterns) {
+    return null;
+  }
+
+  const name = normalizeAssetName(filename);
+  const label = asString(grammar.displayName) ?? labelFromAssetName(name);
+  return { label, name, scopeName };
+}
+
+function getInstalledSyntaxTheme(filename: string): SyntaxTheme | null {
+  const name = normalizeAssetName(filename);
+  if (!installedSyntaxThemeCache.has(name)) {
+    const value = seededSyntaxThemeNames.includes(name)
+      ? seededThemeFiles[name as keyof typeof seededThemeFiles]
+      : getSyntaxAssetFileValue("theme", filenameForAssetName(name));
+    installedSyntaxThemeCache.set(name, parseSyntaxThemeFile(filenameForAssetName(name), value));
+  }
+  return installedSyntaxThemeCache.get(name) ?? null;
+}
+
+function getInstalledSyntaxGrammar(filename: string) {
+  const normalizedFilename = filenameForAssetName(normalizeAssetName(filename));
+  if (!installedSyntaxGrammarCache.has(normalizedFilename)) {
+    const value = getSyntaxAssetFileValue("grammar", normalizedFilename);
+    installedSyntaxGrammarCache.set(normalizedFilename, parseSyntaxGrammarFile(normalizedFilename, value));
+  }
+  return installedSyntaxGrammarCache.get(normalizedFilename) ?? null;
+}
+
+function listInstalledSyntaxThemes(): SyntaxThemeAssetEntry[] {
+  const entries = seededSyntaxThemeNames.map((name): SyntaxThemeAssetEntry => {
+    const filename = filenameForAssetName(name);
+    const theme = getInstalledSyntaxTheme(name) ?? fallbackTheme;
+    return {
+      ...theme,
+      filename,
+      kind: "theme",
+      removable: false,
+      status: "seeded",
+    };
+  });
+  for (const entry of syntaxAssetStorage.list(syntaxAssetFolder.themes, { extension: ".json" })) {
+    const name = normalizeAssetName(entry.name);
+    if (seededSyntaxThemeNames.includes(name) || name.endsWith("__m")) {
+      continue;
+    }
+    const theme = getInstalledSyntaxTheme(entry.name);
+    if (theme) {
+      const filename = entry.name;
+      entries.push({
+        ...theme,
+        filename,
+        kind: "theme",
+        removable: true,
+        status: "installed",
+      });
+    }
+  }
+  return entries;
+}
+
+function listInstalledSyntaxGrammars(): SyntaxGrammarAssetEntry[] {
+  const catalogByFilename = new Map<string, typeof popularSyntaxGrammars[number]>(
+    popularSyntaxGrammars.map((grammar) => [grammar.filename, grammar]),
+  );
+  const entries: SyntaxGrammarAssetEntry[] = [];
+  for (const entry of syntaxAssetStorage.list(syntaxAssetFolder.grammars, { extension: ".json" })) {
+    if (normalizeAssetName(entry.name).endsWith("__m")) {
+      continue;
+    }
+    const grammar = getInstalledSyntaxGrammar(entry.name);
+    if (grammar) {
+      const catalogEntry = catalogByFilename.get(entry.name);
+      entries.push({
+        dependencies: catalogEntry ? [...catalogEntry.dependencies] : [entry.name],
+        filename: entry.name,
+        kind: "grammar",
+        label: catalogEntry?.label ?? grammar.label,
+        name: catalogEntry?.name ?? grammar.name,
+        removable: true,
+        scopeName: grammar.scopeName,
+        status: "installed",
+      });
+    }
+  }
+  return entries;
+}
+
+export function getAvailableSyntaxThemes(): SyntaxThemeAssetEntry[] {
+  const installed = listInstalledSyntaxThemes();
+  const byName = new Map(installed.map((theme) => [theme.name, theme]));
+
+  for (const theme of popularSyntaxThemes) {
+    if (!byName.has(theme.name)) {
+      byName.set(theme.name, {
+        ...theme,
+        filename: filenameForAssetName(theme.name),
+        kind: "theme",
+        removable: false,
+        status: "available",
+      });
+    }
+  }
+
+  return [...byName.values()].sort((a, b) => (
+    a.status === b.status
+      ? a.label.localeCompare(b.label)
+      : a.status === "available" ? 1 : -1
+  ));
+}
+
+export function getAvailableSyntaxGrammars(): SyntaxGrammarAssetEntry[] {
+  const installed = listInstalledSyntaxGrammars();
+  const installedFilenames = new Set(installed.map((grammar) => grammar.filename));
+  const entries = [...installed];
+
+  for (const grammar of popularSyntaxGrammars) {
+    if (!installedFilenames.has(grammar.filename)) {
+      entries.push({
+        dependencies: [...grammar.dependencies],
+        filename: grammar.filename,
+        kind: "grammar",
+        label: grammar.label,
+        name: grammar.name,
+        removable: false,
+        status: "available",
+      });
+    }
+  }
+
+  return entries.sort((a, b) => (
+    a.status === b.status
+      ? a.label.localeCompare(b.label)
+      : a.status === "available" ? 1 : -1
+  ));
+}
+
+export function getSyntaxTheme(name: string): SyntaxTheme {
+  return getInstalledSyntaxTheme(name) ?? fallbackTheme;
+}
+
+export function getSyntaxThemeFile(name: string): unknown {
+  const normalizedName = normalizeSyntaxThemeName(name);
+  return seededSyntaxThemeNames.includes(normalizedName)
+    ? seededThemeFiles[normalizedName as keyof typeof seededThemeFiles]
+    : getSyntaxAssetFileValue("theme", filenameForAssetName(normalizedName));
+}
+
+export function isAvailableSyntaxThemeName(value: unknown): value is string {
+  return typeof value === "string" && (
+    popularSyntaxThemes.some((theme) => theme.name === value) || isSyntaxThemeInstalled(value)
+  );
+}
+
+export function normalizeSyntaxThemeName(value: unknown) {
+  return typeof value === "string" && isSyntaxThemeInstalled(value) ? value : defaultSyntaxThemeName;
+}
+
+export function isSyntaxThemeInstalled(name: string) {
+  return getInstalledSyntaxTheme(name) !== null;
+}
+
+export function isSyntaxGrammarInstalled(language: string) {
+  const normalized = normalizeAssetName(language);
+  const catalogEntry = popularSyntaxGrammars.find((grammar) => grammar.name === normalized);
+  const dependencies = catalogEntry?.dependencies ?? [filenameForAssetName(normalized)];
+  return dependencies.every((filename) => getInstalledSyntaxGrammar(filename) !== null);
+}
+
+function extensionForPath(path: string) {
+  const slashIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  const dotIndex = path.lastIndexOf(".");
+  return dotIndex >= 0 && dotIndex > slashIndex ? path.slice(dotIndex + 1).toLowerCase() : "";
+}
+
+function filenameForPath(path: string) {
+  const slashIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return slashIndex >= 0 ? path.slice(slashIndex + 1).toLowerCase() : path.toLowerCase();
+}
+
+export function getSyntaxLanguageForPath(path: string) {
+  const name = filenameForPath(path);
+  const extension = extensionForPath(path);
+
+  if (name === "dockerfile" || name.startsWith("dockerfile.")) {
+    return "dockerfile";
+  }
+
+  if (name === ".yarnrc" || name === ".yarnrc.yml" || name === ".yarnrc.yaml" || extension === "yml") {
+    return "yaml";
+  }
+
+  const languagesByExtension: Record<string, string> = {
+    bash: "shellscript",
+    c: "c",
+    cc: "cpp",
+    cpp: "cpp",
+    css: "css",
+    cxx: "cpp",
+    go: "go",
+    h: "c",
+    hpp: "cpp",
+    html: "html",
+    java: "java",
+    js: "javascript",
+    json: "json",
+    json5: "json",
+    jsonc: "json",
+    jsx: "jsx",
+    kt: "kotlin",
+    kts: "kotlin",
+    m: "objective-c",
+    md: "markdown",
+    mdx: "markdown",
+    mm: "objective-cpp",
+    py: "python",
+    rb: "ruby",
+    rs: "rust",
+    scss: "scss",
+    sh: "shellscript",
+    swift: "swift",
+    toml: "toml",
+    ts: "typescript",
+    tsx: "tsx",
+    xml: "xml",
+    yaml: "yaml",
+    zsh: "shellscript",
+  };
+
+  return languagesByExtension[extension] ?? "";
+}
+
+function getDevSyntaxAssetSourceCandidates({ filename, kind }: SyntaxAssetSource) {
+  const sourceRoot = __DEV__ ? devSyntaxAssetSourceRoot : undefined;
+  if (!sourceRoot) {
+    return [];
+  }
+
+  if (kind === "theme") {
+    return [
+      joinPath(sourceRoot, "themes", filename),
+      joinPath(sourceRoot, "tm-themes", "themes", filename),
+    ];
+  }
+
+  return [
+    joinPath(sourceRoot, "grammars", filename),
+    joinPath(sourceRoot, "tm-grammars", "grammars", filename),
+  ];
+}
+
+function readDevSyntaxAssetFile(source: SyntaxAssetSource) {
+  for (const candidate of getDevSyntaxAssetSourceCandidates(source)) {
+    const content = readTextFile(candidate);
+    if (content !== undefined) {
+      const value = JSON.parse(content);
+      const valid = source.kind === "theme"
+        ? parseSyntaxThemeFile(source.filename, value)
+        : parseSyntaxGrammarFile(source.filename, value);
+      if (!valid) {
+        throw new Error(`Invalid syntax ${source.kind} file at ${candidate}.`);
+      }
+      return value;
+    }
+  }
+}
+
+async function writeSyntaxAsset(kind: SyntaxAssetKind, filename: string, value: unknown) {
+  if (!isObject(value)) {
+    throw new Error(`Invalid syntax ${kind} file ${filename}.`);
+  }
+  await setSyntaxAssetFileValue(kind, filename, value);
+  if (kind === "theme") {
+    installedSyntaxThemeCache.set(normalizeAssetName(filename), parseSyntaxThemeFile(filename, value));
+  } else {
+    const normalizedFilename = filenameForAssetName(normalizeAssetName(filename));
+    installedSyntaxGrammarCache.set(normalizedFilename, parseSyntaxGrammarFile(normalizedFilename, value));
+  }
+}
+
+function unavailableSyntaxAssetMessage(kind: SyntaxAssetKind) {
+  const label = kind === "grammar" ? "grammar" : "theme";
+  return __DEV__ && devSyntaxAssetSourceRoot
+    ? `Syntax ${label} is not available in ${devSyntaxAssetSourceRoot}.`
+    : `Syntax ${label} downloads are not configured yet.`;
+}
+
+async function installDevSyntaxAsset(kind: SyntaxAssetKind, filename: string) {
+  const value = readDevSyntaxAssetFile({ filename, kind });
+  if (!value) {
+    throw new Error(unavailableSyntaxAssetMessage(kind));
+  }
+  await writeSyntaxAsset(kind, filename, value);
+}
+
+export async function ensureSyntaxTheme(name: string) {
+  if (!isSyntaxThemeInstalled(name)) {
+    await installDevSyntaxAsset("theme", filenameForAssetName(name));
+  }
+}
+
+export async function ensureSyntaxGrammar(language: string) {
+  if (!isSyntaxGrammarInstalled(language)) {
+    const normalized = normalizeAssetName(language);
+    const catalogEntry = popularSyntaxGrammars.find((grammar) => grammar.name === normalized);
+    const dependencies = catalogEntry?.dependencies ?? [filenameForAssetName(normalized)];
+    for (const filename of dependencies) {
+      if (!getInstalledSyntaxGrammar(filename)) {
+        await installDevSyntaxAsset("grammar", filename);
+      }
+    }
+  }
+}
+
+export async function ensureSyntaxGrammarsForPaths(paths: readonly string[]) {
+  const languages = new Set<string>();
+  for (const path of paths) {
+    const language = getSyntaxLanguageForPath(path);
+    if (language) {
+      languages.add(language);
+    }
+  }
+
+  for (const language of languages) {
+    await ensureSyntaxGrammar(language);
+  }
+}
+
+export async function removeSyntaxAsset(kind: SyntaxAssetKind, filename: string) {
+  const name = normalizeAssetName(filename);
+  if (kind === "theme" && seededSyntaxThemeNames.includes(name)) {
+    return;
+  }
+  const normalizedFilename = filenameForAssetName(name);
+  await setSyntaxAssetFileValue(kind, normalizedFilename, null);
+  if (kind === "theme") {
+    installedSyntaxThemeCache.set(name, null);
+  } else {
+    installedSyntaxGrammarCache.set(normalizedFilename, null);
+  }
+}
+
+export const bundledSyntaxThemes = popularSyntaxThemes.filter((theme) => seededSyntaxThemeNames.includes(theme.name));
+export type BundledSyntaxThemeName = string;

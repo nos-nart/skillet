@@ -1,0 +1,21 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["legendapps", "syntaxparser"],
+  "ios": {
+    "iosModuleName": "RNSyntaxParser"
+  },
+  "android": {
+    "androidNamespace": ["legendapps", "syntaxparser"],
+    "androidCxxLibName": "RNSyntaxParser"
+  },
+  "autolinking": {
+    "SyntaxParser": {
+      "ios": {
+        "language": "c++",
+        "implementationClassName": "HybridSyntaxParser"
+      }
+    }
+  },
+  "ignorePaths": ["**/node_modules", "vendor/**"],
+  "gitAttributesGeneratedFlag": true
+}

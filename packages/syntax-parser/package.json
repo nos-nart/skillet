@@ -1,0 +1,19 @@
+{
+  "name": "@legend-apps/syntax-parser",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "dependencies": {
+    "@legend-apps/native-text-source": "workspace:*",
+    "@legend-apps/storage": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-native": "catalog:"
+  },
+  "devDependencies": {
+    "nitrogen": "0.35.6",
+    "react-native-nitro-modules": "0.35.6"
+  }
+}
