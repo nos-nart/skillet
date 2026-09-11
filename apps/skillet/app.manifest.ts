@@ -28,6 +28,7 @@ const manifest = {
       "@legend-apps/native-menu",
       "@legend-apps/appkit-split-view",
       "react-native-enriched-markdown",
+      "@legend-apps/syntax-parser",
     ],
     ios: [],
     android: [],
