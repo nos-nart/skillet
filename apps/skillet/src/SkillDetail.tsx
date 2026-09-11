@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { useUniwind } from "uniwind";
 import { createSkilletMarkdownStyle } from "./services/markdownStyle";
+import { SkillCodeFence } from "./SkillCodeFence";
+import { splitMarkdownFences, syntaxThemeForAppearance } from "./services/codeFence";
 import { EnrichedMarkdownText } from "react-native-enriched-markdown";
 import { InstallSkillDialog, UninstallSkillDialog } from "./dialogs";
 import { isSkillEnabled, type Skill } from "./services/skills";
@@ -56,6 +58,22 @@ export function SkillDetail({
   const { theme } = useUniwind();
   const appearance = theme === "dark" ? "dark" : "light";
   const markdownStyle = useMemo(() => createSkilletMarkdownStyle(appearance), [appearance]);
+  const fenceThemeName = syntaxThemeForAppearance(appearance);
+  // codeBlock is optional in MarkdownStyle: per-field ?. keeps undefined as
+  // the RN default instead of asserting a shape the type does not promise.
+  const fenceBlockStyle = {
+    backgroundColor: markdownStyle.codeBlock?.backgroundColor,
+    borderColor: markdownStyle.codeBlock?.borderColor,
+    borderRadius: markdownStyle.codeBlock?.borderRadius,
+    borderWidth: markdownStyle.codeBlock?.borderWidth,
+    padding: markdownStyle.codeBlock?.padding,
+  } as const;
+  const fenceTextStyle = {
+    color: markdownStyle.codeBlock?.color,
+    fontFamily: markdownStyle.codeBlock?.fontFamily,
+    fontSize: markdownStyle.codeBlock?.fontSize,
+    lineHeight: markdownStyle.codeBlock?.lineHeight,
+  } as const;
 
   useEffect(() => {
     let cancelled = false;
@@ -282,12 +300,27 @@ export function SkillDetail({
               SKILL.MD documentation
             </Text>
             <View className="rounded-lg border border-border bg-surface-muted p-4">
-              <EnrichedMarkdownText
-                flavor="github"
-                markdown={skill.rawMarkdown === "" ? "# No body content in SKILL.md" : skill.rawMarkdown}
-                markdownStyle={markdownStyle}
-                selectable
-              />
+              {splitMarkdownFences(skill.rawMarkdown === "" ? "# No body content in SKILL.md" : skill.rawMarkdown).map(
+                (span, index) =>
+                  span.type === "prose" ? (
+                    <EnrichedMarkdownText
+                      flavor="github"
+                      key={index}
+                      markdown={span.text}
+                      markdownStyle={markdownStyle}
+                      selectable
+                    />
+                  ) : (
+                    <SkillCodeFence
+                      blockStyle={fenceBlockStyle}
+                      code={span.code}
+                      key={index}
+                      lang={span.lang}
+                      textStyle={fenceTextStyle}
+                      themeName={fenceThemeName}
+                    />
+                  ),
+              )}
             </View>
           </View>
         </View>
