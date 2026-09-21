@@ -1,3 +1,5 @@
+const path = require("path");
+
 module.exports = {
   rootDir: __dirname,
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.ts"],
@@ -11,7 +13,11 @@ module.exports = {
           ["@babel/preset-react", { runtime: "automatic" }],
           "@babel/preset-typescript",
         ],
-        plugins: ["@babel/plugin-transform-modules-commonjs"],
+        plugins: [
+          path.resolve(__dirname, "jest/transformImportMeta.cjs"),
+          "@babel/plugin-transform-export-namespace-from",
+          "@babel/plugin-transform-modules-commonjs",
+        ],
       },
     ],
   },
@@ -23,4 +29,7 @@ module.exports = {
     "^uniwind$": "<rootDir>/jest/uniwindMock.cjs",
     "^@legend-apps/storage$": "<rootDir>/src/services/__tests__/storageMock.ts",
   },
+  transformIgnorePatterns: [
+    "node_modules/(?!(?:\\.bun/[^/]+/node_modules/)?effect)",
+  ],
 };
