@@ -37,6 +37,7 @@ export function useRunEffect() {
         return result;
       } catch (cause) {
         setError(cause);
+        // SAFETY: The runtime fiber rejects with the effect's error channel type E
         options?.onError?.(cause as E);
         throw cause;
       } finally {

@@ -444,6 +444,7 @@ export const fetchRepoTreeEffect = (
     const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
 
     if (!res.ok) {
+      // SAFETY: FetchResponse in RN and test stubs carries an optional numeric status code
       const status = (res as ApiResponse).status;
       if (status === 404 || (!status && !res.ok)) {
         return yield* Effect.fail(
@@ -469,6 +470,7 @@ export const fetchRepoTreeEffect = (
       );
     }
 
+    // SAFETY: GitHub trees API responds with a JSON object containing a tree entry array
     const data = (yield* Effect.tryPromise({
       try: () => res.json(),
       catch: (e) =>
@@ -481,7 +483,16 @@ export const fetchRepoTreeEffect = (
       return [];
     }
 
-    return Schema.decodeUnknownSync(Schema.Array(GitHubTreeItemSchema))(data.tree);
+    return yield* Schema.decodeUnknownEffect(
+      Schema.Array(GitHubTreeItemSchema),
+    )(data.tree).pipe(
+      Effect.mapError(
+        (e) =>
+          new GitHubNetworkError({
+            message: `Tree schema mismatch: ${String(e)}`,
+          }),
+      ),
+    );
   });
 
 export const fetchRawFileEffect = (
@@ -509,6 +520,7 @@ export const fetchRawFileEffect = (
     const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
 
     if (!res.ok) {
+      // SAFETY: FetchResponse carries an optional status code in fetch implementations
       const status = (res as ApiResponse).status;
       if (status === 404 || (!status && !res.ok)) {
         return yield* Effect.fail(
@@ -558,6 +570,7 @@ export const getRepoInfoEffect = (
     const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
 
     if (!res.ok) {
+      // SAFETY: FetchResponse carries an optional status code in fetch implementations
       const status = (res as ApiResponse).status;
       if (status === 404 || (!status && !res.ok)) {
         return yield* Effect.fail(
@@ -583,6 +596,7 @@ export const getRepoInfoEffect = (
       );
     }
 
+    // SAFETY: GitHub repository endpoint returns a JSON metadata record
     const data = (yield* Effect.tryPromise({
       try: () => res.json(),
       catch: (e) =>
