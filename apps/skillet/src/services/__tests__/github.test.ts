@@ -1,14 +1,25 @@
 import { createStorage } from "@legend-apps/storage";
+import { Effect } from "effect";
 import {
   buildGitHubHeaders,
   compareCommitShas,
   fetchLatestCommit,
   fetchSkillMd,
+  fetchRepoTreeEffect,
+  fetchRawFileEffect,
+  getRepoInfoEffect,
+  GitHubClient,
+  LiveGitHubClient,
   loadSkillsLock,
   parseGitHubRepo,
   saveSkillsLock,
   type FetchFn,
 } from "../github";
+import {
+  GitHubRateLimitError,
+  RepoNotFoundError,
+  GitHubNetworkError,
+} from "../errors";
 import { storageJsonStore } from "../workspaces";
 
 test("parses shorthand owner/repo with path", () => {
@@ -158,3 +169,70 @@ test("skills lock round-trips through the store", async () => {
     },
   });
 });
+
+describe("Effect GitHub workflows and retries", () => {
+  test("fetchRepoTreeEffect maps 404 to RepoNotFoundError", async () => {
+    const fetchImpl: FetchFn = async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({ message: "Not Found" }),
+      text: async () => "Not Found",
+    });
+
+    const err = await Effect.runPromise(
+      fetchRepoTreeEffect("anthropics/nonexistent", "main", { fetchImpl }).pipe(Effect.flip),
+    );
+    expect(err).toBeInstanceOf(RepoNotFoundError);
+    expect((err as RepoNotFoundError).owner).toBe("anthropics");
+    expect((err as RepoNotFoundError).repo).toBe("nonexistent");
+  });
+
+  test("fetchRepoTreeEffect maps 403 / rate limit to GitHubRateLimitError", async () => {
+    const fetchImpl: FetchFn = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({ message: "API rate limit exceeded" }),
+      text: async () => "Rate limit",
+    });
+
+    const err = await Effect.runPromise(
+      fetchRepoTreeEffect("anthropics/skills", "main", { fetchImpl }).pipe(Effect.flip),
+    );
+    expect(err).toBeInstanceOf(GitHubRateLimitError);
+    expect((err as GitHubRateLimitError).message).toContain("rate limit");
+  });
+
+  test("fetchRepoTreeEffect automatically retries on transient network error", async () => {
+    let attempts = 0;
+    const fetchImpl: FetchFn = async () => {
+      attempts++;
+      if (attempts < 3) {
+        throw new Error("Network connection dropped");
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          tree: [
+            {
+              path: "skills/test/SKILL.md",
+              mode: "100644",
+              type: "blob",
+              sha: "123456",
+              url: "https://api.github.com/...",
+            },
+          ],
+        }),
+        text: async () => "",
+      };
+    };
+
+    const tree = await Effect.runPromise(
+      fetchRepoTreeEffect("anthropics/skills", "main", { fetchImpl }),
+    );
+    expect(attempts).toBe(3);
+    expect(tree).toHaveLength(1);
+    expect(tree[0].path).toBe("skills/test/SKILL.md");
+  });
+});
+

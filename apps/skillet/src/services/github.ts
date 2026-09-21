@@ -1,3 +1,10 @@
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Schedule from "effect/Schedule";
+import * as Schema from "effect/Schema";
+import { GitHubRateLimitError, RepoNotFoundError, GitHubNetworkError } from "./errors";
+import { GitHubTreeItemSchema, type GitHubTreeItem } from "./schemas";
 import { storageJsonStore, type JsonStore } from "./workspaces";
 
 // GitHub service for the macOS app, porting the pure + fetch logic from
@@ -385,3 +392,256 @@ export function buildInstallSource(
 ): string {
   return itemPath === "" ? `${repo.owner}/${repo.repo}` : `${repo.owner}/${repo.repo}/${itemPath}`;
 }
+
+export const gitHubRetrySchedule = Schedule.exponential("250 millis").pipe(
+  Schedule.upTo({ times: 3 }),
+);
+
+function requestWithRetry<T>(
+  fn: () => Promise<T>,
+): Effect.Effect<T, GitHubNetworkError> {
+  return Effect.tryPromise({
+    try: fn,
+    catch: (err) =>
+      new GitHubNetworkError({
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  }).pipe(
+    Effect.retry({
+      schedule: gitHubRetrySchedule,
+      while: (err) => err._tag === "GitHubNetworkError",
+    }),
+  );
+}
+
+export type GitHubRepoInfoMetadata = {
+  defaultBranch: string;
+  description: string | null;
+  stars: number;
+  updatedAt: string;
+};
+
+export const fetchRepoTreeEffect = (
+  repo: string,
+  branch: string,
+  options: { token?: string; fetchImpl?: FetchFn } = {},
+): Effect.Effect<readonly GitHubTreeItem[], GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError> =>
+  Effect.gen(function* () {
+    const parsed = parseGitHubRepo(repo);
+    if (!parsed) {
+      return yield* Effect.fail(
+        new RepoNotFoundError({
+          owner: "",
+          repo,
+          message: `Invalid repo format: ${repo}`,
+        }),
+      );
+    }
+    const headers = buildGitHubHeaders(options.token);
+    const fetchImpl = options.fetchImpl ?? defaultFetch;
+    const url = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${branch}?recursive=1`;
+
+    const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
+
+    if (!res.ok) {
+      const status = (res as ApiResponse).status;
+      if (status === 404 || (!status && !res.ok)) {
+        return yield* Effect.fail(
+          new RepoNotFoundError({
+            owner: parsed.owner,
+            repo: parsed.repo,
+            message: "Repository or branch not found",
+          }),
+        );
+      }
+      if (rateLimitError(status)) {
+        return yield* Effect.fail(
+          new GitHubRateLimitError({
+            message: "GitHub rate limit exceeded. Add a token or try again later.",
+          }),
+        );
+      }
+      return yield* Effect.fail(
+        new GitHubNetworkError({
+          message: `GitHub API error: status ${status ?? "unknown"}`,
+          status,
+        }),
+      );
+    }
+
+    const data = (yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: (e) =>
+        new GitHubNetworkError({
+          message: `Failed to parse tree JSON: ${e instanceof Error ? e.message : String(e)}`,
+        }),
+    })) as { tree?: unknown };
+
+    if (!Array.isArray(data?.tree)) {
+      return [];
+    }
+
+    return Schema.decodeUnknownSync(Schema.Array(GitHubTreeItemSchema))(data.tree);
+  });
+
+export const fetchRawFileEffect = (
+  repo: string,
+  branch: string,
+  path: string,
+  options: { token?: string; fetchImpl?: FetchFn } = {},
+): Effect.Effect<string, RepoNotFoundError | GitHubNetworkError> =>
+  Effect.gen(function* () {
+    const parsed = parseGitHubRepo(repo);
+    if (!parsed) {
+      return yield* Effect.fail(
+        new RepoNotFoundError({
+          owner: "",
+          repo,
+          message: `Invalid repo format: ${repo}`,
+        }),
+      );
+    }
+    const headers = buildGitHubHeaders(options.token);
+    const fetchImpl = options.fetchImpl ?? defaultFetch;
+    const cleanPath = path.replace(/^\/+/, "");
+    const url = `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${branch}/${cleanPath}`;
+
+    const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
+
+    if (!res.ok) {
+      const status = (res as ApiResponse).status;
+      if (status === 404 || (!status && !res.ok)) {
+        return yield* Effect.fail(
+          new RepoNotFoundError({
+            owner: parsed.owner,
+            repo: parsed.repo,
+            message: `File not found: ${path}`,
+          }),
+        );
+      }
+      return yield* Effect.fail(
+        new GitHubNetworkError({
+          message: `Failed to fetch raw file: status ${status ?? "unknown"}`,
+          status,
+        }),
+      );
+    }
+
+    return yield* Effect.tryPromise({
+      try: () => res.text(),
+      catch: (e) =>
+        new GitHubNetworkError({
+          message: `Failed to read response text: ${e instanceof Error ? e.message : String(e)}`,
+        }),
+    });
+  });
+
+export const getRepoInfoEffect = (
+  repo: string,
+  options: { token?: string; fetchImpl?: FetchFn } = {},
+): Effect.Effect<GitHubRepoInfoMetadata, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError> =>
+  Effect.gen(function* () {
+    const parsed = parseGitHubRepo(repo);
+    if (!parsed) {
+      return yield* Effect.fail(
+        new RepoNotFoundError({
+          owner: "",
+          repo,
+          message: `Invalid repo format: ${repo}`,
+        }),
+      );
+    }
+    const headers = buildGitHubHeaders(options.token);
+    const fetchImpl = options.fetchImpl ?? defaultFetch;
+    const url = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}`;
+
+    const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
+
+    if (!res.ok) {
+      const status = (res as ApiResponse).status;
+      if (status === 404 || (!status && !res.ok)) {
+        return yield* Effect.fail(
+          new RepoNotFoundError({
+            owner: parsed.owner,
+            repo: parsed.repo,
+            message: `Repository not found: ${parsed.owner}/${parsed.repo}`,
+          }),
+        );
+      }
+      if (rateLimitError(status)) {
+        return yield* Effect.fail(
+          new GitHubRateLimitError({
+            message: "GitHub rate limit exceeded. Add a token or try again later.",
+          }),
+        );
+      }
+      return yield* Effect.fail(
+        new GitHubNetworkError({
+          message: `GitHub API error: status ${status ?? "unknown"}`,
+          status,
+        }),
+      );
+    }
+
+    const data = (yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: (e) =>
+        new GitHubNetworkError({
+          message: `Failed to parse repo info JSON: ${e instanceof Error ? e.message : String(e)}`,
+        }),
+    })) as Record<string, unknown>;
+
+    return {
+      defaultBranch: typeof data.default_branch === "string" ? data.default_branch : "main",
+      description: typeof data.description === "string" ? data.description : null,
+      stars: typeof data.stargazers_count === "number" ? data.stargazers_count : 0,
+      updatedAt: typeof data.updated_at === "string" ? data.updated_at : "",
+    };
+  });
+
+export const fetchRepoTree = (
+  repo: string,
+  branch: string,
+  options?: BrowseRepoOptions,
+): Promise<readonly GitHubTreeItem[]> => Effect.runPromise(fetchRepoTreeEffect(repo, branch, options));
+
+export const fetchRawFile = (
+  repo: string,
+  branch: string,
+  path: string,
+  options?: { token?: string; fetchImpl?: FetchFn },
+): Promise<string> => Effect.runPromise(fetchRawFileEffect(repo, branch, path, options));
+
+export const getRepoInfo = (
+  repo: string,
+  options?: { token?: string; fetchImpl?: FetchFn },
+): Promise<GitHubRepoInfoMetadata> => Effect.runPromise(getRepoInfoEffect(repo, options));
+
+export interface GitHubClientService {
+  readonly fetchRepoTree: (
+    repo: string,
+    branch: string,
+    options?: { token?: string; fetchImpl?: FetchFn },
+  ) => Effect.Effect<readonly GitHubTreeItem[], GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError>;
+  readonly fetchRawFile: (
+    repo: string,
+    branch: string,
+    path: string,
+    options?: { token?: string; fetchImpl?: FetchFn },
+  ) => Effect.Effect<string, GitHubNetworkError | RepoNotFoundError>;
+  readonly getRepoInfo: (
+    repo: string,
+    options?: { token?: string; fetchImpl?: FetchFn },
+  ) => Effect.Effect<GitHubRepoInfoMetadata, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError>;
+}
+
+export class GitHubClient extends Context.Service<GitHubClient, GitHubClientService>()(
+  "GitHubClient",
+) {}
+
+export const LiveGitHubClient = Layer.succeed(GitHubClient, {
+  fetchRepoTree: (repo, branch, opts) => fetchRepoTreeEffect(repo, branch, opts),
+  fetchRawFile: (repo, branch, path, opts) => fetchRawFileEffect(repo, branch, path, opts),
+  getRepoInfo: (repo, opts) => getRepoInfoEffect(repo, opts),
+});
+
