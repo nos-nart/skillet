@@ -15,8 +15,14 @@
 		865924376E9B47A789F18DBA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF6D2A2E6E56D66743B832DD /* PrivacyInfo.xcprivacy */; };
 		B89682B011F670D42E9D5162 /* libPods-legendapp-shell-macos.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 17DDBFAE20DDB86D2D0BD777 /* libPods-legendapp-shell-macos.a */; };
 		D049273A1D34E970A528943A /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA2406CD41308B5A3C582D6C /* ExpoModulesProvider.swift */; };
+		F0A700110000000000000001 /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A700010000000000000001 /* SpaceGrotesk-Regular.ttf */; };
+		F0A700110000000000000002 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A700020000000000000002 /* SpaceGrotesk-Medium.ttf */; };
+		F0A700110000000000000003 /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A700030000000000000003 /* SpaceGrotesk-SemiBold.ttf */; };
+		F0A700110000000000000004 /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A700040000000000000004 /* SpaceGrotesk-Bold.ttf */; };
+		F0A700110000000000000005 /* JetBrainsMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A700050000000000000005 /* JetBrainsMono-Regular.ttf */; };
+		F0A700110000000000000006 /* JetBrainsMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A700060000000000000006 /* JetBrainsMono-Medium.ttf */; };
+		F0A700110000000000000007 /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A700070000000000000007 /* JetBrainsMono-Bold.ttf */; };
 /* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		0B118A8808A23B26C65DB5A2 /* Pods-legendapp-shell-macos.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-legendapp-shell-macos.release.xcconfig"; path = "Target Support Files/Pods-legendapp-shell-macos/Pods-legendapp-shell-macos.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* legendapp-shell-macos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "legendapp-shell-macos.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -31,6 +37,13 @@
 		514201592437B4B40078DB4F /* legendapp-shell-macos.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "legendapp-shell-macos.entitlements"; sourceTree = "<group>"; };
 		CA2406CD41308B5A3C582D6C /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-legendapp-shell-macos/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		CF6D2A2E6E56D66743B832DD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F0A700010000000000000001 /* SpaceGrotesk-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = SpaceGrotesk-Regular.ttf; sourceTree = "<group>"; };
+		F0A700020000000000000002 /* SpaceGrotesk-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = SpaceGrotesk-Medium.ttf; sourceTree = "<group>"; };
+		F0A700030000000000000003 /* SpaceGrotesk-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = SpaceGrotesk-SemiBold.ttf; sourceTree = "<group>"; };
+		F0A700040000000000000004 /* SpaceGrotesk-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = SpaceGrotesk-Bold.ttf; sourceTree = "<group>"; };
+		F0A700050000000000000005 /* JetBrainsMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = JetBrainsMono-Regular.ttf; sourceTree = "<group>"; };
+		F0A700060000000000000006 /* JetBrainsMono-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = JetBrainsMono-Medium.ttf; sourceTree = "<group>"; };
+		F0A700070000000000000007 /* JetBrainsMono-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = JetBrainsMono-Bold.ttf; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FB945BD33B6775868222A02D /* Pods-legendapp-shell-macos.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-legendapp-shell-macos.debug.xcconfig"; path = "Target Support Files/Pods-legendapp-shell-macos/Pods-legendapp-shell-macos.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -73,8 +86,23 @@
 				514201562437B4B40078DB4F /* Info.plist */,
 				514201572437B4B40078DB4F /* main.m */,
 				514201592437B4B40078DB4F /* legendapp-shell-macos.entitlements */,
+				F007F007F007F007F007 /* Fonts */,
 			);
 			path = "legendapp-shell-macos";
+			sourceTree = "<group>";
+		};
+		F007F007F007F007F007 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				F0A700010000000000000001 /* SpaceGrotesk-Regular.ttf */,
+				F0A700020000000000000002 /* SpaceGrotesk-Medium.ttf */,
+				F0A700030000000000000003 /* SpaceGrotesk-SemiBold.ttf */,
+				F0A700040000000000000004 /* SpaceGrotesk-Bold.ttf */,
+				F0A700050000000000000005 /* JetBrainsMono-Regular.ttf */,
+				F0A700060000000000000006 /* JetBrainsMono-Medium.ttf */,
+				F0A700070000000000000007 /* JetBrainsMono-Bold.ttf */,
+			);
+			path = ../Fonts;
 			sourceTree = "<group>";
 		};
 		5B0A6CE5F13628E57A23295B /* legendapp-shell-macos */ = {
@@ -229,6 +257,13 @@
 				514201522437B4B40078DB4F /* Assets.xcassets in Resources */,
 				514201552437B4B40078DB4F /* Main.storyboard in Resources */,
 				182BC90B2A52E9C89B580EE9 /* PrivacyInfo.xcprivacy in Resources */,
+				F0A700110000000000000001 /* SpaceGrotesk-Regular.ttf in Resources */,
+				F0A700110000000000000002 /* SpaceGrotesk-Medium.ttf in Resources */,
+				F0A700110000000000000003 /* SpaceGrotesk-SemiBold.ttf in Resources */,
+				F0A700110000000000000004 /* SpaceGrotesk-Bold.ttf in Resources */,
+				F0A700110000000000000005 /* JetBrainsMono-Regular.ttf in Resources */,
+				F0A700110000000000000006 /* JetBrainsMono-Medium.ttf in Resources */,
+				F0A700110000000000000007 /* JetBrainsMono-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

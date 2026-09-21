@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, TextInput, View } from "react-native";
+import { Text } from "../AppText";
+import { SFSymbol } from "@legend-apps/sf-symbol";
 import { SkillList } from "../SkillList";
 import {
   browseRepoForSkills,
@@ -11,6 +13,7 @@ import {
   type GitHubRepoInfo,
 } from "../services/github";
 import type { Skill } from "../services/skills";
+import { useThemePalette } from "../services/theme";
 
 // Native port of the web `DiscoverTab` (`src/components/tabs/DiscoverTab.tsx`):
 // search any GitHub repo for skills via the trees API, browse a curated
@@ -34,14 +37,15 @@ export function DiscoverTab({
   token?: string;
   fetchImpl?: FetchFn;
 }): React.JSX.Element {
+  const c = useThemePalette();
   const [query, setQuery] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<DiscoveredSkillItem[]>([]);
   const [repo, setRepo] = useState<GitHubRepoInfo | null>(null);
   const [installing, setInstalling] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
-
   const handleBrowse = async (raw: string): Promise<void> => {
     const trimmed = raw.trim();
     if (trimmed === "" || loading) return;
@@ -60,7 +64,7 @@ export function DiscoverTab({
       setRepo(found.repo);
       setItems(found.items);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to fetch repository");
+      setError(err instanceof Error ? err.message : "Failed to load skills from repository.");
     } finally {
       setLoading(false);
     }
@@ -75,8 +79,8 @@ export function DiscoverTab({
       .then(() => {
         Alert.alert("Skill installed", `${item.name} was added to your skills.`);
       })
-      .catch((err: unknown) => {
-        Alert.alert("Install failed", err instanceof Error ? err.message : "Could not install skill.");
+      .catch((cause: unknown) => {
+        Alert.alert("Install failed", cause instanceof Error ? cause.message : "Could not install skill.");
       })
       .finally(() => {
         setInstalling(null);
@@ -92,36 +96,60 @@ export function DiscoverTab({
     );
 
   return (
-    <View className="flex-1 bg-surface-muted">
-      <View className="gap-2 px-4 pb-2 pt-3">
+    <View className="flex-1 bg-background">
+      <View className="gap-2 px-4 pb-3 pt-3">
         <Text className="text-[14px] font-bold text-foreground">Discover Skills</Text>
         <Text className="text-[12px] text-muted">
           Browse and install skills from any GitHub repository.
         </Text>
         <View className="flex-row gap-2 pt-1">
-          <TextInput
-            autoCapitalize="none"
-            autoCorrect={false}
-            className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-[13px] text-foreground"
-            onChangeText={(t) => {
-              setQuery(t);
-              setError(null);
-            }}
-            onSubmitEditing={() => void handleBrowse(query)}
-            placeholder="anthropics/skills or GitHub URL"
-            returnKeyType="search"
-            value={query}
-          />
+          <View
+            className={`min-w-0 flex-1 flex-row items-center gap-2 rounded-lg border bg-surface-muted px-2.5 ${
+              isFocused ? "border-primary" : "border-border"
+            }`}
+            style={{ borderCurve: "continuous" }}
+          >
+            <SFSymbol color={isFocused ? c.primary : c.muted} name="magnifyingglass" size={15} />
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              className="min-w-0 flex-1 py-1.5 pl-1 text-[13px] text-foreground"
+              enableFocusRing={false}
+              focusRingType="none"
+              onBlur={() => setIsFocused(false)}
+              onChangeText={(t) => {
+                setQuery(t);
+                setError(null);
+              }}
+              onFocus={() => setIsFocused(true)}
+              onSubmitEditing={() => void handleBrowse(query)}
+              placeholder="anthropics/skills or GitHub URL"
+              placeholderTextColor={c.muted}
+              returnKeyType="search"
+              value={query}
+            />
+            {query.length > 0 ? (
+              <Pressable
+                accessibilityLabel="Clear search"
+                accessibilityRole="button"
+                className="h-4 w-4 items-center justify-center rounded-full active:opacity-70"
+                onPress={() => setQuery("")}
+              >
+                <SFSymbol color={c.muted} name="xmark.circle.fill" size={14} />
+              </Pressable>
+            ) : null}
+          </View>
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ disabled: loading || query.trim() === "" }}
             className={loading || query.trim() === ""
-              ? "rounded-md bg-border px-3 py-1.5"
-              : "rounded-md bg-primary px-3 py-1.5"}
+              ? "rounded-lg bg-surface-muted px-3.5 py-1.5 opacity-50"
+              : "rounded-lg bg-primary px-3.5 py-1.5"}
+            style={{ borderCurve: "continuous" }}
             disabled={loading || query.trim() === ""}
             onPress={() => void handleBrowse(query)}
           >
-            <Text className="text-[13px] font-semibold text-white">
+            <Text className={loading || query.trim() === "" ? "text-[13px] font-medium text-muted" : "text-[13px] font-semibold text-white"}>
               {loading ? "Browsing…" : "Browse"}
             </Text>
           </Pressable>
@@ -152,7 +180,7 @@ export function DiscoverTab({
                 setError(null);
               }}
             >
-              <Text className="text-[12px] text-primary">← Back</Text>
+              <Text className="text-[12px] font-semibold text-primary">← Back</Text>
             </Pressable>
           </View>
           <ScrollView className="flex-1">
@@ -162,7 +190,8 @@ export function DiscoverTab({
                 const busy = installing === item.path;
                 return (
                   <View
-                    className="flex-row items-center rounded-lg border border-border bg-background px-3 py-2"
+                    className="flex-row items-center rounded-lg border border-border bg-surface-muted px-3 py-2"
+                    style={{ borderCurve: "continuous" }}
                     key={item.path === "" ? item.name : item.path}
                   >
                     <View className="flex-1 pr-3">
@@ -176,13 +205,25 @@ export function DiscoverTab({
                     <Pressable
                       accessibilityRole="button"
                       accessibilityState={{ disabled: installed || busy }}
-                      className={installed || busy
-                        ? "rounded-md bg-border px-3 py-1.5"
-                        : "rounded-md bg-primary px-3 py-1.5"}
+                      className={installed
+                        ? "flex-row items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5"
+                        : busy
+                        ? "flex-row items-center gap-1.5 rounded-lg bg-primary/60 px-3 py-1.5"
+                        : "flex-row items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5"}
+                      style={{ borderCurve: "continuous" }}
                       disabled={installed || busy}
                       onPress={() => handleInstall(item)}
                     >
-                      <Text className="text-[12px] font-semibold text-white">
+                      <SFSymbol
+                        color={installed ? c.muted : "#ffffff"}
+                        name={installed ? "checkmark" : "square.and.arrow.down"}
+                        size={13}
+                      />
+                      <Text
+                        className={installed
+                          ? "text-[12px] font-medium text-muted"
+                          : "text-[12px] font-semibold text-white"}
+                      >
                         {busy ? "Installing…" : installed ? "Installed" : "Install"}
                       </Text>
                     </Pressable>

@@ -132,6 +132,11 @@ test("resolveSkillTarget guards traversal slugs", () => {
   expect(resolveSkillTarget("/ws/proj", "a/b")).toBeNull();
 });
 
+test("resolveSkillTarget rejects empty and tilde workspace paths", () => {
+  expect(resolveSkillTarget("", "eli5")).toBeNull();
+  expect(resolveSkillTarget("~/ws", "eli5")).toBeNull();
+});
+
 test("toggleSkill enables via symlink and disables via unlink", async () => {
   const fs = fakeFs({});
   const req = {

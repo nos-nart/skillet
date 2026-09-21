@@ -10,8 +10,20 @@ export function validateSafeSlug(slug: string): boolean {
 
 // Contract: native `scanSkillsDir` returns a JSON string (string[] encoded);
 // the façade parses it to `string[]` (file-dialog pattern) for Task 3 consumers.
+// Pure so the payload shape stays unit-testable without the native runtime.
+export function parseScanResult(json: string): string[] {
+  // SAFETY: native `scanSkillsDir` resolves with a JSON-encoded array of path
+  // strings (`jsonStringFromObject:` over an `NSMutableArray<NSString *>`);
+  // anything else is a bridge contract violation, so throw loudly.
+  const parsed: unknown = JSON.parse(json);
+  if (!Array.isArray(parsed) || !parsed.every((entry) => typeof entry === "string")) {
+    throw new Error("skills-fs: scanSkillsDir returned a non-string-array payload");
+  }
+  return parsed;
+}
+
 export function scanSkillsDir(dir: string): Promise<string[]> {
-  return NativeSkillsFs.scanSkillsDir(dir).then((json) => JSON.parse(json) as string[]);
+  return NativeSkillsFs.scanSkillsDir(dir).then((json) => parseScanResult(json));
 }
 
 export function readSkillMd(path: string): Promise<string> {
@@ -37,6 +49,11 @@ export function ensureDir(path: string): Promise<boolean> {
 
 export function writeTextFile(path: string, contents: string): Promise<boolean> {
   return NativeSkillsFs.writeTextFile(path, contents);
+}
+
+// Clipboard for the Prompts tab copy buttons (old `navigator.clipboard`).
+export function copyText(text: string): Promise<boolean> {
+  return NativeSkillsFs.copyText(text);
 }
 
 export { default as NativeSkillsFs } from "./NativeSkillsFs";

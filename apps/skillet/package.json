@@ -6,11 +6,13 @@
   "dependencies": {
     "@legend-apps/appkit-split-view": "workspace:*",
     "@legend-apps/file-dialog": "workspace:*",
+    "@legend-apps/sf-symbol": "workspace:*",
     "@legend-apps/source-viewer": "workspace:*",
     "@legend-apps/storage": "workspace:*",
     "@legend-apps/syntax-parser": "workspace:*",
     "@legend-apps/theme": "workspace:*",
     "@legend-apps/virtualized-document": "workspace:*",
+    "@legend-apps/window-manager": "workspace:*",
     "@legend-apps/windows": "workspace:*",
     "@legendapp/list": "catalog:",
     "@legendapp/state": "catalog:",

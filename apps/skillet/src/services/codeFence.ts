@@ -93,6 +93,20 @@ export function isWellFormedHighlightResult(value: unknown): value is SyntaxHigh
   return true;
 }
 
+const highlightCache = new Map<string, SyntaxHighlightResult>();
+
+export function getCachedHighlight(
+  code: string,
+  lang: string,
+  themeName: string,
+): SyntaxHighlightResult | undefined {
+  return highlightCache.get(`${lang}:${themeName}:${code}`);
+}
+
+export function clearHighlightCache(): void {
+  highlightCache.clear();
+}
+
 export async function highlightFence(
   code: string,
   lang: string,
@@ -100,6 +114,9 @@ export async function highlightFence(
   deps: CodeFenceDeps = {},
 ): Promise<SyntaxHighlightResult | null> {
   if (lang === "") return null;
+  const cacheKey = `${lang}:${themeName}:${code}`;
+  const cached = highlightCache.get(cacheKey);
+  if (cached !== undefined) return cached;
   try {
     let ensureGrammar = deps.ensureGrammar;
     let highlight = deps.highlight;
@@ -120,6 +137,7 @@ export async function highlightFence(
     await ensureGrammar(lang);
     const result = await highlight(code, lang, themeName);
     if (!isWellFormedHighlightResult(result)) return null;
+    highlightCache.set(cacheKey, result);
     return result;
   } catch {
     warnParserUnavailable();

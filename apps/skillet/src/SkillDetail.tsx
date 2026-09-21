@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Linking, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Switch, View } from "react-native";
+import { Text } from "./AppText";
+import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useUniwind } from "uniwind";
+import { useThemePalette } from "./services/theme";
 import { createSkilletMarkdownStyle } from "./services/markdownStyle";
 import { SkillCodeFence } from "./SkillCodeFence";
 import { splitMarkdownFences, syntaxThemeForAppearance } from "./services/codeFence";
@@ -57,6 +60,7 @@ export function SkillDetail({
   const [installError, setInstallError] = useState<string | null>(null);
   const { theme } = useUniwind();
   const appearance = theme === "dark" ? "dark" : "light";
+  const c = useThemePalette();
   const markdownStyle = useMemo(() => createSkilletMarkdownStyle(appearance), [appearance]);
   const fenceThemeName = syntaxThemeForAppearance(appearance);
   // Memoized with the other hooks (above the early return): the fence spans
@@ -168,39 +172,45 @@ export function SkillDetail({
 
   return (
     <View className="flex-1 bg-background" key={skill.id}>
-      <View className="border-b border-border px-5 pb-4 pt-5">
-        <View className="flex-row flex-wrap items-center gap-2">
-          <Text className="text-[22px] font-bold text-foreground">{skill.name}</Text>
-          <View className="rounded-md bg-surface-muted px-2 py-0.5">
-            <Text className="text-[11px] font-semibold capitalize text-muted">
-              {skill.scope === "global" ? "Global" : "Project"}
+      <View className="border-b border-border bg-surface px-6 pb-4 pt-4">
+        <View className="flex-row items-start justify-between gap-3">
+          <View className="min-w-0 flex-1">
+            <View className="flex-row flex-wrap items-center gap-2">
+              <Text className="text-[22px] font-bold text-foreground">{skill.name}</Text>
+              <View className="rounded-md border border-border bg-surface-muted px-2 py-0.5" style={{ borderCurve: "continuous" }}>
+                <Text className="text-[11px] font-semibold capitalize text-muted">
+                  {skill.scope === "global" ? "Global" : "Project"}
+                </Text>
+              </View>
+              {skill.metadata.trigger ? (
+                <View className="rounded-md bg-primary px-2 py-0.5" style={{ borderCurve: "continuous" }}>
+                  <Text className="text-[11px] font-semibold text-white" mono>{skill.metadata.trigger}</Text>
+                </View>
+              ) : null}
+              {skill.isSymlink ? (
+                <View className="rounded-md border border-primary/30 bg-primary/15 px-2 py-0.5" style={{ borderCurve: "continuous" }}>
+                  <Text className="text-[11px] font-semibold text-primary">Symlinked</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text className="pt-1.5 text-[13px] leading-5 text-muted">
+              {skill.metadata.description === "" ? "No description provided." : skill.metadata.description}
             </Text>
           </View>
-          {skill.metadata.trigger ? (
-            <View className="rounded-md bg-primary px-2 py-0.5">
-              <Text className="text-[11px] font-semibold text-white">{skill.metadata.trigger}</Text>
-            </View>
-          ) : null}
-          {skill.isSymlink ? (
-            <View className="rounded-md bg-surface-muted px-2 py-0.5">
-              <Text className="text-[11px] font-semibold text-muted">Symlinked</Text>
-            </View>
-          ) : null}
         </View>
-        <Text className="pt-1.5 text-[13px] text-muted">
-          {skill.metadata.description === "" ? "No description provided." : skill.metadata.description}
-        </Text>
         <View className="flex-row gap-2 pt-3">
           {skill.updateAvailable && onUpdateSkill ? (
             <Pressable
               accessibilityRole="button"
-              className="rounded-md bg-primary px-3 py-1.5"
+              className="h-8 flex-row items-center gap-1.5 rounded-lg bg-primary px-3 active:opacity-85"
               disabled={action !== "idle"}
               onPress={() =>
                 runAction("updating", onUpdateSkill).catch((cause: unknown) => {
                   console.error("Update failed:", cause);
                 })}
+              style={{ borderCurve: "continuous" }}
             >
+              <SFSymbol color="#ffffff" name="arrow.clockwise" size={14} />
               <Text className="text-[12px] font-semibold text-white">
                 {action === "updating" ? "Updating…" : "Update"}
               </Text>
@@ -209,10 +219,12 @@ export function SkillDetail({
           {onInstallSkill ? (
             <Pressable
               accessibilityRole="button"
-              className="rounded-md border border-border px-3 py-1.5"
+              className="h-8 flex-row items-center gap-1.5 rounded-lg border border-border bg-surface px-3 active:bg-surface-muted"
               disabled={action !== "idle"}
               onPress={() => setInstallOpen(true)}
+              style={{ borderCurve: "continuous" }}
             >
+              <SFSymbol color={c.primary} name="square.and.arrow.down" size={14} />
               <Text className="text-[12px] font-semibold text-primary">
                 {action === "installing" ? "Installing…" : "Install"}
               </Text>
@@ -221,10 +233,12 @@ export function SkillDetail({
           {onUninstallSkill ? (
             <Pressable
               accessibilityRole="button"
-              className="rounded-md bg-danger px-3 py-1.5"
+              className="h-8 flex-row items-center gap-1.5 rounded-lg bg-danger px-3 active:opacity-85"
               disabled={action !== "idle"}
               onPress={() => setUninstallOpen(true)}
+              style={{ borderCurve: "continuous" }}
             >
+              <SFSymbol color="#ffffff" name="trash" size={14} />
               <Text className="text-[12px] font-semibold text-white">
                 {action === "uninstalling" ? "Removing…" : "Uninstall"}
               </Text>
@@ -234,59 +248,114 @@ export function SkillDetail({
       </View>
 
       <ScrollView className="flex-1">
-        <View className="gap-5 px-5 py-4">
-          <View className="gap-2 rounded-lg border border-border bg-surface-muted p-4">
-            <MetaRow label="Source package" mono value={skill.packageName} />
-            <MetaRow label="Agent target" value={skill.agent} />
-            <MetaRow label="Provider" value={skill.provider ?? "local"} />
-            <MetaRow
-              label="Tools used"
-              mono
-              value={skill.metadata.tools && skill.metadata.tools.length > 0
-                ? skill.metadata.tools.join(", ")
-                : "None"}
-            />
-            <MetaRow label="Path on disk" mono muted value={skill.path} />
-            {sourceUrl ? (
-              <View>
-                <Text className="text-[10px] font-bold uppercase text-muted">Source URL</Text>
-                <Pressable
-                  accessibilityRole="link"
-                  onPress={() => void Linking.openURL(sourceUrl)}
-                >
-                  <Text className="pt-0.5 text-[12px] text-primary" numberOfLines={2}>
-                    {`${sourceUrl} ↗`}
-                  </Text>
-                </Pressable>
+        <View className="mx-auto w-full max-w-[896px] gap-5 px-6 py-5">
+          <View
+            className="gap-3 rounded-lg border border-border bg-surface p-5"
+            style={{ borderCurve: "continuous" }}
+          >
+            <View className="flex-row gap-4">
+              <View className="min-w-0 flex-1">
+                <MetaRow label="Source package" mono value={skill.packageName} />
               </View>
-            ) : null}
+              <View className="flex-1">
+                <MetaRow label="Agent target" value={skill.agent} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[10px] font-bold uppercase tracking-wider text-muted">Provider</Text>
+                <View
+                  className="mt-1 self-start rounded-md border border-primary/30 bg-primary/15 px-2 py-0.5"
+                  style={{ borderCurve: "continuous" }}
+                >
+                  <Text className="text-[11px] font-semibold capitalize text-primary">
+                    {skill.provider ?? "local"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View className="flex-row gap-4">
+              <View className="min-w-0 flex-1">
+                <MetaRow
+                  label="Tools used"
+                  mono
+                  value={skill.metadata.tools && skill.metadata.tools.length > 0
+                    ? skill.metadata.tools.join(", ")
+                    : "None"}
+                />
+              </View>
+              <View className="min-w-0 flex-[2]">
+                {sourceUrl ? (
+                  <View>
+                    <Text className="text-[10px] font-bold uppercase tracking-wider text-muted">Source Repository / URL</Text>
+                    <Pressable
+                      accessibilityRole="link"
+                      className="flex-row items-center gap-1 pt-0.5 active:opacity-75"
+                      onPress={() => void Linking.openURL(sourceUrl)}
+                    >
+                      <Text className="min-w-0 flex-1 text-[12px] font-medium text-primary" mono numberOfLines={1}>
+                        {sourceUrl}
+                      </Text>
+                      <SFSymbol color={c.primary} name="arrow.up.right.square" size={12} />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <MetaRow label="Source Repository / URL" mono muted value="Local Directory" />
+                )}
+              </View>
+            </View>
+            <View className="border-t border-border pt-3">
+              <MetaRow label="Path on disk" mono muted value={skill.path} />
+            </View>
           </View>
 
           <View className="gap-2">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-[12px] font-bold uppercase text-foreground">
-                Per-repository activation
-              </Text>
-              <Text className="text-[12px] text-muted">Symlinks managed automatically</Text>
+            <View className="flex-row items-center justify-between px-1">
+              <View className="flex-row items-center gap-1.5">
+                <View className="h-4 w-1 rounded-full bg-primary" />
+                <Text className="text-[12px] font-bold uppercase tracking-wider text-foreground">
+                  Per-repository activation
+                </Text>
+              </View>
+              <Text className="text-[11px] text-muted">Symlinks managed automatically</Text>
             </View>
-            <View className="overflow-hidden rounded-lg border border-border bg-surface-muted">
-              {workspaces.map((ws) => {
+            <View
+              className="rounded-lg border border-border bg-surface"
+              style={{ borderCurve: "continuous" }}
+            >
+              {workspaces.map((ws, idx) => {
                 const isGlobal = ws.id === "global";
+                const isLast = idx === workspaces.length - 1;
                 return (
                   <View
-                    className="flex-row items-center justify-between px-4 py-3"
+                    className={`flex-row items-center justify-between px-4 py-3 ${isLast ? "" : "border-b border-border/60"}`}
                     key={ws.id}
                   >
-                    <View className="flex-1 pr-3">
-                      <Text className="text-[13px] font-semibold text-foreground" numberOfLines={1}>
-                        {ws.name}
-                      </Text>
-                      <Text className="pt-0.5 text-[11px] text-muted" numberOfLines={1}>
-                        {ws.path}
-                      </Text>
+                    <View className="min-w-0 flex-1 flex-row items-center gap-2.5 pr-3">
+                      <View
+                        className="h-8 w-8 items-center justify-center rounded-lg border border-primary/30 bg-primary/15"
+                        style={{ borderCurve: "continuous" }}
+                      >
+                        <Text className="text-[14px] font-bold text-primary">
+                          {(ws.name.trim().charAt(0) || "•").toUpperCase()}
+                        </Text>
+                      </View>
+                      <View className="min-w-0 flex-1">
+                        <View className="flex-row items-center gap-1.5">
+                          <Text className="text-[13px] font-semibold text-foreground" numberOfLines={1}>
+                            {ws.name}
+                          </Text>
+                          {isGlobal ? (
+                            <View className="rounded bg-surface-muted px-1.5 py-0" style={{ borderCurve: "continuous" }}>
+                              <Text className="text-[10px] font-bold uppercase text-muted" mono>All repos</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text className="pt-0.5 text-[11px] text-muted" mono numberOfLines={1}>
+                          {ws.path}
+                        </Text>
+                      </View>
                     </View>
                     {isGlobal ? (
-                      <View className="rounded-md bg-surface px-2 py-0.5">
+                      <View className="rounded-md border border-border bg-surface-muted px-2 py-0.5" style={{ borderCurve: "continuous" }}>
                         <Text className="text-[11px] font-semibold text-muted">Active</Text>
                       </View>
                     ) : (
@@ -303,10 +372,19 @@ export function SkillDetail({
           </View>
 
           <View className="gap-2">
-            <Text className="text-[12px] font-bold uppercase text-foreground">
-              SKILL.MD documentation
-            </Text>
-            <View className="rounded-lg border border-border bg-surface-muted p-4">
+            <View className="flex-row items-center justify-between px-1">
+              <View className="flex-row items-center gap-1.5">
+                <View className="h-4 w-1 rounded-full bg-primary" />
+                <Text className="text-[12px] font-bold uppercase tracking-wider text-foreground">
+                  SKILL.MD documentation
+                </Text>
+              </View>
+              <Text className="text-[11px] text-muted" mono>Live Preview</Text>
+            </View>
+            <View
+              className="rounded-lg border border-border bg-surface p-5"
+              style={{ borderCurve: "continuous" }}
+            >
               {spans.map(
                 (span, index) =>
                   span.type === "prose" ? (
@@ -383,8 +461,8 @@ function MetaRow({
       <Text className="text-[10px] font-bold uppercase text-muted">{label}</Text>
       <Text
         className={muted ? "pt-0.5 text-[12px] text-muted" : "pt-0.5 text-[12px] text-foreground"}
+        mono={mono}
         numberOfLines={2}
-        style={mono ? { fontFamily: "monospace" } : undefined}
       >
         {value}
       </Text>

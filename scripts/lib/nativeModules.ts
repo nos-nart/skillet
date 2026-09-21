@@ -183,6 +183,11 @@ export const nativePackages: NativePackage[] = [
     platforms: ["macos", "ios", "android"],
   },
   {
+    name: "@legend-apps/sf-symbol",
+    root: path.join(packagesDir, "sf-symbol"),
+    platforms: ["macos", "ios", "android"],
+  },
+  {
     name: "@legend-apps/text-input-search",
     root: path.join(packagesDir, "text-input-search"),
     platforms: ["macos", "ios"],

@@ -9,3 +9,4 @@ docs
 
 # legend shell generated config (metro/native codegen output)
 shell/.legend/
+.repos/

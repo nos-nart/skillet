@@ -128,8 +128,7 @@ RCT_EXPORT_MODULE(NativeSkillsFs)
 }
 
 - (void)writeTextFile:(NSString *)path contents:(NSString *)contents resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
-{
-  if (path.length == 0) {
+{  if (path.length == 0) {
     reject(@"invalid_path", @"Cannot write file without a path.", nil);
     return;
   }
@@ -149,6 +148,19 @@ RCT_EXPORT_MODULE(NativeSkillsFs)
     return;
   }
   resolve(@YES);
+}
+
+// Clipboard for the Prompts tab copy buttons (old `navigator.clipboard`).
+- (void)copyText:(NSString *)text resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  if (text.length == 0) {
+    reject(@"invalid_text", @"Cannot copy empty text.", nil);
+    return;
+  }
+  NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+  [pasteboard clearContents];
+  BOOL ok = [pasteboard setString:text forType:NSPasteboardTypeString];
+  resolve(@(ok));
 }
 
 @end

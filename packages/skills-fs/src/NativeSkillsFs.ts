@@ -8,6 +8,7 @@ export interface Spec extends TurboModule {
   unlink(target: string): Promise<boolean>;
   ensureDir(path: string): Promise<boolean>;
   writeTextFile(path: string, contents: string): Promise<boolean>;
+  copyText(text: string): Promise<boolean>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>("NativeSkillsFs");

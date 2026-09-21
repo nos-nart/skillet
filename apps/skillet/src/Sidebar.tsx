@@ -1,162 +1,228 @@
-import { sidebarSplitViewTitlebarMetrics } from "@legend-apps/appkit-split-view";
 import { openFileDialog } from "@legend-apps/file-dialog";
-import { useCallback, useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { SkillList } from "./SkillList";
-import { DiscoverTab } from "./tabs/DiscoverTab";
-import { downloadSkill, getSkills, type Skill } from "./services/skills";
-import {
-  addWorkspace,
-  getWorkspaces,
-  setCurrentWorkspace,
-  type Workspace,
-} from "./services/workspaces";
+import { SFSymbol } from "@legend-apps/sf-symbol";
+import { useState } from "react";
+import { Pressable, View } from "react-native";
+import { Text } from "./AppText";
+import { toggleAppTheme, useAppTheme, useThemePalette } from "./services/theme";
+import type { Workspace } from "./services/workspaces";
 
-type SidebarNav = "skills" | "discover";
+export type SidebarNav = "skills" | "discover" | "agents" | "prompts" | "settings";
 
 function workspaceName(path: string): string {
   const base = path.replace(/\/+$/, "").split("/").pop() ?? path;
   return base === "" ? path : base;
 }
 
+function shortPath(path: string): string {
+  return path.replace(/^\/Users\/[^/]+/, "~");
+}
+
+// Nav sidebar matching the old Deno UI (`src/components/Sidebar.tsx`):
+// logo + version header, theme toggle, Scope/Workspace selector, nav
+// (Skills/Discover/Agents/Prompts) and a Settings footer.
+//
+// Legend doctrine (see .repos/legend-apps): no icon libraries, no custom
+// fonts — system type + text glyphs only (⌕ › ↗ ↻ ↑ ▾ ✦ ◎ ☀︎ ☾︎), Menlo/mono
+// via `font-mono`. Nothing here needs a native module beyond the file dialog.
 export function Sidebar({
-  selectedId,
-  onSelect,
-  onSkills,
+  currentTab,
+  onTab,
+  skillsCount,
+  workspaces,
+  currentPath,
+  onSelectWorkspace,
+  onAddWorkspace,
 }: {
-  selectedId?: string;
-  onSelect?: (id: string) => void;
-  // Task 6 lift: App needs the loaded skills to resolve the selected Skill
-  // for the detail pane. Reported once per successful fetch (not per render).
-  onSkills?: (skills: Skill[]) => void;
+  currentTab: SidebarNav;
+  onTab: (tab: SidebarNav) => void;
+  skillsCount: number;
+  workspaces: Workspace[];
+  currentPath?: string;
+  onSelectWorkspace: (id: string) => void;
+  onAddWorkspace: (path: string) => void;
 }): React.JSX.Element {
-  const [nav, setNav] = useState<SidebarNav>("skills");
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [currentPath, setCurrentPath] = useState<string | undefined>(undefined);
+  const theme = useAppTheme();
+  const c = useThemePalette();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  const refreshWorkspaces = useCallback(async () => {
-    const list = await getWorkspaces();
-    setWorkspaces(list);
-    setCurrentPath(list.find((w) => w.isCurrent)?.path ?? list[0]?.path);
-  }, []);
+  const current = workspaces.find((w) => w.path === currentPath) ?? workspaces[0];
 
-  const refreshSkills = useCallback(async () => {
-    const list = await getSkills();
-    setSkills(list);
-    onSkills?.(list);
-  }, [onSkills]);
+  const navItems = [
+    { tab: "skills" as const, label: "Skills", icon: "sparkles", count: skillsCount },
+    { tab: "discover" as const, label: "Discover", icon: "safari" },
+    { tab: "agents" as const, label: "Agents", icon: "cpu" },
+    { tab: "prompts" as const, label: "Prompts", icon: "apple.terminal" },
+  ];
 
-  useEffect(() => {
-    void refreshSkills().catch(() => setSkills([]));
-    void refreshWorkspaces();
-  }, [refreshSkills, refreshWorkspaces]);
-
-  // Discover installs go through the real Task 7 `downloadSkill` (JS fetch +
-  // native write); failures throw so DiscoverTab can `Alert.alert` them, and a
-  // success re-scans so the new skill appears in the list immediately.
-  const handleDiscoverInstall = useCallback(async (source: string): Promise<void> => {
-    const res = await downloadSkill({ source });
-    if (!res.ok) throw new Error(res.error);
-    await refreshSkills();
-  }, [refreshSkills]);
-
-  const handleSelectWorkspace = useCallback(async (id: string) => {
-    await setCurrentWorkspace(id);
-    await refreshWorkspaces();
-  }, [refreshWorkspaces]);
-
-  // file-dialog returns absolute paths, which is exactly what the skills-fs
-  // toggle surface requires (`symlink`/`unlink` do NOT expand `~` — Task 3).
-  const handleAddWorkspace = useCallback(async () => {
-    const picked = await openFileDialog({
-      allowsMultipleSelection: false,
-      canChooseDirectories: true,
-      canChooseFiles: false,
-      prompt: "Add workspace",
-    });
-    const path = picked?.[0];
-    if (!path) return;
-    await addWorkspace({ id: path, name: workspaceName(path), path });
-    await setCurrentWorkspace(path);
-    await refreshWorkspaces();
-  }, [refreshWorkspaces]);
+  const handleAddWorkspace = (): void => {
+    void (async () => {
+      const picked = await openFileDialog({
+        allowsMultipleSelection: false,
+        canChooseDirectories: true,
+        canChooseFiles: false,
+        prompt: "Add workspace",
+      });
+      const path = picked?.[0];
+      if (!path) return;
+      onAddWorkspace(path);
+    })();
+  };
 
   return (
-    <View
-      className="flex-1 bg-surface-muted"
-      style={{ paddingTop: sidebarSplitViewTitlebarMetrics.sidebarInsetTop }}
-    >
-      <View className="px-4 pb-2 pt-2">
-        <Text className="text-[14px] font-bold text-foreground">Skillet</Text>
+    // NOTE: no sidebarSplitViewTitlebarMetrics inset here. The skillet window
+    // is a standard titled NSWindow (see AppDelegate: no FullSizeContentView
+    // for this app), so the 42pt inset only added dead space under the real
+    // titlebar. Keep a small top pad for breathing room.
+    <View className="flex-1 bg-surface-muted">
+      <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
+        <View className="flex-row items-center gap-2.5">
+          <View
+            className="h-8 w-8 items-center justify-center rounded-lg bg-primary"
+            style={{ borderCurve: "continuous" }}
+          >
+            <SFSymbol color="#ffffff" name="sparkles" size={18} />
+          </View>
+          <View>
+            <View className="flex-row items-center gap-1.5">
+              <Text className="text-[14px] font-bold text-foreground">Skillet</Text>
+              <View
+                className="rounded-full border border-primary/30 bg-primary/15 px-1.5 py-0"
+                style={{ borderCurve: "continuous" }}
+              >
+                <Text className="text-[10px] font-bold text-primary" mono>v1.0</Text>
+              </View>
+            </View>
+            <Text className="text-[11px] text-muted">Universal Skills & Prompts</Text>
+          </View>
+        </View>
+        <Pressable
+          accessibilityLabel={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          accessibilityRole="button"
+          className="h-7 w-7 items-center justify-center rounded-md border border-border bg-surface active:bg-surface-muted"
+          onPress={() => toggleAppTheme()}
+          style={{ borderCurve: "continuous" }}
+        >
+          {theme === "dark" ? (
+            <SFSymbol color={c.muted} name="sun.max" size={16} />
+          ) : (
+            <SFSymbol color={c.muted} name="moon" size={16} />
+          )}
+        </Pressable>
       </View>
 
-      <View className="flex-row gap-1 px-3">
-        {(["skills", "discover"] as const).map((tab) => {
-          const active = nav === tab;
+      <View className="gap-2 px-3 pb-1 pt-2.5">
+        <View className="flex-row items-center justify-between px-1">
+          <Text className="text-[10px] font-bold uppercase tracking-wider text-muted">Scope / Workspace</Text>
+          <Pressable
+            accessibilityLabel="Add workspace folder"
+            accessibilityRole="button"
+            className="h-5 w-5 items-center justify-center rounded active:opacity-60"
+            onPress={handleAddWorkspace}
+          >
+            <SFSymbol color={c.primary} name="folder.badge.plus" size={16} />
+          </Pressable>
+        </View>
+
+        <View
+          className="rounded-lg border border-border bg-surface"
+          style={{ borderCurve: "continuous" }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            className="flex-row items-center gap-2 px-3 py-2 active:bg-surface-muted"
+            onPress={() => setPickerOpen((v) => !v)}
+          >
+            <SFSymbol color={c.muted} name="arrow.triangle.branch" size={15} />
+            <Text className="min-w-0 flex-1 text-[12px] font-medium text-foreground" numberOfLines={1}>
+              {current ? `${current.name} (${shortPath(current.path)})` : "Select workspace…"}
+            </Text>
+            <SFSymbol color={c.muted} name="chevron.down" size={11} />
+          </Pressable>
+          {pickerOpen
+            ? workspaces.filter((w) => w.path !== current?.path).map((ws) => (
+              <Pressable
+                accessibilityRole="button"
+                className="flex-row items-center gap-2 border-t border-border px-3 py-2 active:bg-surface-muted"
+                key={ws.id}
+                onPress={() => {
+                  setPickerOpen(false);
+                  onSelectWorkspace(ws.id);
+                }}
+              >
+                <Text className="min-w-0 flex-1 text-[12px] text-foreground" numberOfLines={1}>
+                  {`${ws.name} (${shortPath(ws.path)})`}
+                </Text>
+              </Pressable>
+            ))
+            : null}
+        </View>
+      </View>
+
+      <View className="gap-1 px-2 pt-2">
+        {navItems.map(({ tab, label, icon, count }) => {
+          const active = currentTab === tab;
           return (
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
-              className={active ? "rounded-md bg-border px-3 py-1" : "rounded-md px-3 py-1"}
+              className={active
+                ? "flex-row items-center justify-between rounded-lg border border-border/70 bg-surface px-2.5 py-2"
+                : "flex-row items-center justify-between rounded-lg px-2.5 py-2 active:bg-surface/50"}
               key={tab}
-              onPress={() => setNav(tab)}
+              onPress={() => onTab(tab)}
+              style={{ borderCurve: "continuous" }}
             >
-              <Text className="text-[12px] font-semibold capitalize text-foreground">
-                {tab}
-              </Text>
+              <View className="flex-row items-center gap-2">
+                <View className={active ? "h-3.5 w-1 rounded-full bg-primary" : "h-3.5 w-1 rounded-full bg-transparent"} />
+                <SFSymbol color={active ? c.primary : c.muted} name={icon} size={17} />
+                <Text className={active
+                  ? "text-[13px] font-semibold text-foreground"
+                  : "text-[13px] font-medium text-muted"}
+                >
+                  {label}
+                </Text>
+              </View>
+              {count !== undefined && count > 0 ? (
+                <View
+                  className="rounded-full bg-primary/15 px-2 py-0.5"
+                  style={{ borderCurve: "continuous" }}
+                >
+                  <Text className="text-[10px] font-bold text-primary" mono>{count}</Text>
+                </View>
+              ) : null}
             </Pressable>
           );
         })}
       </View>
 
-      <View className="px-4 pb-1 pt-3">
-        <Text className="text-[11px] font-semibold uppercase text-muted">Workspace</Text>
-      </View>
-      {workspaces.map((ws) => {
-        const active = ws.path === currentPath;
-        return (
-          <View className="px-2" key={ws.id}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              className={active
-                ? "flex-row items-center rounded-md bg-primary px-3 py-1"
-                : "flex-row items-center rounded-md px-3 py-1"}
-              onPress={() => void handleSelectWorkspace(ws.id)}
-            >
-              <Text
-                className={active ? "flex-1 text-[12px] text-white" : "flex-1 text-[12px] text-foreground"}
-                numberOfLines={1}
-              >
-                {ws.name}
-              </Text>
-            </Pressable>
-          </View>
-        );
-      })}
-      <View className="px-2">
+      <View className="flex-1" />
+
+      <View className="border-t border-border px-2 py-2">
         <Pressable
           accessibilityRole="button"
-          className="flex-row items-center rounded-md px-3 py-1"
-          onPress={() => void handleAddWorkspace()}
+          accessibilityState={{ selected: currentTab === "settings" }}
+          className={currentTab === "settings"
+            ? "flex-row items-center gap-2 rounded-lg border border-border/70 bg-surface px-2.5 py-2"
+            : "flex-row items-center gap-2 rounded-lg px-2.5 py-2 active:bg-surface/50"}
+          onPress={() => onTab("settings")}
+          style={{ borderCurve: "continuous" }}
         >
-          <Text className="text-[12px] text-primary">+ Add workspace…</Text>
+          <View className={currentTab === "settings" ? "h-3.5 w-1 rounded-full bg-primary" : "h-3.5 w-1 rounded-full bg-transparent"} />
+          <SFSymbol
+            color={currentTab === "settings" ? c.primary : c.muted}
+            name="gearshape"
+            size={17}
+          />
+          <Text className={currentTab === "settings"
+            ? "text-[13px] font-semibold text-foreground"
+            : "text-[13px] font-medium text-muted"}
+          >
+            Settings
+          </Text>
         </Pressable>
-      </View>
-
-      <View className="px-4 pb-1 pt-3">
-        <Text className="text-[11px] font-semibold uppercase text-muted">
-          Skills{skills.length > 0 ? ` · ${skills.length}` : ""}
-        </Text>
-      </View>
-      <View className="flex-1">
-        {nav === "skills" ? (
-          <SkillList onSelect={onSelect} selectedId={selectedId} skills={skills} />
-        ) : (
-          <DiscoverTab installedSkills={skills} onInstall={handleDiscoverInstall} />
-        )}
       </View>
     </View>
   );
 }
+
+export { workspaceName };

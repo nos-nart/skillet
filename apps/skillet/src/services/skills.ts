@@ -208,10 +208,19 @@ export function resolveSkillTarget(workspacePath: string, skillSlug: string): st
     return null;
   }
   const normalizedWs = normalizeWs(workspacePath);
+  // `symlink`/`unlink` do NOT expand `~` natively (absolute-only contract),
+  // and an empty workspace would anchor the target at the filesystem root —
+  // reject both before joining.
+  if (normalizedWs === "" || normalizedWs.startsWith("~")) {
+    return null;
+  }
   const target = `${normalizedWs}/${WORKSPACE_SKILLS_REL}/${skillSlug}`;
 
-  // Ensure resolved path doesn't escape workspace
-  if (!target.startsWith(normalizedWs)) {
+  // Ensure resolved path doesn't escape workspace (segment-aware so `/ws`
+  // never matches a sibling like `/ws2/...`). Defense-in-depth: the target is
+  // constructed from `normalizedWs` below, so this holds by construction —
+  // the live protection is `validateSafeSlug` above plus native re-validation.
+  if (!target.startsWith(`${normalizedWs}/`)) {
     return null;
   }
   return target;

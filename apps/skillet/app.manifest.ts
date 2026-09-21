@@ -27,6 +27,7 @@ const manifest = {
       "@legend-apps/windows",
       "@legend-apps/native-menu",
       "@legend-apps/appkit-split-view",
+      "@legend-apps/sf-symbol",
       "react-native-enriched-markdown",
       "@legend-apps/syntax-parser",
     ],

@@ -38,6 +38,20 @@ test("maps a recursive tree to installable skill rows", () => {
   ]);
 });
 
+test("maps a recursive tree to installable skill rows with default main branch when unset", () => {
+  const items = mapTreeToSkillItems(
+    [{ type: "blob", path: "skills/eli5/SKILL.md" }],
+    { owner: "anthropics", repo: "skills" },
+  );
+  expect(items).toEqual([
+    {
+      name: "eli5",
+      path: "skills/eli5",
+      htmlUrl: "https://github.com/anthropics/skills/tree/main/skills/eli5",
+    },
+  ]);
+});
+
 test("builds an install source from a discovered row", () => {
   expect(buildInstallSource({ owner: "anthropics", repo: "skills" }, "skills/eli5")).toBe(
     "anthropics/skills/skills/eli5",

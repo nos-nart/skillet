@@ -5,7 +5,7 @@ import { App } from "@legend-apps/app";
 
 export default function ShellApp(props: Record<string, unknown>) {
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-background">
       <App {...props} />
     </View>
   );

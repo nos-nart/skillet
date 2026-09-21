@@ -17,6 +17,7 @@ module.exports = {
   },
   moduleNameMapper: {
     "^react-native$": "<rootDir>/jest/reactNativeMock.cjs",
+    "^@legend-apps/sf-symbol$": "<rootDir>/jest/sfSymbolMock.cjs",
     "^@legendapp/list/react-native$": "<rootDir>/jest/legendListMock.cjs",
     "^react-native-enriched-markdown$": "<rootDir>/jest/enrichedMarkdownMock.cjs",
     "^uniwind$": "<rootDir>/jest/uniwindMock.cjs",

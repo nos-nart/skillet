@@ -260,6 +260,12 @@ export function mapTreeToSkillItems(
   tree: TreeEntry[],
   repo: GitHubRepoInfo,
 ): DiscoveredSkillItem[] {
+  // `branch` is optional on the parsed type (`parseGitHubRepo` never sets it;
+  // only `browseRepoForSkills` resolves it) — default to `main` so direct
+  // callers never emit `tree/undefined/...` links. Matches the `main` fallback
+  // convention in `browseRepoForSkills` below; the in-app path always passes a
+  // resolved branch.
+  const branch = repo.branch ?? "main";
   const seen = new Map<string, DiscoveredSkillItem>();
   for (const entry of tree) {
     if (entry.type !== "blob") continue;
@@ -282,7 +288,7 @@ export function mapTreeToSkillItems(
     seen.set(dirPath, {
       name,
       path: dirPath,
-      htmlUrl: `https://github.com/${repo.owner}/${repo.repo}/tree/${repo.branch}${dirPath === "" ? "" : `/${dirPath}`}`,
+      htmlUrl: `https://github.com/${repo.owner}/${repo.repo}/tree/${branch}${dirPath === "" ? "" : `/${dirPath}`}`,
     });
   }
   return [...seen.values()];
@@ -317,6 +323,8 @@ export async function browseRepoForSkills(
   const headers = buildGitHubHeaders(options.token);
   let repoRes: ApiResponse;
   try {
+    // SAFETY: `FetchFn` implementers return the `FetchResponse` shape plus an
+    // optional numeric `status`; `ApiResponse` only narrows `status` to optional.
     repoRes = (await fetchImpl(
       `https://api.github.com/repos/${info.owner}/${info.repo}`,
       { headers },
@@ -330,10 +338,13 @@ export async function browseRepoForSkills(
     }
     throw new Error("Repository not found");
   }
+  // SAFETY: GitHub repo metadata is a JSON object; `default_branch` is
+  // narrowed with `typeof` before use, so the wide record cast is safe.
   const repoData = (await repoRes.json()) as { default_branch?: unknown };
   const branch = typeof repoData.default_branch === "string" ? repoData.default_branch : "main";
   let treeRes: ApiResponse;
   try {
+    // SAFETY: same `FetchFn` → `ApiResponse` narrowing as the repo call above.
     treeRes = (await fetchImpl(
       `https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`,
       { headers },
@@ -347,9 +358,15 @@ export async function browseRepoForSkills(
     }
     throw new Error("Failed to fetch repository tree");
   }
+  // SAFETY: GitHub trees API returns a JSON object with an optional `tree`
+  // array; `Array.isArray` below guarantees an array before entries are read.
   const treeData = (await treeRes.json()) as { tree?: unknown };
+  // SAFETY: same payload as above — still an array here only when the
+  // `Array.isArray` guard passes, and each entry's fields are narrowed to
+  // strings by the type-predicate filter that follows.
+  const rawEntries = treeData.tree as { type?: unknown; path?: unknown }[];
   const tree = Array.isArray(treeData.tree)
-    ? (treeData.tree as { type?: unknown; path?: unknown }[]).filter(
+    ? rawEntries.filter(
       (e): e is { type: string; path: string } =>
         typeof e.type === "string" && typeof e.path === "string",
     )

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { shellDir } from "./apps";
+import { rootDir, shellDir } from "./apps";
 import { macOSDefaultInfoPlistPath } from "./macosShell";
 import {
   getMacOSReleaseBuild,
@@ -115,7 +115,6 @@ function replacePlistString(plist: string, key: string, value: string) {
     return `${prefix}${escapePlistString(value)}${suffix}`;
   });
 }
-
 function renderSparkleMetadata(manifest: AppManifest, mode: "dev" | "release", arch: MacOSReleaseArch) {
   if (mode !== "release" || !manifest.release?.macos) {
     return "";
@@ -127,6 +126,22 @@ function renderSparkleMetadata(manifest: AppManifest, mode: "dev" | "release", a
     "\t<key>SUPublicEDKey</key>",
     `\t<string>${escapePlistString(getMacOSSparklePublicEdKey(manifest))}</string>`,
   ].join("\n");
+}
+
+// Bundled fonts convention: `apps/<id>/macos/Fonts/*.ttf` are overlaid into
+// the build workspace by copyAppMacOSTemplate and copied into the app
+// Resources by the Xcode target, then registered here via UIAppFonts — so
+// `fontFamily` resolves synchronously at launch with no native module and no
+// JS loader. Keep in sync with the PBXResourcesBuildPhase entries.
+function bundledFontFiles(manifest: AppManifest): string[] {
+  try {
+    return fs
+      .readdirSync(path.join(rootDir, "apps", manifest.id, "macos", "Fonts"))
+      .filter((f) => f.endsWith(".ttf"))
+      .sort();
+  } catch {
+    return [];
+  }
 }
 
 export function writeMacOSInfoPlist(
@@ -170,9 +185,10 @@ export function writeMacOSInfoPlist(
       : []),
   ].join("\n");
   const sparkleMetadata = renderSparkleMetadata(manifest, mode, arch);
+  const bundledFonts = bundledFontFiles(manifest);
   const outputPlist = basePlist.replace(
     "\n</dict>\n</plist>\n",
-    `\n${appMetadata}${mode === "dev" ? `\n${renderDevAppTransportSecurity()}` : ""}${sparkleMetadata ? `\n${sparkleMetadata}` : ""}${documentTypes && documentTypes.length > 0 ? `\n${renderDocumentTypes(documentTypes)}` : ""}${urlSchemes.length > 0 ? `\n${renderUrlSchemes(urlSchemes)}` : ""}${Object.keys(customStrings).length > 0 ? `\n${renderCustomStrings(customStrings)}` : ""}\n</dict>\n</plist>\n`,
+    `\n${appMetadata}${mode === "dev" ? `\n${renderDevAppTransportSecurity()}` : ""}${sparkleMetadata ? `\n${sparkleMetadata}` : ""}${bundledFonts.length > 0 ? `\n${renderStringArray("UIAppFonts", bundledFonts, "\t")}` : ""}${documentTypes && documentTypes.length > 0 ? `\n${renderDocumentTypes(documentTypes)}` : ""}${urlSchemes.length > 0 ? `\n${renderUrlSchemes(urlSchemes)}` : ""}${Object.keys(customStrings).length > 0 ? `\n${renderCustomStrings(customStrings)}` : ""}\n</dict>\n</plist>\n`,
   );
   const outputPath = path.join(outputDir, "Info.plist");
 

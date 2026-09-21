@@ -1,4 +1,5 @@
 import {
+  clearHighlightCache,
   highlightFence,
   isWellFormedHighlightResult,
   splitMarkdownFences,
@@ -82,6 +83,19 @@ test("highlightFence returns token runs on success", async () => {
     highlightFence("code", "ts", "dark-plus", { ensureGrammar, highlight }),
   ).resolves.toBe(result);
   expect(highlight).toHaveBeenCalledWith("code", "ts", "dark-plus");
+});
+
+test("highlightFence caches results across repeated calls", async () => {
+  clearHighlightCache();
+  const ensureGrammar = jest.fn().mockResolvedValue(undefined);
+  const result = { lines: [], styles: [] };
+  const highlight = jest.fn().mockResolvedValue(result);
+  const deps = { ensureGrammar, highlight };
+  const first = await highlightFence("cached-code", "ts", "dark-plus", deps);
+  const second = await highlightFence("cached-code", "ts", "dark-plus", deps);
+  expect(first).toBe(result);
+  expect(second).toBe(result);
+  expect(highlight).toHaveBeenCalledTimes(1);
 });
 
 test("isWellFormedHighlightResult accepts only well-formed shapes", () => {

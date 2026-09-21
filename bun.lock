@@ -25,11 +25,13 @@
       "dependencies": {
         "@legend-apps/appkit-split-view": "workspace:*",
         "@legend-apps/file-dialog": "workspace:*",
+        "@legend-apps/sf-symbol": "workspace:*",
         "@legend-apps/source-viewer": "workspace:*",
         "@legend-apps/storage": "workspace:*",
         "@legend-apps/syntax-parser": "workspace:*",
         "@legend-apps/theme": "workspace:*",
         "@legend-apps/virtualized-document": "workspace:*",
+        "@legend-apps/window-manager": "workspace:*",
         "@legend-apps/windows": "workspace:*",
         "@legendapp/list": "catalog:",
         "@legendapp/state": "catalog:",
@@ -91,6 +93,14 @@
     "packages/native-text-source": {
       "name": "@legend-apps/native-text-source",
       "version": "0.0.0",
+    },
+    "packages/sf-symbol": {
+      "name": "@legend-apps/sf-symbol",
+      "version": "0.0.0",
+      "peerDependencies": {
+        "react": "catalog:",
+        "react-native": "catalog:",
+      },
     },
     "packages/skills-fs": {
       "name": "@skillet/skills-fs",
@@ -527,6 +537,8 @@
     "@legend-apps/native-menu": ["@legend-apps/native-menu@workspace:packages/native-menu"],
 
     "@legend-apps/native-text-source": ["@legend-apps/native-text-source@workspace:packages/native-text-source"],
+
+    "@legend-apps/sf-symbol": ["@legend-apps/sf-symbol@workspace:packages/sf-symbol"],
 
     "@legend-apps/source-viewer": ["@legend-apps/source-viewer@workspace:packages/source-viewer"],
 
