@@ -1,7 +1,8 @@
 node_modules/
 dist/
 .vite/
-docs
+docs/
+.repos/
 .superpowers
 *.app/
 .scratch/
@@ -9,4 +10,3 @@ docs
 
 # legend shell generated config (metro/native codegen output)
 shell/.legend/
-.repos/
