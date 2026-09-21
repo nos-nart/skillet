@@ -73,6 +73,8 @@ const defaultPath = [
 
 const baseEnv = {
   ...process.env,
+  LANG: "en_US.UTF-8",
+  LC_ALL: "en_US.UTF-8",
   PATH: process.env.PATH ? `${process.env.PATH}:${defaultPath}` : defaultPath,
 };
 
