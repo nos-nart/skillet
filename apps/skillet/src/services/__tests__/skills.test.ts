@@ -1,11 +1,19 @@
+import { Effect } from "effect";
 import {
   getSkills,
   isSkillEnabled,
   parseSkillMd,
   resolveSkillTarget,
   toggleSkill,
+  listSkillsEffect,
+  readSkillMdEffect,
+  toggleSkillEffect,
+  copySkillToWorkspaceEffect,
+  SkillsFileSystem,
+  LiveSkillsFileSystem,
   type SkillsFs,
 } from "../skills";
+import { FsError, InvalidSlugError } from "../errors";
 
 test("parses frontmatter name", () => {
   const { metadata } = parseSkillMd("---\nname: eli5\n---\n\nBody");
@@ -173,3 +181,65 @@ test("isSkillEnabled reflects workspace scan", async () => {
   await expect(isSkillEnabled("missing", "/ws/proj", fs)).resolves.toBe(false);
   await expect(isSkillEnabled("..", "/ws/proj", fs)).resolves.toBe(false);
 });
+
+describe("SkillsFileSystem Effect Service", () => {
+  test("listSkillsEffect retrieves skills through service layer", async () => {
+    const fs = fakeFs({
+      "~/.skills/test-skill/SKILL.md": "---\nname: test-skill\ndescription: test\n---\n\nContent",
+    });
+
+    const skills = await Effect.runPromise(listSkillsEffect(["~/.skills"], fs));
+    expect(skills).toHaveLength(1);
+    expect(skills[0].slug).toBe("test-skill");
+  });
+
+  test("toggleSkillEffect fails with InvalidSlugError on path traversal attempt", async () => {
+    const fs = fakeFs({});
+    const req = {
+      skillSlug: "../evil",
+      sourcePath: "/src",
+      workspacePath: "/ws/proj",
+      enable: true,
+    };
+
+    const err = await Effect.runPromise(toggleSkillEffect(req, fs).pipe(Effect.flip));
+    expect(err).toBeInstanceOf(InvalidSlugError);
+    expect((err as InvalidSlugError).slug).toBe("../evil");
+  });
+
+  test("readSkillMdEffect reads skill content or fails with FsError", async () => {
+    const fs = fakeFs({
+      "/path/to/SKILL.md": "content",
+    });
+
+    const content = await Effect.runPromise(readSkillMdEffect("/path/to/SKILL.md", fs));
+    expect(content).toBe("content");
+
+    const err = await Effect.runPromise(readSkillMdEffect("/nonexistent", fs).pipe(Effect.flip));
+    expect(err).toBeInstanceOf(FsError);
+  });
+
+  test("copySkillToWorkspaceEffect safely copies SKILL.md", async () => {
+    let writtenPath = "";
+    let writtenContent = "";
+    const writer = {
+      ensureDir: async () => true,
+      writeTextFile: async (p: string, c: string) => {
+        writtenPath = p;
+        writtenContent = c;
+        return true;
+      },
+    };
+    const fs = fakeFs({
+      "/source/SKILL.md": "---\nname: my-skill\n---\nbody",
+    });
+
+    const ok = await Effect.runPromise(
+      copySkillToWorkspaceEffect("my-skill", "/source", "/ws/proj", { fs, writer }),
+    );
+    expect(ok).toBe(true);
+    expect(writtenPath).toBe("/ws/proj/.skills/my-skill/SKILL.md");
+    expect(writtenContent).toBe("---\nname: my-skill\n---\nbody");
+  });
+});
+

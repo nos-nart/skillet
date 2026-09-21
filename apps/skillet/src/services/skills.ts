@@ -1,12 +1,16 @@
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import {
   ensureDir,
-  readSkillMd,
+  readSkillMd as nativeReadSkillMd,
   scanSkillsDir,
   symlink,
   unlink,
   validateSafeSlug,
   writeTextFile,
 } from "@skillet/skills-fs";
+import { FsError, InvalidSlugError } from "./errors";
 import {
   fetchLatestCommit,
   fetchSkillMd,
@@ -93,7 +97,7 @@ export interface SkillWriter {
   writeTextFile(path: string, contents: string): Promise<boolean>;
 }
 
-const defaultSkillsFs: SkillsFs = { scanSkillsDir, readSkillMd, symlink, unlink };
+const defaultSkillsFs: SkillsFs = { scanSkillsDir, readSkillMd: nativeReadSkillMd, symlink, unlink };
 const defaultSkillWriter: SkillWriter = { ensureDir, writeTextFile };
 
 // Global skill dirs per agent, verbatim from `src/backend/agents.ts`
@@ -506,3 +510,143 @@ export async function uninstallSkill(
     return false;
   }
 }
+
+export const listSkillsEffect = (
+  dirs: readonly string[] = DEFAULT_SKILL_DIRS,
+  fs: SkillsFs = defaultSkillsFs,
+): Effect.Effect<Skill[], FsError> =>
+  Effect.tryPromise({
+    try: () => getSkills(dirs, fs),
+    catch: (err) =>
+      new FsError({
+        operation: "listSkills",
+        path: dirs.join(", "),
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
+export const listSkills = (
+  dirs?: readonly string[],
+  fs?: SkillsFs,
+): Promise<Skill[]> => getSkills(dirs, fs);
+
+export const readSkillMdEffect = (
+  path: string,
+  fs: SkillsFs = defaultSkillsFs,
+): Effect.Effect<string, FsError> =>
+  Effect.tryPromise({
+    try: () => fs.readSkillMd(path),
+    catch: (err) =>
+      new FsError({
+        operation: "readSkillMd",
+        path,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
+export const readSkillMd = (
+  path: string,
+  fs: SkillsFs = defaultSkillsFs,
+): Promise<string> => fs.readSkillMd(path);
+
+export const toggleSkillEffect = (
+  req: ToggleSkillRequest,
+  fs: SkillsFs = defaultSkillsFs,
+): Effect.Effect<boolean, InvalidSlugError | FsError> =>
+  Effect.gen(function* () {
+    const target = resolveSkillTarget(req.workspacePath, req.skillSlug);
+    if (!target) {
+      return yield* Effect.fail(new InvalidSlugError({ slug: req.skillSlug }));
+    }
+    return yield* Effect.tryPromise({
+      try: () => (req.enable ? fs.symlink(req.sourcePath, target) : fs.unlink(target)),
+      catch: (err) =>
+        new FsError({
+          operation: req.enable ? "symlink" : "unlink",
+          path: target,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+  });
+
+export const copySkillToWorkspaceEffect = (
+  skillSlug: string,
+  sourcePath: string,
+  workspacePath: string,
+  deps: { fs?: SkillsFs; writer?: SkillWriter } = {},
+): Effect.Effect<boolean, InvalidSlugError | FsError> =>
+  Effect.gen(function* () {
+    const target = resolveSkillTarget(workspacePath, skillSlug);
+    if (!target) {
+      return yield* Effect.fail(new InvalidSlugError({ slug: skillSlug }));
+    }
+    const fs = deps.fs ?? defaultSkillsFs;
+    const writer = deps.writer ?? defaultSkillWriter;
+
+    const skillMdPath = sourcePath.endsWith("SKILL.md")
+      ? sourcePath
+      : `${sourcePath}/SKILL.md`;
+
+    const content = yield* Effect.tryPromise({
+      try: () => fs.readSkillMd(skillMdPath),
+      catch: (err) =>
+        new FsError({
+          operation: "readSkillMd",
+          path: skillMdPath,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+
+    yield* Effect.tryPromise({
+      try: () => writer.ensureDir(target),
+      catch: (err) =>
+        new FsError({
+          operation: "ensureDir",
+          path: target,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+
+    yield* Effect.tryPromise({
+      try: () => writer.writeTextFile(`${target}/SKILL.md`, content),
+      catch: (err) =>
+        new FsError({
+          operation: "writeTextFile",
+          path: `${target}/SKILL.md`,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+
+    return true;
+  });
+
+export const copySkillToWorkspace = (
+  skillSlug: string,
+  sourcePath: string,
+  workspacePath: string,
+  deps?: { fs?: SkillsFs; writer?: SkillWriter },
+): Promise<boolean> =>
+  Effect.runPromise(copySkillToWorkspaceEffect(skillSlug, sourcePath, workspacePath, deps));
+
+export interface SkillsFileSystemService {
+  readonly listSkills: (dirs?: readonly string[]) => Effect.Effect<Skill[], FsError>;
+  readonly readSkillMd: (path: string) => Effect.Effect<string, FsError>;
+  readonly toggleSkill: (req: ToggleSkillRequest) => Effect.Effect<boolean, InvalidSlugError | FsError>;
+  readonly copySkillToWorkspace: (
+    skillSlug: string,
+    sourcePath: string,
+    workspacePath: string,
+  ) => Effect.Effect<boolean, InvalidSlugError | FsError>;
+}
+
+export class SkillsFileSystem extends Context.Service<SkillsFileSystem, SkillsFileSystemService>()(
+  "SkillsFileSystem",
+) {}
+
+export const LiveSkillsFileSystem = Layer.succeed(SkillsFileSystem, {
+  listSkills: (dirs) => listSkillsEffect(dirs),
+  readSkillMd: (path) => readSkillMdEffect(path),
+  toggleSkill: (req) => toggleSkillEffect(req),
+  copySkillToWorkspace: (slug, src, ws) => copySkillToWorkspaceEffect(slug, src, ws),
+});
+
