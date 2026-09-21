@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Pressable, Text, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 import { SFSymbol } from "@legend-apps/sf-symbol";
 import { copyText } from "@skillet/skills-fs";
@@ -58,7 +58,7 @@ function batchLineTokens(
   return runs.length > 0 ? runs : [{ text: lineText }];
 }
 
-export function SkillCodeFence({
+export const SkillCodeFence = React.memo(function SkillCodeFence({
   blockStyle,
   code,
   lang,
@@ -104,52 +104,95 @@ export function SkillCodeFence({
     return new Map(result.styles.map((entry) => [entry.id, entry.foreground]));
   }, [result]);
 
+  const batchedLines = useMemo(() => {
+    if (!result) return null;
+    return result.lines.map((line) => ({
+      index: line.index,
+      tokens: batchLineTokens(line.text, line.tokens, colorByStyleId),
+    }));
+  }, [result, colorByStyleId]);
+
+  const isDark = themeName === "dark-plus";
   const displayLang = (lang || "code").toUpperCase();
+
+  const cardBg = isDark ? "#1a1b1e" : "#f6f8fa";
+  const cardBorder = isDark ? "#2c2d32" : "#e1e4e8";
+  const headerBg = isDark ? "#222328" : "#edf0f3";
+  const headerBorder = isDark ? "#2c2d32" : "#e1e4e8";
+  const defaultTextColor = isDark ? "#e1e4e8" : "#24292e";
+
+  const lineTextStyle = useMemo(
+    () => [{ fontFamily: "JetBrains Mono", fontSize: 12, lineHeight: 18, color: defaultTextColor }, textStyle],
+    [defaultTextColor, textStyle],
+  );
 
   return (
     <View
-      className="my-3 overflow-hidden rounded-lg border border-border bg-surface-muted/40"
-      style={[{ borderCurve: "continuous" }, blockStyle]}
+      className="my-3 overflow-hidden rounded-lg border"
+      style={[
+        {
+          backgroundColor: cardBg,
+          borderColor: cardBorder,
+          borderCurve: "continuous",
+          padding: 0,
+        },
+        blockStyle,
+      ]}
     >
-      <View className="flex-row items-center justify-between border-b border-border/60 bg-surface-muted/80 px-3 py-1.5">
-        <Text className="text-[10px] font-bold tracking-wider text-muted" style={{ fontFamily: "JetBrains Mono" }}>
+      <View
+        className="flex-row items-center justify-between border-b px-3 py-1.5"
+        style={{ backgroundColor: headerBg, borderColor: headerBorder }}
+      >
+        <Text
+          className="text-[10px] font-bold tracking-wider text-muted"
+          style={{ fontFamily: "JetBrains Mono" }}
+        >
           {displayLang}
         </Text>
         <Pressable
           accessibilityLabel={`Copy ${displayLang} snippet`}
           accessibilityRole="button"
-          className="flex-row items-center gap-1 rounded px-1.5 py-0.5 active:bg-surface"
+          className="flex-row items-center gap-1 rounded px-2 py-0.5 active:opacity-70"
           onPress={handleCopy}
           style={{ borderCurve: "continuous" }}
         >
           <SFSymbol
             color={copied ? "#10b981" : c.muted}
             name={copied ? "checkmark" : "doc.on.doc"}
-            size={12}
+            size={13}
           />
-          <Text className={copied ? "text-[10px] font-semibold text-emerald-500" : "text-[10px] font-medium text-muted"}>
+          <Text
+            className={copied ? "text-[10px] font-semibold text-emerald-500" : "text-[10px] font-medium text-muted"}
+          >
             {copied ? "Copied" : "Copy"}
           </Text>
         </Pressable>
       </View>
-      <View className="p-3">
-        {!result ? (
-          <Text selectable style={[{ fontFamily: "JetBrains Mono", fontSize: 12, lineHeight: 18 }, textStyle]}>
+      <View className="p-3.5">
+        {!batchedLines ? (
+          <Text selectable style={lineTextStyle}>
             {code}
           </Text>
         ) : (
-          result.lines.map((line) => {
-            const batched = batchLineTokens(line.text, line.tokens, colorByStyleId);
+          batchedLines.map((line) => {
+            if (line.tokens.length === 1 && !line.tokens[0].color) {
+              return (
+                <Text key={line.index} selectable style={lineTextStyle}>
+                  {line.tokens[0].text || " "}
+                </Text>
+              );
+            }
             return (
-              <Text key={line.index} style={[{ fontFamily: "JetBrains Mono", fontSize: 12, lineHeight: 18 }, textStyle]}>
-                {batched.map((token, tokenIdx) => (
-                  <Text
-                    key={tokenIdx}
-                    style={token.color ? { color: token.color } : undefined}
-                  >
-                    {token.text}
-                  </Text>
-                ))}
+              <Text key={line.index} selectable style={lineTextStyle}>
+                {line.tokens.map((token, tokenIdx) =>
+                  token.color ? (
+                    <Text key={tokenIdx} style={{ color: token.color }}>
+                      {token.text}
+                    </Text>
+                  ) : (
+                    token.text
+                  ),
+                )}
               </Text>
             );
           })
@@ -157,4 +200,4 @@ export function SkillCodeFence({
       </View>
     </View>
   );
-}
+});

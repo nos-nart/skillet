@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Alert, Image, Pressable, ScrollView, TextInput, View } from "react-native";
+import { Alert, Image, Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import { Text } from "../AppText";
 import { SFSymbol } from "@legend-apps/sf-symbol";
-import { SkillList } from "../SkillList";
 import {
   browseRepoForSkills,
   buildInstallSource,
@@ -15,16 +14,66 @@ import {
 import type { Skill } from "../services/skills";
 import { useThemePalette } from "../services/theme";
 
-// Native port of the web `DiscoverTab` (`src/components/tabs/DiscoverTab.tsx`):
-// search any GitHub repo for skills via the trees API, browse a curated
-// popular list, install rows through `downloadSkill` (wired by the Sidebar's
-// `onInstall`). Web `alert()` → RN `Alert.alert`; avatars → RN `Image`
-// (`github.com/<owner>.png`, hidden on load error); StyleX cards → Uniwind
-// rows. Deliberately out of scope: bookmarks dialog + per-item description
-// prefetch (one fetch per row is too chatty for the MVP; rows show the path).
-// Repo search itself lives in `services/github.ts` (`browseRepoForSkills` +
-// `mapTreeToSkillItems` + `POPULAR_REPOS`); this file keeps the component and
-// selection state.
+function PopularRepoCard({
+  repo,
+  onSelect,
+}: {
+  repo: (typeof POPULAR_REPOS)[number];
+  onSelect: (fullName: string) => void;
+}): React.JSX.Element {
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const c = useThemePalette();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      className="rounded-lg border border-border bg-surface p-3.5 active:bg-surface-muted/80"
+      onPress={() => onSelect(repo.fullName)}
+      style={{ borderCurve: "continuous", flexBasis: "48%", flexGrow: 1, minWidth: 260 }}
+    >
+      <View className="flex-row items-center justify-between gap-2">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
+          {avatarFailed ? (
+            <View
+              className="h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-muted"
+              style={{ borderCurve: "continuous" }}
+            >
+              <SFSymbol color={c.muted} name="shippingbox" size={15} />
+            </View>
+          ) : (
+            <Image
+              accessibilityLabel={`${repo.owner} avatar`}
+              className="h-7 w-7 rounded-md"
+              onError={() => setAvatarFailed(true)}
+              source={{ uri: `https://github.com/${repo.owner}.png?size=64` }}
+            />
+          )}
+          <Text className="min-w-0 flex-1 text-[13px] font-bold text-foreground" numberOfLines={1}>
+            {repo.fullName}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityLabel={`Open ${repo.fullName} on GitHub`}
+          accessibilityRole="button"
+          className="h-6 w-6 items-center justify-center rounded active:opacity-60"
+          onPress={(e) => {
+            e.stopPropagation();
+            void Linking.openURL(`https://github.com/${repo.fullName}`).catch(() => {});
+          }}
+        >
+          <SFSymbol color={c.muted} name="arrow.up.right.square" size={14} />
+        </Pressable>
+      </View>
+      <Text className="pt-2 text-[12px] leading-4 text-muted" numberOfLines={2}>
+        {repo.desc}
+      </Text>
+      <View className="flex-row items-center gap-1 pt-2.5">
+        <Text className="text-[11px] font-semibold text-primary">Browse skills</Text>
+        <SFSymbol color={c.primary} name="chevron.right" size={10} />
+      </View>
+    </Pressable>
+  );
+}
 
 export function DiscoverTab({
   installedSkills,
@@ -46,6 +95,7 @@ export function DiscoverTab({
   const [repo, setRepo] = useState<GitHubRepoInfo | null>(null);
   const [installing, setInstalling] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
+
   const handleBrowse = async (raw: string): Promise<void> => {
     const trimmed = raw.trim();
     if (trimmed === "" || loading) return;
@@ -109,7 +159,7 @@ export function DiscoverTab({
             }`}
             style={{ borderCurve: "continuous" }}
           >
-            <SFSymbol color={isFocused ? c.primary : c.muted} name="magnifyingglass" size={15} />
+            <SFSymbol color={isFocused ? c.primary : c.muted} name="magnifyingglass" size={17} />
             <TextInput
               autoCapitalize="none"
               autoCorrect={false}
@@ -135,7 +185,7 @@ export function DiscoverTab({
                 className="h-4 w-4 items-center justify-center rounded-full active:opacity-70"
                 onPress={() => setQuery("")}
               >
-                <SFSymbol color={c.muted} name="xmark.circle.fill" size={14} />
+                <SFSymbol color={c.muted} name="xmark.circle.fill" size={16} />
               </Pressable>
             ) : null}
           </View>
@@ -159,38 +209,41 @@ export function DiscoverTab({
 
       {repo ? (
         <View className="flex-1">
-          <View className="flex-row items-center gap-2 px-4 pb-2">
+          <View className="flex-row items-center gap-2.5 px-4 pb-3">
             {avatarFailed ? null : (
               <Image
                 accessibilityLabel={`${repo.owner} avatar`}
-                className="h-5 w-5 rounded"
+                className="h-6 w-6 rounded-md"
                 onError={() => setAvatarFailed(true)}
                 source={{ uri: `https://github.com/${repo.owner}.png?size=64` }}
               />
             )}
-            <Text className="flex-1 text-[12px] font-semibold text-foreground" numberOfLines={1}>
+            <Text className="flex-1 text-[13px] font-bold text-foreground" numberOfLines={1}>
               {`${repo.owner} / ${repo.repo}${repo.path ? ` / ${repo.path}` : ""}`}
             </Text>
             <Pressable
               accessibilityRole="button"
+              className="flex-row items-center gap-1 rounded-md bg-surface-muted px-2.5 py-1 active:opacity-70"
               onPress={() => {
                 setRepo(null);
                 setItems([]);
                 setQuery("");
                 setError(null);
               }}
+              style={{ borderCurve: "continuous" }}
             >
-              <Text className="text-[12px] font-semibold text-primary">← Back</Text>
+              <SFSymbol color={c.primary} name="chevron.left" size={12} />
+              <Text className="text-[12px] font-semibold text-primary">Back</Text>
             </Pressable>
           </View>
           <ScrollView className="flex-1">
-            <View className="gap-2 px-2 pb-4">
+            <View className="gap-2 px-4 pb-4">
               {items.map((item) => {
                 const installed = isInstalled(item);
                 const busy = installing === item.path;
                 return (
                   <View
-                    className="flex-row items-center rounded-lg border border-border bg-surface-muted px-3 py-2"
+                    className="flex-row items-center rounded-lg border border-border bg-surface px-3.5 py-2.5"
                     style={{ borderCurve: "continuous" }}
                     key={item.path === "" ? item.name : item.path}
                   >
@@ -217,7 +270,7 @@ export function DiscoverTab({
                       <SFSymbol
                         color={installed ? c.muted : "#ffffff"}
                         name={installed ? "checkmark" : "square.and.arrow.down"}
-                        size={13}
+                        size={15}
                       />
                       <Text
                         className={installed
@@ -234,22 +287,30 @@ export function DiscoverTab({
           </ScrollView>
         </View>
       ) : (
-        <View className="flex-1">
-          <View className="px-4 pb-1 pt-1">
-            <Text className="text-[11px] font-semibold uppercase text-muted">
-              Popular Repositories
+        <ScrollView className="flex-1">
+          <View className="gap-3 px-4 pb-6 pt-1">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                Popular Repositories
+              </Text>
+              <Text className="text-[11px] text-muted">
+                {POPULAR_REPOS.length} featured repos
+              </Text>
+            </View>
+            <View className="flex-row flex-wrap gap-3">
+              {POPULAR_REPOS.map((r) => (
+                <PopularRepoCard
+                  key={r.fullName}
+                  onSelect={(fullName) => void handleBrowse(fullName)}
+                  repo={r}
+                />
+              ))}
+            </View>
+            <Text className="pt-1 text-[11px] text-muted">
+              Select a repository to explore and install its skills, or search any owner/repo above.
             </Text>
           </View>
-          <SkillList
-            onSelect={(id) => void handleBrowse(id)}
-            skills={POPULAR_REPOS.map((r) => ({ id: r.fullName, name: r.fullName }))}
-          />
-          <View className="px-4 pb-3">
-            <Text className="text-[11px] text-muted" numberOfLines={2}>
-              Tap a repo to list its skills, or paste any owner/repo above.
-            </Text>
-          </View>
-        </View>
+        </ScrollView>
       )}
     </View>
   );

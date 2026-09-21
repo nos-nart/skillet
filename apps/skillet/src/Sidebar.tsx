@@ -74,15 +74,15 @@ export function Sidebar({
     // for this app), so the 42pt inset only added dead space under the real
     // titlebar. Keep a small top pad for breathing room.
     <View className="flex-1 bg-surface-muted">
-      <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
-        <View className="flex-row items-center gap-2.5">
+      <View className="flex-row items-center justify-between px-3 pb-1 pt-3">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2">
           <View
-            className="h-8 w-8 items-center justify-center rounded-lg bg-primary"
+            className="h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary"
             style={{ borderCurve: "continuous" }}
           >
-            <SFSymbol color="#ffffff" name="sparkles" size={18} />
+            <SFSymbol color="#ffffff" name="sparkles" size={20} />
           </View>
-          <View>
+          <View className="min-w-0 flex-1">
             <View className="flex-row items-center gap-1.5">
               <Text className="text-[14px] font-bold text-foreground">Skillet</Text>
               <View
@@ -92,34 +92,38 @@ export function Sidebar({
                 <Text className="text-[10px] font-bold text-primary" mono>v1.0</Text>
               </View>
             </View>
-            <Text className="text-[11px] text-muted">Universal Skills & Prompts</Text>
+            <Text className="text-[11px] text-muted" ellipsizeMode="tail" numberOfLines={1}>
+              Universal Skills & Prompts
+            </Text>
           </View>
         </View>
         <Pressable
           accessibilityLabel={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           accessibilityRole="button"
-          className="h-7 w-7 items-center justify-center rounded-md border border-border bg-surface active:bg-surface-muted"
+          className="ml-2 h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface active:bg-surface-muted"
           onPress={() => toggleAppTheme()}
           style={{ borderCurve: "continuous" }}
         >
           {theme === "dark" ? (
-            <SFSymbol color={c.muted} name="sun.max" size={16} />
+            <SFSymbol color={c.muted} name="sun.max" size={18} />
           ) : (
-            <SFSymbol color={c.muted} name="moon" size={16} />
+            <SFSymbol color={c.muted} name="moon" size={18} />
           )}
         </Pressable>
       </View>
 
       <View className="gap-2 px-3 pb-1 pt-2.5">
         <View className="flex-row items-center justify-between px-1">
-          <Text className="text-[10px] font-bold uppercase tracking-wider text-muted">Scope / Workspace</Text>
+          <Text className="min-w-0 flex-1 text-[10px] font-bold uppercase tracking-wider text-muted" numberOfLines={1}>
+            Scope / Workspace
+          </Text>
           <Pressable
             accessibilityLabel="Add workspace folder"
             accessibilityRole="button"
-            className="h-5 w-5 items-center justify-center rounded active:opacity-60"
+            className="h-6 w-6 shrink-0 items-center justify-center rounded active:opacity-60"
             onPress={handleAddWorkspace}
           >
-            <SFSymbol color={c.primary} name="folder.badge.plus" size={16} />
+            <SFSymbol color={c.primary} name="folder.badge.plus" size={17} />
           </Pressable>
         </View>
 
@@ -132,11 +136,11 @@ export function Sidebar({
             className="flex-row items-center gap-2 px-3 py-2 active:bg-surface-muted"
             onPress={() => setPickerOpen((v) => !v)}
           >
-            <SFSymbol color={c.muted} name="arrow.triangle.branch" size={15} />
+            <SFSymbol color={c.muted} name="arrow.triangle.branch" size={16} />
             <Text className="min-w-0 flex-1 text-[12px] font-medium text-foreground" numberOfLines={1}>
               {current ? `${current.name} (${shortPath(current.path)})` : "Select workspace…"}
             </Text>
-            <SFSymbol color={c.muted} name="chevron.down" size={11} />
+            <SFSymbol color={c.muted} name="chevron.down" size={12} />
           </Pressable>
           {pickerOpen
             ? workspaces.filter((w) => w.path !== current?.path).map((ws) => (
@@ -174,7 +178,7 @@ export function Sidebar({
             >
               <View className="flex-row items-center gap-2">
                 <View className={active ? "h-3.5 w-1 rounded-full bg-primary" : "h-3.5 w-1 rounded-full bg-transparent"} />
-                <SFSymbol color={active ? c.primary : c.muted} name={icon} size={17} />
+                <SFSymbol color={active ? c.primary : c.muted} name={icon} size={18} />
                 <Text className={active
                   ? "text-[13px] font-semibold text-foreground"
                   : "text-[13px] font-medium text-muted"}
@@ -211,7 +215,7 @@ export function Sidebar({
           <SFSymbol
             color={currentTab === "settings" ? c.primary : c.muted}
             name="gearshape"
-            size={17}
+            size={18}
           />
           <Text className={currentTab === "settings"
             ? "text-[13px] font-semibold text-foreground"

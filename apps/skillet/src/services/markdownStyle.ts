@@ -25,7 +25,11 @@ export function createSkilletMarkdownStyle(appearance: LegendDisplayThemeAppeara
     },
     codeBlock: {
       ...sharedStyle.codeBlock,
+      backgroundColor: appearance === "dark" ? "#1a1b1e" : "#f6f8fa",
+      borderColor: appearance === "dark" ? "#2c2d32" : "#e1e4e8",
       borderRadius: 7,
+      borderWidth: 1,
+      color: appearance === "dark" ? "#e1e4e8" : "#24292e",
       fontFamily: codeFontFamily,
       fontSize: 12,
       lineHeight: 18,

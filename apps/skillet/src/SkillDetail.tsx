@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Switch, View } from "react-native";
 import { Text } from "./AppText";
 import { SFSymbol } from "@legend-apps/sf-symbol";
@@ -11,6 +11,23 @@ import { EnrichedMarkdownText } from "react-native-enriched-markdown";
 import { InstallSkillDialog, UninstallSkillDialog } from "./dialogs";
 import { isSkillEnabled, type Skill } from "./services/skills";
 import { getWorkspaces, type Workspace } from "./services/workspaces";
+
+const ProseSpan = React.memo(function ProseSpan({
+  markdown,
+  markdownStyle,
+}: {
+  markdown: string;
+  markdownStyle: ReturnType<typeof createSkilletMarkdownStyle>;
+}): React.JSX.Element {
+  return (
+    <EnrichedMarkdownText
+      flavor="github"
+      markdown={markdown}
+      markdownStyle={markdownStyle}
+      selectable
+    />
+  );
+});
 
 // Optimistic toggle helper: the component seeds a `Set` of workspace ids
 // where the skill is enabled and applies this reducer per `Switch` flip,
@@ -73,14 +90,9 @@ export function SkillDetail({
   // codeBlock is optional in MarkdownStyle: per-field ?. keeps undefined as
   // the RN default instead of asserting a shape the type does not promise.
   const fenceBlockStyle = useMemo(() => ({
-    backgroundColor: markdownStyle.codeBlock?.backgroundColor,
-    borderColor: markdownStyle.codeBlock?.borderColor,
-    borderRadius: markdownStyle.codeBlock?.borderRadius,
-    borderWidth: markdownStyle.codeBlock?.borderWidth,
-    padding: markdownStyle.codeBlock?.padding,
-  } as const), [markdownStyle]);
+    borderRadius: 8,
+  } as const), []);
   const fenceTextStyle = useMemo(() => ({
-    color: markdownStyle.codeBlock?.color,
     fontFamily: markdownStyle.codeBlock?.fontFamily,
     fontSize: markdownStyle.codeBlock?.fontSize,
     lineHeight: markdownStyle.codeBlock?.lineHeight,
@@ -210,7 +222,7 @@ export function SkillDetail({
                 })}
               style={{ borderCurve: "continuous" }}
             >
-              <SFSymbol color="#ffffff" name="arrow.clockwise" size={14} />
+              <SFSymbol color="#ffffff" name="arrow.clockwise" size={16} />
               <Text className="text-[12px] font-semibold text-white">
                 {action === "updating" ? "Updating…" : "Update"}
               </Text>
@@ -224,7 +236,7 @@ export function SkillDetail({
               onPress={() => setInstallOpen(true)}
               style={{ borderCurve: "continuous" }}
             >
-              <SFSymbol color={c.primary} name="square.and.arrow.down" size={14} />
+              <SFSymbol color={c.primary} name="square.and.arrow.down" size={16} />
               <Text className="text-[12px] font-semibold text-primary">
                 {action === "installing" ? "Installing…" : "Install"}
               </Text>
@@ -233,13 +245,13 @@ export function SkillDetail({
           {onUninstallSkill ? (
             <Pressable
               accessibilityRole="button"
-              className="h-8 flex-row items-center gap-1.5 rounded-lg bg-danger px-3 active:opacity-85"
+              className="h-8 flex-row items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 px-3 active:bg-danger/20"
               disabled={action !== "idle"}
               onPress={() => setUninstallOpen(true)}
               style={{ borderCurve: "continuous" }}
             >
-              <SFSymbol color="#ffffff" name="trash" size={14} />
-              <Text className="text-[12px] font-semibold text-white">
+              <SFSymbol color={c.danger} name="trash" size={16} />
+              <Text className="text-[12px] font-semibold text-danger">
                 {action === "uninstalling" ? "Removing…" : "Uninstall"}
               </Text>
             </Pressable>
@@ -388,12 +400,10 @@ export function SkillDetail({
               {spans.map(
                 (span, index) =>
                   span.type === "prose" ? (
-                    <EnrichedMarkdownText
-                      flavor="github"
+                    <ProseSpan
                       key={index}
                       markdown={span.text}
                       markdownStyle={markdownStyle}
-                      selectable
                     />
                   ) : (
                     <SkillCodeFence

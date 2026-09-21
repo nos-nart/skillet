@@ -202,7 +202,7 @@ export function App(): React.JSX.Element {
           throws "No dimension set" — all pane sizes are explicit state, never
           measured. */}
       <View className="flex-1 flex-row bg-background">
-        <View style={{ width: navWidth }}>
+        <View style={{ width: navWidth, overflow: "hidden" }}>
           <Sidebar
             currentPath={currentPath}
             currentTab={nav}
@@ -225,7 +225,7 @@ export function App(): React.JSX.Element {
         />
         {nav === "skills" ? (
           <>
-            <View className="bg-surface" style={{ width: listWidth }}>
+            <View className="bg-surface" style={{ width: listWidth, overflow: "hidden" }}>
               <SkillList
                 isCheckingUpdates={isCheckingUpdates}
                 isLoading={isLoading}

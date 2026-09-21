@@ -96,7 +96,7 @@ const DARK_PALETTE: ThemePalette = {
   border: "#2e2e34",
   primary: "#0A84FF",
   accent: "#0A84FF",
-  danger: "#f87171",
+  danger: "#FF453A",
   white: "#ffffff",
 };
 
@@ -109,7 +109,7 @@ const LIGHT_PALETTE: ThemePalette = {
   border: "#e2e8f0",
   primary: "#007AFF",
   accent: "#007AFF",
-  danger: "#b42318",
+  danger: "#FF3B30",
   white: "#ffffff",
 };
 

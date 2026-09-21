@@ -94,6 +94,8 @@ export function isWellFormedHighlightResult(value: unknown): value is SyntaxHigh
 }
 
 const highlightCache = new Map<string, SyntaxHighlightResult>();
+const ensuredGrammars = new Set<string>();
+const inFlightRequests = new Map<string, Promise<SyntaxHighlightResult | null>>();
 
 export function getCachedHighlight(
   code: string,
@@ -105,6 +107,8 @@ export function getCachedHighlight(
 
 export function clearHighlightCache(): void {
   highlightCache.clear();
+  ensuredGrammars.clear();
+  inFlightRequests.clear();
 }
 
 export async function highlightFence(
@@ -117,30 +121,44 @@ export async function highlightFence(
   const cacheKey = `${lang}:${themeName}:${code}`;
   const cached = highlightCache.get(cacheKey);
   if (cached !== undefined) return cached;
-  try {
-    let ensureGrammar = deps.ensureGrammar;
-    let highlight = deps.highlight;
-    if (ensureGrammar === undefined || highlight === undefined) {
-      // No static import: the parser evaluates react-native-nitro-modules
-      // native setup at import time, which cannot run under jest. Requiring it
-      // lazily keeps the real module unloaded in tests (fakes are injected) and
-      // in hosts that only render prose; Metro caches the module in prod. The
-      // annotated const (no assertion) pins the expected shape. The require
-      // lives inside the try so a missing module returns null through the
-      // fallback contract instead of throwing. Prod-only path: evaluating this
-      // line IS the nitro crash under jest, so it stays uncovered — do not
-      // attempt to cover it.
-      const native: NativeSyntaxParser = require("@legend-apps/syntax-parser");
-      if (ensureGrammar === undefined) ensureGrammar = native.ensureSyntaxGrammar;
-      if (highlight === undefined) highlight = native.highlightString;
+
+  const inFlight = inFlightRequests.get(cacheKey);
+  if (inFlight !== undefined) return inFlight;
+
+  const promise = (async (): Promise<SyntaxHighlightResult | null> => {
+    try {
+      let ensureGrammar = deps.ensureGrammar;
+      let highlight = deps.highlight;
+      if (ensureGrammar === undefined || highlight === undefined) {
+        // No static import: the parser evaluates react-native-nitro-modules
+        // native setup at import time, which cannot run under jest. Requiring it
+        // lazily keeps the real module unloaded in tests (fakes are injected) and
+        // in hosts that only render prose; Metro caches the module in prod. The
+        // annotated const (no assertion) pins the expected shape. The require
+        // lives inside the try so a missing module returns null through the
+        // fallback contract instead of throwing. Prod-only path: evaluating this
+        // line IS the nitro crash under jest, so it stays uncovered — do not
+        // attempt to cover it.
+        const native: NativeSyntaxParser = require("@legend-apps/syntax-parser");
+        if (ensureGrammar === undefined) ensureGrammar = native.ensureSyntaxGrammar;
+        if (highlight === undefined) highlight = native.highlightString;
+      }
+      if (deps.ensureGrammar !== undefined || !ensuredGrammars.has(lang)) {
+        await ensureGrammar(lang);
+        ensuredGrammars.add(lang);
+      }
+      const result = await highlight(code, lang, themeName);
+      if (!isWellFormedHighlightResult(result)) return null;
+      highlightCache.set(cacheKey, result);
+      return result;
+    } catch {
+      warnParserUnavailable();
+      return null;
+    } finally {
+      inFlightRequests.delete(cacheKey);
     }
-    await ensureGrammar(lang);
-    const result = await highlight(code, lang, themeName);
-    if (!isWellFormedHighlightResult(result)) return null;
-    highlightCache.set(cacheKey, result);
-    return result;
-  } catch {
-    warnParserUnavailable();
-    return null;
-  }
+  })();
+
+  inFlightRequests.set(cacheKey, promise);
+  return promise;
 }

@@ -93,9 +93,9 @@ export function SkillList({
     <View className="flex-1 border-r border-border bg-surface">
       <View className="gap-2 border-b border-border px-3 pb-2.5 pt-3">
         {showToolbar ? (
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-1.5">
-              <Text className="text-[13px] font-bold text-foreground">
+          <View className="flex-row items-center justify-between gap-1">
+            <View className="shrink-0 flex-row items-center gap-1.5">
+              <Text className="text-[13px] font-bold text-foreground" numberOfLines={1}>
                 {skills.length} skills
               </Text>
               {updateCount > 0 ? (
@@ -104,21 +104,21 @@ export function SkillList({
                   style={{ borderCurve: "continuous" }}
                 >
                   <Text className="text-[10px] font-bold text-primary" mono>
-                    {updateCount} updates
+                    {updateCount}
                   </Text>
                 </View>
               ) : null}
             </View>
-            <View className="flex-row items-center gap-1">
+            <View className="shrink-0 flex-row items-center gap-1">
               {onNewSkill ? (
                 <Pressable
                   accessibilityLabel="Add new skill"
                   accessibilityRole="button"
-                  className="h-7 flex-row items-center gap-1.5 rounded-md border border-border/80 bg-surface px-2.5 active:bg-surface-muted"
+                  className="h-7 flex-row items-center gap-1 rounded-md border border-border/80 bg-surface px-2 active:bg-surface-muted"
                   onPress={onNewSkill}
                   style={{ borderCurve: "continuous" }}
                 >
-                  <SFSymbol color={c.primary} name="plus" size={14} />
+                  <SFSymbol color={c.primary} name="plus" size={16} />
                   <Text className="text-[12px] font-medium text-foreground">New</Text>
                 </Pressable>
               ) : null}
@@ -126,14 +126,14 @@ export function SkillList({
                 <Pressable
                   accessibilityLabel="Check for updates"
                   accessibilityRole="button"
-                  className="h-7 flex-row items-center gap-1.5 rounded-md border border-border/80 bg-surface px-2.5 active:bg-surface-muted"
+                  className="h-7 flex-row items-center gap-1 rounded-md border border-border/80 bg-surface px-2 active:bg-surface-muted"
                   disabled={isCheckingUpdates}
                   onPress={onCheckUpdates}
                   style={{ borderCurve: "continuous" }}
                 >
-                  <SFSymbol color={c.primary} name="arrow.up.circle" size={15} />
+                  <SFSymbol color={c.primary} name="arrow.up.circle" size={16} />
                   <Text className="text-[12px] font-medium text-foreground">
-                    {isCheckingUpdates ? "Checking…" : "Updates"}
+                    {isCheckingUpdates ? "…" : "Updates"}
                   </Text>
                 </Pressable>
               ) : null}
@@ -146,7 +146,7 @@ export function SkillList({
                   onPress={onRescan}
                   style={{ borderCurve: "continuous" }}
                 >
-                  <SFSymbol color={c.primary} name="arrow.clockwise" size={15} />
+                  <SFSymbol color={c.primary} name="arrow.clockwise" size={16} />
                 </Pressable>
               ) : null}
             </View>
@@ -158,7 +158,7 @@ export function SkillList({
           }`}
           style={{ borderCurve: "continuous" }}
         >
-          <SFSymbol color={isFocused ? c.primary : c.muted} name="magnifyingglass" size={15} />
+          <SFSymbol color={isFocused ? c.primary : c.muted} name="magnifyingglass" size={17} />
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
@@ -179,7 +179,7 @@ export function SkillList({
               className="h-4 w-4 items-center justify-center rounded-full active:opacity-70"
               onPress={() => setQuery("")}
             >
-              <SFSymbol color={c.muted} name="xmark.circle.fill" size={14} />
+              <SFSymbol color={c.muted} name="xmark.circle.fill" size={16} />
             </Pressable>
           ) : null}
         </View>
@@ -198,7 +198,7 @@ export function SkillList({
           if (row.kind === "header") {
             return (
               <View className="flex-row items-center gap-1.5 px-4 pb-1 pt-2.5">
-                <SFSymbol color={c.muted} name="shippingbox" size={14} />
+                <SFSymbol color={c.muted} name="shippingbox" size={15} />
                 <Text className="min-w-0 flex-1 text-[10px] font-bold uppercase tracking-wider text-muted" numberOfLines={1}>
                   {row.title}
                 </Text>
@@ -242,7 +242,7 @@ export function SkillList({
                     {item.description ?? item.name}
                   </Text>
                 </View>
-                <SFSymbol color={selected ? "#ffffff" : c.muted} name="chevron.right" size={12} />
+                <SFSymbol color={selected ? "#ffffff" : c.muted} name="chevron.right" size={14} />
               </Pressable>
             </View>
           );
