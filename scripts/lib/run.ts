@@ -40,6 +40,8 @@ export function runCommand(command: string, args: string[], options: {
     cwd: options.cwd,
     env: {
       ...process.env,
+      LANG: process.env.LANG || "en_US.UTF-8",
+      LC_ALL: process.env.LC_ALL || "en_US.UTF-8",
       ...options.env,
     },
     stdio: "inherit",

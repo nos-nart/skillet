@@ -35,10 +35,26 @@ type PackageOptions = {
   skipSign: boolean;
 };
 
-function runCommand(command: string, args: string[], options: { cwd?: string } = {}) {
+function runCommand(command: string, args: string[], options: { cwd?: string; env?: Record<string, string | undefined> } = {}) {
+  const defaultPath = [
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    path.join(process.env.HOME || "", ".bun", "bin"),
+    "/usr/bin",
+    "/bin",
+    "/usr/sbin",
+    "/sbin",
+  ].join(":");
+
   const result = spawnSync(command, args, {
     cwd: options.cwd,
-    env: process.env,
+    env: {
+      ...process.env,
+      PATH: process.env.PATH ? `${process.env.PATH}:${defaultPath}` : defaultPath,
+      LANG: process.env.LANG || "en_US.UTF-8",
+      LC_ALL: process.env.LC_ALL || "en_US.UTF-8",
+      ...options.env,
+    },
     stdio: "inherit",
   });
 

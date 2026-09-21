@@ -2,8 +2,26 @@ import path from "node:path";
 import { rootDir } from "./apps";
 import type { AppManifest, AppPackageMetadata, MacOSReleaseArch } from "./types";
 
-export const githubOwner = "LegendApp";
-export const githubRepo = "legend-apps";
+import { spawnSync } from "node:child_process";
+
+function detectGitHubSlug(): { owner: string; repo: string } {
+  try {
+    const result = spawnSync("git", ["remote", "get-url", "origin"], { encoding: "utf8" });
+    if (result.status === 0 && result.stdout) {
+      const match = result.stdout.trim().match(/github\.com[:/]([^/]+)\/([^/.]+)(?:\.git)?$/);
+      if (match) {
+        return { owner: match[1], repo: match[2] };
+      }
+    }
+  } catch {
+    // Fall back to default repository owner and name.
+  }
+  return { owner: "nos-nart", repo: "skillet" };
+}
+
+const detectedSlug = detectGitHubSlug();
+export const githubOwner = detectedSlug.owner;
+export const githubRepo = detectedSlug.repo;
 export const githubBranch = "main";
 
 export function getGitHubRepositorySlug() {

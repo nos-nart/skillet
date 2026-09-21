@@ -11,6 +11,12 @@
   ],
   "scripts": {
     "skillet": "bun scripts/run-app.ts skillet",
+    "dev": "bun run skillet",
+    "open": "bun run skillet open",
+    "build": "bun run skillet build macos",
+    "package": "bun run skillet package",
+    "release": "bun scripts/release.ts",
+    "test": "jest --no-watchman --config apps/skillet/jest.config.cjs",
     "typecheck": "tsc --noEmit -p tsconfig.legend.json"
   },
   "devDependencies": {

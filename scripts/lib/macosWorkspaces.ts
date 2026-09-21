@@ -260,6 +260,8 @@ export function getMacOSEnv(appId: string, configPath: string, appRoot = shellDi
     LEGEND_APP_ROOT: appRoot,
     LEGEND_REPO_ROOT: rootDir,
     LEGEND_SHELL_ROOT: shellDir,
+    LANG: process.env.LANG || "en_US.UTF-8",
+    LC_ALL: process.env.LC_ALL || "en_US.UTF-8",
   };
 }
 
