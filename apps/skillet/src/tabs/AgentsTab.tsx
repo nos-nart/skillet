@@ -3,6 +3,8 @@ import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Text } from "../AppText";
+import { AgentLogo } from "../services/agentLogos";
+import { useThemePalette } from "../services/theme";
 
 // Port of the old AgentsTab (`src/components/tabs/AgentsTab.tsx`): agent cards
 // with install locations. Status is live — a dir that scans cleanly counts as
@@ -35,6 +37,7 @@ async function probeActive(dir: string): Promise<boolean> {
 }
 
 export function AgentsTab(): React.JSX.Element {
+  const c = useThemePalette();
   const [active, setActive] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -55,7 +58,7 @@ export function AgentsTab(): React.JSX.Element {
       <View className="mx-auto w-full max-w-[780px] gap-6 px-9 py-8">
         <View>
           <View className="flex-row items-center gap-2">
-            <SFSymbol name="cpu" size={20} />
+            <SFSymbol color={c.foreground} name="cpu" size={20} />
             <Text className="text-[20px] font-bold text-foreground">Detected Coding Agents</Text>
           </View>
           <Text className="pt-1.5 text-[13px] leading-5 text-muted">
@@ -68,20 +71,18 @@ export function AgentsTab(): React.JSX.Element {
             const isActive = active[agent.id] ?? false;
             return (
               <View
-                className="min-w-[220px] flex-1 gap-3 rounded-[10px] border border-border bg-surface-muted p-4"
+                className="min-w-[220px] flex-1 gap-3 rounded-lg border border-border bg-surface p-4"
                 key={agent.id}
+                style={{ borderCurve: "continuous" }}
               >
                 <View className="flex-row items-center justify-between gap-2">
-                  <View className="min-w-0 flex-1 flex-row items-center gap-2">
-                    <View
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: agent.color !== "" ? agent.color : "#a3a3a3" }}
-                    />
+                  <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
+                    <AgentLogo id={agent.id} isDark={c.isDark} size={22} />
                     <Text className="min-w-0 flex-1 text-[13px] font-semibold text-foreground" numberOfLines={1}>
                       {agent.name}
                     </Text>
                   </View>
-                  <View className={`rounded-md px-2 py-0.5 ${isActive ? "bg-emerald-500/15" : "bg-surface"}`}>
+                  <View className={`rounded-md px-2 py-0.5 ${isActive ? "bg-emerald-500/15" : "bg-surface-muted"}`}>
                     <Text className={`text-[11px] font-semibold ${isActive ? "text-emerald-500" : "text-muted"}`}>
                       {isActive ? "Active" : "Ready"}
                     </Text>

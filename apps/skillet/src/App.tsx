@@ -9,7 +9,6 @@ import { ResizeHandle } from "./ResizeHandle";
 import { InstallSkillDialog } from "./dialogs";
 import { AgentsTab } from "./tabs/AgentsTab";
 import { DiscoverTab } from "./tabs/DiscoverTab";
-import { PromptsTab } from "./tabs/PromptsTab";
 import { SettingsTab } from "./tabs/SettingsTab";
 import {
   downloadSkill,
@@ -266,6 +265,7 @@ export function App(): React.JSX.Element {
                 onUninstallSkill={handleUninstallSkill}
                 onUpdateSkill={handleUpdateSkill}
                 skill={selectedSkill}
+                workspaces={workspaces}
               />
             </View>
           </>
@@ -276,10 +276,6 @@ export function App(): React.JSX.Element {
         ) : nav === "agents" ? (
           <View className="min-w-0 flex-1">
             <AgentsTab />
-          </View>
-        ) : nav === "prompts" ? (
-          <View className="min-w-0 flex-1">
-            <PromptsTab skills={skills} />
           </View>
         ) : (
           <View className="min-w-0 flex-1">

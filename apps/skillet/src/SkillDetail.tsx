@@ -10,7 +10,7 @@ import { splitMarkdownFences, syntaxThemeForAppearance } from "./services/codeFe
 import { EnrichedMarkdownText } from "react-native-enriched-markdown";
 import { InstallSkillDialog, UninstallSkillDialog } from "./dialogs";
 import { isSkillEnabled, type Skill } from "./services/skills";
-import { getWorkspaces, type Workspace } from "./services/workspaces";
+import type { Workspace } from "./services/workspaces";
 
 const ProseSpan = React.memo(function ProseSpan({
   markdown,
@@ -51,12 +51,14 @@ export function toggleReducer(prev: Set<string>, t: { workspaceId: string; enabl
 // exist and would render nothing) — `markdown={body}` is the correct prop.
 export function SkillDetail({
   skill,
+  workspaces,
   onToggleInRepo,
   onInstallSkill,
   onUninstallSkill,
   onUpdateSkill,
 }: {
   skill: Skill | null;
+  workspaces: Workspace[];
   // Resolves true when the toggle was applied; false (or throw) rolls the
   // optimistic flip back. `workspacePath` is the stored absolute path —
   // `symlink`/`unlink` do NOT expand `~` (Task 3), and the workspace picker
@@ -69,7 +71,6 @@ export function SkillDetail({
   onUninstallSkill?: (skill: Skill) => Promise<void>;
   onUpdateSkill?: (skill: Skill) => Promise<void>;
 }): React.JSX.Element {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [optimistic, setOptimistic] = useState<Set<string>>(new Set());
   const [action, setAction] = useState<"idle" | "updating" | "installing" | "uninstalling">("idle");
   const [installOpen, setInstallOpen] = useState(false);
@@ -97,16 +98,6 @@ export function SkillDetail({
     fontSize: markdownStyle.codeBlock?.fontSize,
     lineHeight: markdownStyle.codeBlock?.lineHeight,
   } as const), [markdownStyle]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void getWorkspaces().then((list) => {
-      if (!cancelled) setWorkspaces(list);
-    }, () => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Re-seed optimistic state whenever the selection changes: enabled set =
   // workspaces where the native `isSkillEnabled` probe finds the slug.

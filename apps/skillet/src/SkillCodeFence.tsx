@@ -122,7 +122,7 @@ export const SkillCodeFence = React.memo(function SkillCodeFence({
   const defaultTextColor = isDark ? "#e1e4e8" : "#24292e";
 
   const lineTextStyle = useMemo(
-    () => [{ fontFamily: "JetBrains Mono", fontSize: 12, lineHeight: 18, color: defaultTextColor }, textStyle],
+    () => [{ fontFamily: "JetBrains Mono", fontSize: 13, lineHeight: 20, color: defaultTextColor }, textStyle],
     [defaultTextColor, textStyle],
   );
 
@@ -186,7 +186,15 @@ export const SkillCodeFence = React.memo(function SkillCodeFence({
               <Text key={line.index} selectable style={lineTextStyle}>
                 {line.tokens.map((token, tokenIdx) =>
                   token.color ? (
-                    <Text key={tokenIdx} style={{ color: token.color }}>
+                    <Text
+                      key={tokenIdx}
+                      style={{
+                        color: token.color,
+                        fontFamily: "JetBrains Mono",
+                        fontSize: 13,
+                        lineHeight: 20,
+                      }}
+                    >
                       {token.text}
                     </Text>
                   ) : (

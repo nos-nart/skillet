@@ -6,7 +6,7 @@ import { Text } from "./AppText";
 import { toggleAppTheme, useAppTheme, useThemePalette } from "./services/theme";
 import type { Workspace } from "./services/workspaces";
 
-export type SidebarNav = "skills" | "discover" | "agents" | "prompts" | "settings";
+export type SidebarNav = "skills" | "discover" | "agents" | "settings";
 
 function workspaceName(path: string): string {
   const base = path.replace(/\/+$/, "").split("/").pop() ?? path;
@@ -19,7 +19,7 @@ function shortPath(path: string): string {
 
 // Nav sidebar matching the old Deno UI (`src/components/Sidebar.tsx`):
 // logo + version header, theme toggle, Scope/Workspace selector, nav
-// (Skills/Discover/Agents/Prompts) and a Settings footer.
+// (Skills/Discover/Agents) and a Settings footer.
 //
 // Legend doctrine (see .repos/legend-apps): no icon libraries, no custom
 // fonts — system type + text glyphs only (⌕ › ↗ ↻ ↑ ▾ ✦ ◎ ☀︎ ☾︎), Menlo/mono
@@ -51,7 +51,6 @@ export function Sidebar({
     { tab: "skills" as const, label: "Skills", icon: "sparkles", count: skillsCount },
     { tab: "discover" as const, label: "Discover", icon: "safari" },
     { tab: "agents" as const, label: "Agents", icon: "cpu" },
-    { tab: "prompts" as const, label: "Prompts", icon: "apple.terminal" },
   ];
 
   const handleAddWorkspace = (): void => {

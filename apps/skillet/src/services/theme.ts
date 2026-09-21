@@ -85,6 +85,7 @@ export interface ThemePalette {
   accent: string;
   danger: string;
   white: string;
+  isDark: boolean;
 }
 
 const DARK_PALETTE: ThemePalette = {
@@ -98,6 +99,7 @@ const DARK_PALETTE: ThemePalette = {
   accent: "#0A84FF",
   danger: "#FF453A",
   white: "#ffffff",
+  isDark: true,
 };
 
 const LIGHT_PALETTE: ThemePalette = {
@@ -111,6 +113,7 @@ const LIGHT_PALETTE: ThemePalette = {
   accent: "#007AFF",
   danger: "#FF3B30",
   white: "#ffffff",
+  isDark: false,
 };
 
 export function themePalette(theme: AppTheme): ThemePalette {
