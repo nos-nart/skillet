@@ -1,6 +1,6 @@
 import { WindowProvider } from "@legend-apps/windows";
 import { setMainWindowOptions } from "@legend-apps/window-manager";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { Sidebar, workspaceName, type SidebarNav } from "./Sidebar";
 import { SkillDetail } from "./SkillDetail";
@@ -59,12 +59,29 @@ export function App(): React.JSX.Element {
   const [navWidth, setNavWidth] = useState(240);
   const navWidthRef = useRef(240);
   const navDragAnchor = useRef(240);
+  const skillsRequestIdRef = useRef(0);
   const selectedSkill = skills.find((s) => s.id === selectedId) ?? null;
 
+  const skillListItems = useMemo(
+    () =>
+      skills.map((s) => ({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        packageName: s.packageName,
+        trigger: s.metadata.trigger ?? `/${s.slug}`,
+        description: s.metadata.description || s.name,
+        updateAvailable: s.updateAvailable,
+      })),
+    [skills],
+  );
+
   const refreshSkills = useCallback(async (): Promise<void> => {
+    const requestId = ++skillsRequestIdRef.current;
     setIsLoading(true);
     try {
       const list = await getSkills();
+      if (skillsRequestIdRef.current !== requestId) return;
       setSkills(list);
       // Keep the selection alive across re-scans; default to the first skill
       // like the old UI (LOAD_SKILLS_SUCCESS auto-selects).
@@ -75,7 +92,9 @@ export function App(): React.JSX.Element {
     } catch {
       // Keep the last good list.
     } finally {
-      setIsLoading(false);
+      if (skillsRequestIdRef.current === requestId) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -236,15 +255,7 @@ export function App(): React.JSX.Element {
                 onRescan={() => void refreshSkills()}
                 onSelect={setSelectedId}
                 selectedId={selectedId}
-                skills={skills.map((s) => ({
-                  id: s.id,
-                  name: s.name,
-                  slug: s.slug,
-                  packageName: s.packageName,
-                  trigger: s.metadata.trigger ?? `/${s.slug}`,
-                  description: s.metadata.description || s.name,
-                  updateAvailable: s.updateAvailable,
-                }))}
+                skills={skillListItems}
               />
             </View>
             <ResizeHandle

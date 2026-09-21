@@ -277,10 +277,14 @@ export async function getSkills(
   dirs: readonly string[] = DEFAULT_SKILL_DIRS,
   fs: SkillsFs = defaultSkillsFs,
 ): Promise<Skill[]> {
-  const found: FoundSkillDoc[] = [];
-  for (const dir of dirs) {
-    await walkSkillsDir(fs, dir, "", agentForDir(dir), 0, found);
-  }
+  const perDirFound = await Promise.all(
+    dirs.map(async (dir) => {
+      const dirFound: FoundSkillDoc[] = [];
+      await walkSkillsDir(fs, dir, "", agentForDir(dir), 0, dirFound);
+      return dirFound;
+    }),
+  );
+  const found: FoundSkillDoc[] = perDirFound.flat();
 
   const rawSkills: Skill[] = found.map(({ dir, rel, agent, content }) => {
     const { metadata, body } = parseSkillMd(content);
