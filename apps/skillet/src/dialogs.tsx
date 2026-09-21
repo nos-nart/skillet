@@ -80,7 +80,7 @@ export function InstallSkillDialog({
         className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-[13px] text-foreground"
         enableFocusRing={false}
         focusRingType="none"
-        style={{ borderCurve: "continuous" }}
+        style={{ borderCurve: "continuous", fontFamily: "Space Grotesk" }}
         onChangeText={(t) => {
           setSource(t);
           setLocalError(null);
@@ -97,7 +97,7 @@ export function InstallSkillDialog({
         className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-[13px] text-foreground"
         enableFocusRing={false}
         focusRingType="none"
-        style={{ borderCurve: "continuous" }}
+        style={{ borderCurve: "continuous", fontFamily: "Space Grotesk" }}
         onChangeText={setSkillName}
         placeholder="my-skill"
         value={skillName}

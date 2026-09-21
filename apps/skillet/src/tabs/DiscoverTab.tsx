@@ -176,6 +176,7 @@ export function DiscoverTab({
               placeholder="anthropics/skills or GitHub URL"
               placeholderTextColor={c.muted}
               returnKeyType="search"
+              style={{ fontFamily: "Space Grotesk" }}
               value={query}
             />
             {query.length > 0 ? (

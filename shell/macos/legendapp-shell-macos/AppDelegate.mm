@@ -6,6 +6,11 @@
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 #import <Carbon/Carbon.h>
 #import <QuartzCore/QuartzCore.h>
+#import <CoreText/CoreText.h>
+
+#if RCT_DEV
+#import <React/RCTDevLoadingViewSetEnabled.h>
+#endif
 
 #include <cxxreact/ReactMarker.h>
 
@@ -348,6 +353,28 @@ static NSView *LegendCreateMusicGlassHostView(NSRect frame, NSView **contentView
   facebook::react::ReactMarker::logMarkerDone(
     facebook::react::ReactMarker::INIT_REACT_RUNTIME_START,
     CACurrentMediaTime() * 1000);
+#if RCT_DEV
+  RCTDevLoadingViewSetEnabled(NO);
+#endif
+
+  NSURL *resourceURL = NSBundle.mainBundle.resourceURL;
+  if (resourceURL != nil) {
+    NSArray<NSURL *> *bundleFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:resourceURL
+                                                                  includingPropertiesForKeys:nil
+                                                                                     options:NSDirectoryEnumerationSkipsHiddenFiles
+                                                                                       error:nil];
+    NSMutableArray<NSURL *> *fontsToRegister = [NSMutableArray array];
+    for (NSURL *url in bundleFiles) {
+      NSString *ext = url.pathExtension.lowercaseString;
+      if ([ext isEqualToString:@"ttf"] || [ext isEqualToString:@"otf"]) {
+        [fontsToRegister addObject:url];
+      }
+    }
+    if (fontsToRegister.count > 0) {
+      CTFontManagerRegisterFontURLs((__bridge CFArrayRef)fontsToRegister, kCTFontManagerScopeProcess, true, nil);
+    }
+  }
+
   [super applicationDidFinishLaunching:notification];
 
   if ([LegendCurrentAppId() isEqualToString:@"music"]) {

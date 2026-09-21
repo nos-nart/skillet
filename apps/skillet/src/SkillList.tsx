@@ -170,6 +170,7 @@ export function SkillList({
             onFocus={() => setIsFocused(true)}
             placeholder="Search skills and prompts..."
             placeholderTextColor={c.muted}
+            style={{ fontFamily: "Space Grotesk" }}
             value={query}
           />
           {query.length > 0 ? (

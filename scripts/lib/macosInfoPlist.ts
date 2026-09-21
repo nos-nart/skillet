@@ -186,9 +186,10 @@ export function writeMacOSInfoPlist(
   ].join("\n");
   const sparkleMetadata = renderSparkleMetadata(manifest, mode, arch);
   const bundledFonts = bundledFontFiles(manifest);
+  const atsFonts = bundledFonts.length > 0 ? "\n\t<key>ATSApplicationFontsPath</key>\n\t<string>.</string>" : "";
   const outputPlist = basePlist.replace(
     "\n</dict>\n</plist>\n",
-    `\n${appMetadata}${mode === "dev" ? `\n${renderDevAppTransportSecurity()}` : ""}${sparkleMetadata ? `\n${sparkleMetadata}` : ""}${bundledFonts.length > 0 ? `\n${renderStringArray("UIAppFonts", bundledFonts, "\t")}` : ""}${documentTypes && documentTypes.length > 0 ? `\n${renderDocumentTypes(documentTypes)}` : ""}${urlSchemes.length > 0 ? `\n${renderUrlSchemes(urlSchemes)}` : ""}${Object.keys(customStrings).length > 0 ? `\n${renderCustomStrings(customStrings)}` : ""}\n</dict>\n</plist>\n`,
+    `\n${appMetadata}${mode === "dev" ? `\n${renderDevAppTransportSecurity()}` : ""}${sparkleMetadata ? `\n${sparkleMetadata}` : ""}${atsFonts}${bundledFonts.length > 0 ? `\n${renderStringArray("UIAppFonts", bundledFonts, "\t")}` : ""}${documentTypes && documentTypes.length > 0 ? `\n${renderDocumentTypes(documentTypes)}` : ""}${urlSchemes.length > 0 ? `\n${renderUrlSchemes(urlSchemes)}` : ""}${Object.keys(customStrings).length > 0 ? `\n${renderCustomStrings(customStrings)}` : ""}\n</dict>\n</plist>\n`,
   );
   const outputPath = path.join(outputDir, "Info.plist");
 
