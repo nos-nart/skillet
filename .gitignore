@@ -3,6 +3,7 @@ dist/
 .vite/
 docs/
 .repos/
+.skills/
 .superpowers
 *.app/
 .scratch/

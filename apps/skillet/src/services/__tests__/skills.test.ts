@@ -159,6 +159,45 @@ test("toggleSkill enables via symlink and disables via unlink", async () => {
   expect(fs.unlinked).toEqual(["/ws/proj/.skills/eli5"]);
 });
 
+test("toggleSkill ensures parent .skills directory exists before symlinking", async () => {
+  const ensured: string[] = [];
+  const fs: SkillsFs = {
+    ...fakeFs({}),
+    ensureDir: async (dir: string) => {
+      ensured.push(dir);
+      return true;
+    },
+  };
+  const req = {
+    skillSlug: "eli5",
+    sourcePath: "/Users/x/.skills/eli5",
+    workspacePath: "/ws/proj",
+    enable: true,
+  };
+  await expect(toggleSkill(req, fs)).resolves.toBe(true);
+  expect(ensured).toEqual(["/ws/proj/.skills"]);
+});
+
+test("toggleSkillEffect ensures parent .skills directory exists before symlinking", async () => {
+  const ensured: string[] = [];
+  const fs: SkillsFs = {
+    ...fakeFs({}),
+    ensureDir: async (dir: string) => {
+      ensured.push(dir);
+      return true;
+    },
+  };
+  const req = {
+    skillSlug: "eli5",
+    sourcePath: "/Users/x/.skills/eli5",
+    workspacePath: "/ws/proj",
+    enable: true,
+  };
+  const result = await Effect.runPromise(toggleSkillEffect(req, fs));
+  expect(result).toBe(true);
+  expect(ensured).toEqual(["/ws/proj/.skills"]);
+});
+
 test("toggleSkill rejects unsafe slugs without touching fs", async () => {
   const fs = fakeFs({});
   await expect(

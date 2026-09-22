@@ -74,10 +74,20 @@ RCT_EXPORT_MODULE(NativeSkillsFs)
     reject(@"slug_unsafe", @"Refusing to symlink to an unsafe slug path.", nil);
     return;
   }
+  NSString *expandedSource = [source stringByExpandingTildeInPath];
+  NSString *expandedTarget = [target stringByExpandingTildeInPath];
+
+  NSString *parentDir = [expandedTarget stringByDeletingLastPathComponent];
+  NSError *dirError = nil;
+  [[NSFileManager defaultManager] createDirectoryAtPath:parentDir
+                            withIntermediateDirectories:YES
+                                             attributes:nil
+                                                  error:&dirError];
+
   NSError *error = nil;
-  [[NSFileManager defaultManager] removeItemAtPath:target error:nil];
-  BOOL ok = [[NSFileManager defaultManager] createSymbolicLinkAtPath:target
-                                                 withDestinationPath:source
+  [[NSFileManager defaultManager] removeItemAtPath:expandedTarget error:nil];
+  BOOL ok = [[NSFileManager defaultManager] createSymbolicLinkAtPath:expandedTarget
+                                                 withDestinationPath:expandedSource
                                                                error:&error];
   if (!ok) {
     reject(@"write_failed", error.localizedDescription ?: @"Failed to create symlink.", error);
@@ -92,8 +102,9 @@ RCT_EXPORT_MODULE(NativeSkillsFs)
     reject(@"slug_unsafe", @"Refusing to unlink an unsafe slug path.", nil);
     return;
   }
+  NSString *expandedTarget = [target stringByExpandingTildeInPath];
   NSError *error = nil;
-  BOOL ok = [[NSFileManager defaultManager] removeItemAtPath:target error:&error];
+  BOOL ok = [[NSFileManager defaultManager] removeItemAtPath:expandedTarget error:&error];
   if (!ok && error.code != NSFileNoSuchFileError) {
     reject(@"write_failed", error.localizedDescription ?: @"Failed to remove symlink.", error);
     return;

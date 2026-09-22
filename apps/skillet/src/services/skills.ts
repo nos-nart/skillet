@@ -87,6 +87,7 @@ export interface SkillsFs {
   readSkillMd(path: string): Promise<string>;
   symlink(source: string, target: string): Promise<boolean>;
   unlink(target: string): Promise<boolean>;
+  ensureDir?: (dir: string) => Promise<boolean>;
 }
 
 // Narrow install surface: the Task 2 `skills-fs` module grew `ensureDir` +
@@ -97,7 +98,7 @@ export interface SkillWriter {
   writeTextFile(path: string, contents: string): Promise<boolean>;
 }
 
-const defaultSkillsFs: SkillsFs = { scanSkillsDir, readSkillMd: nativeReadSkillMd, symlink, unlink };
+const defaultSkillsFs: SkillsFs = { scanSkillsDir, readSkillMd: nativeReadSkillMd, symlink, unlink, ensureDir };
 const defaultSkillWriter: SkillWriter = { ensureDir, writeTextFile };
 
 // Global skill dirs per agent, verbatim from `src/backend/agents.ts`
@@ -357,6 +358,12 @@ export async function toggleSkill(
   }
   try {
     if (req.enable) {
+      if (fs.ensureDir) {
+        const parent = target.substring(0, target.lastIndexOf("/"));
+        if (parent) {
+          await fs.ensureDir(parent);
+        }
+      }
       return await fs.symlink(req.sourcePath, target);
     }
     return await fs.unlink(target);
@@ -557,6 +564,20 @@ export const toggleSkillEffect = (
     const target = resolveSkillTarget(req.workspacePath, req.skillSlug);
     if (!target) {
       return yield* Effect.fail(new InvalidSlugError({ slug: req.skillSlug }));
+    }
+    if (req.enable && fs.ensureDir) {
+      const parent = target.substring(0, target.lastIndexOf("/"));
+      if (parent) {
+        yield* Effect.tryPromise({
+          try: () => fs.ensureDir!(parent),
+          catch: (err) =>
+            new FsError({
+              operation: "ensureDir",
+              path: parent,
+              message: err instanceof Error ? err.message : String(err),
+            }),
+        });
+      }
     }
     return yield* Effect.tryPromise({
       try: () => (req.enable ? fs.symlink(req.sourcePath, target) : fs.unlink(target)),
