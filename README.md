@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/icon.png" width="128" height="128" alt="Skillet Logo" />
+  <img src="assets/icon.png" width="128" height="128" alt="Skillet Logo" />
   <h1>Skillet</h1>
   <p><strong>Universal Skills & Prompts Manager for AI Coding Agents</strong></p>
   <p>A fast, native macOS desktop application to discover, install, inspect, and toggle AI agent skills across all your local projects.</p>

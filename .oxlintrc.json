@@ -4,21 +4,7 @@
   "categories": {
     "correctness": "error"
   },
-  "overrides": [
-    {
-      "files": ["src/**"],
-      "rules": {
-        "import/no-namespace": "off"
-      }
-    },
-    {
-      "files": ["src/hooks/useMediaQuery.ts", "src/hooks/useWorkspaces.ts", "src/components/MarkdownViewer.tsx", "src/components/SkillDetail.tsx"],
-      "rules": {
-        "react/set-state-in-effect": "warn",
-        "react-hooks/exhaustive-deps": "warn"
-      }
-    }
-  ],
+  "overrides": [],
   "ignorePatterns": [
     ".agent/**",
     ".agents/**",
@@ -34,8 +20,7 @@
     ".superpowers/**",
     "tools/oxlint/anti-slop/**",
     "dist/**",
-    "node_modules/**",
-    "tests/**"
+    "node_modules/**"
   ],
   "jsPlugins": [
     { "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }
