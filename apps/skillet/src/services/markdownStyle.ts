@@ -1,6 +1,5 @@
 import type { MarkdownStyle } from "react-native-enriched-markdown";
-import { getLegendDisplayTheme } from "@legend-apps/theme";
-import type { LegendDisplayThemeAppearance } from "@legend-apps/theme";
+import { getLegendDisplayTheme, type LegendDisplayThemeAppearance } from "../displayTheme";
 
 export function createSkilletMarkdownStyle(appearance: LegendDisplayThemeAppearance): MarkdownStyle {
   const sharedStyle = getLegendDisplayTheme(appearance).markdownStyle;

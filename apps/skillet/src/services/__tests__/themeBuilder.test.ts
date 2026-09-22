@@ -1,4 +1,4 @@
-import { getLegendDisplayTheme } from "@legend-apps/theme";
+import { getLegendDisplayTheme } from "../../displayTheme";
 
 test("builds markdownStyle with Menlo code font for both appearances", () => {
   for (const appearance of ["light", "dark"] as const) {

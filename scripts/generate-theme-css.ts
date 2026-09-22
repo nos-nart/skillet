@@ -2,14 +2,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { LegendDisplayThemeFile, MarkdownLayoutThemeFile } from "../packages/theme/src/types";
+import type { LegendDisplayThemeFile, MarkdownLayoutThemeFile } from "../apps/skillet/src/displayTheme/types";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, "..");
-const displayThemeDir = path.join(rootDir, "packages/theme/src/themes/display");
-const layoutThemeDir = path.join(rootDir, "packages/theme/src/themes/layout");
+const displayThemeDir = path.join(rootDir, "apps/skillet/src/displayTheme/themes/display");
+const layoutThemeDir = path.join(rootDir, "apps/skillet/src/displayTheme/themes/layout");
 const cssPath = path.join(rootDir, "shell/src/global.css");
-const generatedThemeRegistryPath = path.join(rootDir, "packages/theme/src/generatedThemes.ts");
+const generatedThemeRegistryPath = path.join(rootDir, "apps/skillet/src/displayTheme/generatedThemes.ts");
 
 const colorVariables = [
   "background",

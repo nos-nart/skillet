@@ -28,14 +28,10 @@
       "name": "@skillet/app-skillet",
       "version": "0.0.1",
       "dependencies": {
-        "@legend-apps/appkit-split-view": "workspace:*",
         "@legend-apps/file-dialog": "workspace:*",
         "@legend-apps/sf-symbol": "workspace:*",
-        "@legend-apps/source-viewer": "workspace:*",
         "@legend-apps/storage": "workspace:*",
         "@legend-apps/syntax-parser": "workspace:*",
-        "@legend-apps/theme": "workspace:*",
-        "@legend-apps/virtualized-document": "workspace:*",
         "@legend-apps/window-manager": "workspace:*",
         "@legend-apps/windows": "workspace:*",
         "@legendapp/list": "catalog:",
@@ -63,22 +59,6 @@
         "react-native": "catalog:",
       },
     },
-    "packages/file-scanner": {
-      "name": "@legend-apps/file-scanner",
-      "version": "0.0.0",
-      "peerDependencies": {
-        "react": "catalog:",
-        "react-native": "catalog:",
-      },
-    },
-    "packages/instrumentation": {
-      "name": "@legend-apps/instrumentation",
-      "version": "0.0.0",
-      "peerDependencies": {
-        "react": "catalog:",
-        "react-native": "catalog:",
-      },
-    },
     "packages/legend-list-sparse-layout": {
       "name": "@legendapp/list",
       "version": "3.3.5-sparse-layout.67a3cbc9",
@@ -87,14 +67,6 @@
       },
       "peerDependencies": {
         "react": "*",
-      },
-    },
-    "packages/native-menu": {
-      "name": "@legend-apps/native-menu",
-      "version": "0.0.0",
-      "peerDependencies": {
-        "react": "catalog:",
-        "react-native": "catalog:",
       },
     },
     "packages/native-text-source": {
@@ -112,18 +84,6 @@
     "packages/skills-fs": {
       "name": "@skillet/skills-fs",
       "version": "0.0.0",
-      "peerDependencies": {
-        "react": "catalog:",
-        "react-native": "catalog:",
-      },
-    },
-    "packages/source-viewer": {
-      "name": "@legend-apps/source-viewer",
-      "version": "0.0.0",
-      "dependencies": {
-        "@legend-apps/syntax-parser": "workspace:*",
-        "@legend-apps/virtualized-document": "workspace:*",
-      },
       "peerDependencies": {
         "react": "catalog:",
         "react-native": "catalog:",
@@ -150,30 +110,6 @@
       "devDependencies": {
         "nitrogen": "0.35.6",
         "react-native-nitro-modules": "0.35.6",
-      },
-      "peerDependencies": {
-        "react": "catalog:",
-        "react-native": "catalog:",
-      },
-    },
-    "packages/theme": {
-      "name": "@legend-apps/theme",
-      "version": "0.0.0",
-      "dependencies": {
-        "react-native-enriched-markdown": "0.7.4",
-      },
-      "peerDependencies": {
-        "react": "catalog:",
-        "react-native": "catalog:",
-      },
-    },
-    "packages/virtualized-document": {
-      "name": "@legend-apps/virtualized-document",
-      "version": "0.0.0",
-      "dependencies": {
-        "@legend-apps/instrumentation": "workspace:*",
-        "@legendapp/list": "catalog:",
-        "@legendapp/state": "catalog:",
       },
       "peerDependencies": {
         "react": "catalog:",
@@ -538,25 +474,13 @@
 
     "@legend-apps/file-dialog": ["@legend-apps/file-dialog@workspace:packages/file-dialog"],
 
-    "@legend-apps/file-scanner": ["@legend-apps/file-scanner@workspace:packages/file-scanner"],
-
-    "@legend-apps/instrumentation": ["@legend-apps/instrumentation@workspace:packages/instrumentation"],
-
-    "@legend-apps/native-menu": ["@legend-apps/native-menu@workspace:packages/native-menu"],
-
     "@legend-apps/native-text-source": ["@legend-apps/native-text-source@workspace:packages/native-text-source"],
 
     "@legend-apps/sf-symbol": ["@legend-apps/sf-symbol@workspace:packages/sf-symbol"],
 
-    "@legend-apps/source-viewer": ["@legend-apps/source-viewer@workspace:packages/source-viewer"],
-
     "@legend-apps/storage": ["@legend-apps/storage@workspace:packages/storage"],
 
     "@legend-apps/syntax-parser": ["@legend-apps/syntax-parser@workspace:packages/syntax-parser"],
-
-    "@legend-apps/theme": ["@legend-apps/theme@workspace:packages/theme"],
-
-    "@legend-apps/virtualized-document": ["@legend-apps/virtualized-document@workspace:packages/virtualized-document"],
 
     "@legend-apps/window-manager": ["@legend-apps/window-manager@workspace:packages/window-manager"],
 
