@@ -9,7 +9,6 @@
     "@legend-apps/storage": "workspace:*",
     "@legend-apps/syntax-parser": "workspace:*",
     "@legend-apps/window-manager": "workspace:*",
-    "@legend-apps/windows": "workspace:*",
     "@legendapp/list": "catalog:",
     "@legendapp/state": "catalog:",
     "@skillet/skills-fs": "workspace:*",

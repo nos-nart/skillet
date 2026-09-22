@@ -23,7 +23,6 @@ const manifest = {
       "@legend-apps/storage",
       "@legend-apps/file-dialog",
       "@legend-apps/window-manager",
-      "@legend-apps/windows",
       "@legend-apps/sf-symbol",
       "react-native-enriched-markdown",
       "@legend-apps/syntax-parser",

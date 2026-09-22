@@ -1,4 +1,4 @@
-import { WindowProvider } from "@legend-apps/windows";
+import { WindowProvider } from "./windows";
 import { setMainWindowOptions } from "@legend-apps/window-manager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";

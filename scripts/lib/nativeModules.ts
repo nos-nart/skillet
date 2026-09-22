@@ -48,11 +48,6 @@ export const nativePackages: NativePackage[] = [
     platforms: ["macos", "ios"],
   },
   {
-    name: "@legend-apps/appkit-split-view",
-    root: path.join(packagesDir, "appkit-split-view"),
-    platforms: ["macos", "ios", "android"],
-  },
-  {
     name: "@legend-apps/audio-player",
     root: path.join(packagesDir, "audio-player"),
     platforms: ["macos", "ios"],
