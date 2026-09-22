@@ -1,3 +1,5 @@
+import "fast-text-encoding";
+
 import { registerRootComponent } from "expo";
 import ShellApp from "./src/ShellApp";
 

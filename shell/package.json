@@ -14,6 +14,7 @@
     "@legend-apps/appkit-split-view": "0.0.0",
     "expo": "~54.0.33",
     "expo-status-bar": "~3.0.9",
+    "fast-text-encoding": "^1.0.6",
     "react": "catalog:",
     "react-native": "catalog:",
     "react-native-macos": "0.81.7",

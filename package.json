@@ -46,5 +46,8 @@
     "@legendapp/list": "3.3.5-sparse-layout.67a3cbc9",
     "@legendapp/motion": "^2.5.3",
     "@legendapp/state": "^3.0.0-beta.42"
+  },
+  "dependencies": {
+    "fast-text-encoding": "^1.0.6"
   }
 }
