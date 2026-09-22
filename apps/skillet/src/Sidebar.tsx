@@ -1,8 +1,9 @@
 import { openFileDialog } from "@legend-apps/file-dialog";
 import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
 import { Text } from "./AppText";
+import { SKILLET_APP_ICON_URI } from "./assets/appIcon";
 import { toggleAppTheme, useAppTheme, useThemePalette } from "./services/theme";
 import type { Workspace } from "./services/workspaces";
 
@@ -76,10 +77,14 @@ export function Sidebar({
       <View className="flex-row items-center justify-between px-3 pb-1 pt-3">
         <View className="min-w-0 flex-1 flex-row items-center gap-2">
           <View
-            className="h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary"
+            className="h-8 w-8 shrink-0 overflow-hidden rounded-lg"
             style={{ borderCurve: "continuous" }}
           >
-            <SFSymbol color="#ffffff" name="sparkles" size={20} />
+            <Image
+              accessibilityLabel="Skillet app icon"
+              source={{ uri: SKILLET_APP_ICON_URI }}
+              style={{ width: 32, height: 32 }}
+            />
           </View>
           <View className="min-w-0 flex-1">
             <View className="flex-row items-center gap-1.5">
