@@ -2,8 +2,10 @@ import { useCallback, useRef, useState } from "react";
 import { Alert, Image, Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import { Text } from "../AppText";
 import { SFSymbol } from "@legend-apps/sf-symbol";
+import * as Effect from "effect/Effect";
 import {
   browseRepoForSkills,
+  browseRepoForSkillsEffect,
   buildInstallSource,
   parseGitHubRepo,
   POPULAR_REPOS,
@@ -384,10 +386,29 @@ export function DiscoverTab({
       setItems([]);
       setRepo(null);
       try {
-        const found = await browseRepoForSkills(info, { token, fetchImpl });
+        const result = await Effect.runPromise(
+          browseRepoForSkillsEffect(info, { token, fetchImpl }).pipe(
+            Effect.map((found) => ({ ok: true as const, found })),
+            Effect.catch((err) => {
+              let message = "Failed to load skills from repository.";
+              if (err._tag === "GitHubRateLimitError") {
+                message = "GitHub API rate limit exceeded. Add a GitHub Personal Access Token in Settings to continue.";
+              } else if (err._tag === "RepoNotFoundError") {
+                message = err.message || `Repository or skills not found: ${info.owner}/${info.repo}`;
+              } else if (err._tag === "GitHubNetworkError") {
+                message = `Network connection error: ${err.message}`;
+              }
+              return Effect.succeed({ ok: false as const, message });
+            }),
+          ),
+        );
         if (activeRequestIdRef.current !== requestId) return;
-        setRepo(found.repo);
-        setItems(found.items);
+        if (result.ok) {
+          setRepo(result.found.repo);
+          setItems(result.found.items);
+        } else {
+          setError(result.message);
+        }
       } catch (err: unknown) {
         if (activeRequestIdRef.current !== requestId) return;
         setError(err instanceof Error ? err.message : "Failed to load skills from repository.");

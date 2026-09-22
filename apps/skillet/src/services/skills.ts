@@ -10,14 +10,25 @@ import {
   validateSafeSlug,
   writeTextFile,
 } from "@skillet/skills-fs";
-import { FsError, InvalidSlugError } from "./errors";
+import {
+  FsError,
+  InvalidSlugError,
+  GitHubRateLimitError,
+  RepoNotFoundError,
+  GitHubNetworkError,
+} from "./errors";
 import {
   fetchLatestCommit,
+  fetchLatestCommitEffect,
   fetchSkillMd,
+  fetchSkillMdEffect,
   loadSkillsLock,
+  loadSkillsLockEffect,
   parseGitHubRepo,
   saveSkillsLock,
+  saveSkillsLockEffect,
   type FetchFn,
+  type SkillsLock,
 } from "./github";
 import { storageJsonStore, type JsonStore } from "./workspaces";
 
@@ -329,47 +340,51 @@ export async function getSkills(
 
 // No lstat on the Task 2 surface: enabled = slug present under the
 // workspace's universal `.skills` dir (deviation from `isSkillEnabledInWorkspace`).
+export const isSkillEnabledEffect = (
+  skillSlug: string,
+  workspacePath: string,
+  fs: SkillsFs = defaultSkillsFs,
+): Effect.Effect<boolean, InvalidSlugError | FsError> =>
+  Effect.gen(function* () {
+    if (!validateSafeSlug(skillSlug)) {
+      return yield* Effect.fail(new InvalidSlugError({ slug: skillSlug }));
+    }
+    const normalizedWs = normalizeWs(workspacePath);
+    const entries = yield* Effect.tryPromise({
+      try: () => fs.scanSkillsDir(`${normalizedWs}/${WORKSPACE_SKILLS_REL}`),
+      catch: (err) =>
+        new FsError({
+          operation: "scanSkillsDir",
+          path: `${normalizedWs}/${WORKSPACE_SKILLS_REL}`,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    }).pipe(
+      Effect.catch(() => Effect.succeed([] as string[])),
+    );
+    return entries.some((full) => (full.split("/").pop() ?? full) === skillSlug.trim());
+  });
+
 export async function isSkillEnabled(
   skillSlug: string,
   workspacePath: string,
   fs: SkillsFs = defaultSkillsFs,
 ): Promise<boolean> {
-  if (!validateSafeSlug(skillSlug)) return false;
-  const normalizedWs = normalizeWs(workspacePath);
-  let entries: string[];
-  try {
-    entries = await fs.scanSkillsDir(`${normalizedWs}/${WORKSPACE_SKILLS_REL}`);
-  } catch {
-    return false;
-  }
-  return entries.some((full) => (full.split("/").pop() ?? full) === skillSlug.trim());
+  return Effect.runPromise(
+    isSkillEnabledEffect(skillSlug, workspacePath, fs).pipe(
+      Effect.catch(() => Effect.succeed(false)),
+    ),
+  );
 }
 
 export async function toggleSkill(
   req: ToggleSkillRequest,
   fs: SkillsFs = defaultSkillsFs,
 ): Promise<boolean> {
-  const target = resolveSkillTarget(req.workspacePath, req.skillSlug);
-  if (!target) {
-    if (req.enable) {
-      console.error(`Invalid skill slug or path traversal attempt: ${req.skillSlug}`);
-    }
-    return false;
-  }
-  try {
-    if (req.enable) {
-      if (fs.ensureDir) {
-        const parent = target.substring(0, target.lastIndexOf("/"));
-        if (parent) {
-          await fs.ensureDir(parent);
-        }
-      }
-      return await fs.symlink(req.sourcePath, target);
-    }
-    return await fs.unlink(target);
-  } catch {
-    return false;
-  }
+  return Effect.runPromise(
+    toggleSkillEffect(req, fs).pipe(
+      Effect.catch(() => Effect.succeed(false)),
+    ),
+  );
 }
 
 export interface DownloadSkillOptions {
@@ -411,68 +426,132 @@ function globalDirForRepo(owner: string, repo: string): string {
   return AGENT_SKILL_DIRS.find(({ agent: a }) => a === agent)?.dir ?? ".skills";
 }
 
-// Native port of `downloadSkillFromGitHub` (`src/backend/installer.ts`): pure
-// JS fetch (raw `main→master` SKILL.md via Task 3 `fetchSkillMd`, commit SHA
-// via `fetchLatestCommit`) + native writes through the Task 7 `skills-fs`
-// `ensureDir`/`writeTextFile` surface. Missing SKILL.md falls back to a
-// `source_url` template so the skill stays discoverable (installer parity).
+export const downloadSkillEffect = (
+  options: DownloadSkillOptions,
+  deps: DownloadSkillDeps = {},
+): Effect.Effect<
+  { path: string },
+  InvalidSlugError | FsError | RepoNotFoundError | GitHubNetworkError | GitHubRateLimitError
+> =>
+  Effect.gen(function* () {
+    const writer = deps.writer ?? defaultSkillWriter;
+    const fetchImpl = deps.fetchImpl;
+    const lockStore = deps.lockStore ?? storageJsonStore();
+
+    const repoInfo = parseGitHubRepo(options.source);
+    if (!repoInfo) {
+      return yield* Effect.fail(
+        new InvalidSlugError({
+          slug: options.source,
+        }),
+      );
+    }
+    const pathParts = repoInfo.path?.split("/").filter(Boolean) ?? [];
+    const skillSlug = options.skillName ?? pathParts[pathParts.length - 1] ?? repoInfo.repo;
+    if (!validateSafeSlug(skillSlug)) {
+      return yield* Effect.fail(
+        new InvalidSlugError({
+          slug: skillSlug,
+        }),
+      );
+    }
+
+    const globalDir = globalDirForRepo(repoInfo.owner, repoInfo.repo);
+    const targetDir =
+      options.targetDir ?? `~/${globalDir}/${repoInfo.owner}/${skillSlug}`;
+    const repoUrl = `${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/tree/main/${repoInfo.path}` : ""}`;
+
+    const defaultContent = `---\nname: ${skillSlug}\ndescription: Skill installed from ${repoUrl}\nsource_url: https://github.com/${repoUrl}\n---\n\n# ${skillSlug}\n\nInstalled from https://github.com/${repoUrl}\n`;
+
+    const skillContent = yield* fetchSkillMdEffect(repoInfo, options.token, fetchImpl).pipe(
+      Effect.catch(() => Effect.succeed(defaultContent)),
+    );
+
+    const dirOk = yield* Effect.tryPromise({
+      try: () => writer.ensureDir(targetDir),
+      catch: (err) =>
+        new FsError({
+          operation: "ensureDir",
+          path: targetDir,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+    if (!dirOk) {
+      return yield* Effect.fail(
+        new FsError({
+          operation: "ensureDir",
+          path: targetDir,
+          message: `Could not create install directory: ${targetDir}`,
+        }),
+      );
+    }
+
+    const writeOk = yield* Effect.tryPromise({
+      try: () => writer.writeTextFile(`${targetDir}/SKILL.md`, skillContent),
+      catch: (err) =>
+        new FsError({
+          operation: "writeTextFile",
+          path: `${targetDir}/SKILL.md`,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+    if (!writeOk) {
+      return yield* Effect.fail(
+        new FsError({
+          operation: "writeTextFile",
+          path: `${targetDir}/SKILL.md`,
+          message: `Could not write SKILL.md to: ${targetDir}`,
+        }),
+      );
+    }
+
+    // Non-fatal lockfile bookkeeping (updater parity)
+    yield* Effect.gen(function* () {
+      const commitSha = yield* fetchLatestCommitEffect(options.source, options.token, fetchImpl).pipe(
+        Effect.catch(() => Effect.succeed("initial")),
+      );
+      const lock = yield* loadSkillsLockEffect(lockStore).pipe(
+        Effect.catch(() => Effect.succeed({} as SkillsLock)),
+      );
+      const pkgKey = `${repoInfo.owner}/${repoInfo.repo}`;
+      lock[pkgKey] = {
+        source: options.source,
+        commitSha,
+        updatedAt: new Date().toISOString(),
+        skills: [skillSlug],
+      };
+      yield* saveSkillsLockEffect(lock, lockStore).pipe(
+        Effect.catch(() => Effect.succeed(false)),
+      );
+    }).pipe(
+      Effect.catch(() => Effect.void),
+    );
+
+    return { path: targetDir };
+  });
+
 export async function downloadSkill(
   options: DownloadSkillOptions,
   deps: DownloadSkillDeps = {},
 ): Promise<DownloadSkillResult> {
-  const writer = deps.writer ?? defaultSkillWriter;
-  const fetchImpl = deps.fetchImpl;
-  const lockStore = deps.lockStore ?? storageJsonStore();
-
-  const repoInfo = parseGitHubRepo(options.source);
-  if (!repoInfo) {
-    return { ok: false, error: "Invalid GitHub repository format" };
-  }
-  const pathParts = repoInfo.path?.split("/").filter(Boolean) ?? [];
-  const skillSlug = options.skillName ?? pathParts[pathParts.length - 1] ?? repoInfo.repo;
-  if (!validateSafeSlug(skillSlug)) {
-    return { ok: false, error: `Refusing to install unsafe skill slug: ${skillSlug}` };
-  }
-
-  const globalDir = globalDirForRepo(repoInfo.owner, repoInfo.repo);
-  const targetDir =
-    options.targetDir ?? `~/${globalDir}/${repoInfo.owner}/${skillSlug}`;
-  const repoUrl = `${repoInfo.owner}/${repoInfo.repo}${repoInfo.path ? `/tree/main/${repoInfo.path}` : ""}`;
-
-  try {
-    const skillContent =
-      (await fetchSkillMd(repoInfo, options.token, fetchImpl)) ??
-      `---\nname: ${skillSlug}\ndescription: Skill installed from ${repoUrl}\nsource_url: https://github.com/${repoUrl}\n---\n\n# ${skillSlug}\n\nInstalled from https://github.com/${repoUrl}\n`;
-
-    if (!(await writer.ensureDir(targetDir))) {
-      return { ok: false, error: `Could not create install directory: ${targetDir}` };
-    }
-    if (!(await writer.writeTextFile(`${targetDir}/SKILL.md`, skillContent))) {
-      return { ok: false, error: `Could not write SKILL.md to: ${targetDir}` };
-    }
-
-    // Non-fatal lockfile bookkeeping (updater.ts parity): records the source
-    // commit so a future update check can diff SHAs.
-    try {
-      const commitSha = await fetchLatestCommit(options.source, options.token, fetchImpl);
-      const lock = await loadSkillsLock(lockStore);
-      const pkgKey = `${repoInfo.owner}/${repoInfo.repo}`;
-      lock[pkgKey] = {
-        source: options.source,
-        commitSha: commitSha ?? "initial",
-        updatedAt: new Date().toISOString(),
-        skills: [skillSlug],
-      };
-      await saveSkillsLock(lock, lockStore);
-    } catch {
-      // Non-fatal lockfile update error
-    }
-
-    return { ok: true, path: targetDir };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: message };
-  }
+  return Effect.runPromise(
+    downloadSkillEffect(options, deps).pipe(
+      Effect.map((res) => ({ ok: true as const, path: res.path })),
+      Effect.catch((err: any) => {
+        const message =
+          err?._tag === "InvalidSlugError" && "slug" in err
+            ? (options.source === err.slug
+              ? "Invalid GitHub repository format"
+              : `Refusing to install unsafe skill slug: ${err.slug}`)
+            : err instanceof Error
+              ? err.message
+              : typeof err?.message === "string"
+                ? err.message
+                : String(err);
+        return Effect.succeed({ ok: false as const, error: message });
+      }),
+    ),
+  );
 }
 
 export interface UninstallSkillRequest {
@@ -481,41 +560,47 @@ export interface UninstallSkillRequest {
   workspacePaths?: string[]; // absolute workspace paths to sweep for symlinks
 }
 
-// Native port of `uninstallSkill` (`src/backend/installer.ts`): unlinks the
-// skill dir itself plus any `<workspace>/.skills/<slug>` links pointing at it.
-// `removeItemAtPath` removes links without touching targets, so unlike the
-// Deno `lstat`/`realPath` dance there is no need to resolve first. Slug-guard
-// + absolute-path preconditions mirror `toggleSkill`.
+export const uninstallSkillEffect = (
+  req: UninstallSkillRequest,
+  fs: SkillsFs = defaultSkillsFs,
+): Effect.Effect<boolean, InvalidSlugError | FsError> =>
+  Effect.gen(function* () {
+    if (!validateSafeSlug(req.skillSlug)) {
+      return yield* Effect.fail(new InvalidSlugError({ slug: req.skillSlug }));
+    }
+    for (const workspacePath of req.workspacePaths ?? []) {
+      const linksDir = `${normalizeWs(workspacePath)}/${WORKSPACE_SKILLS_REL}`;
+      const entries = yield* Effect.tryPromise(() => fs.scanSkillsDir(linksDir)).pipe(
+        Effect.orElseSucceed(() => [] as string[]),
+      );
+      for (const full of entries) {
+        if ((full.split("/").pop() ?? full) === req.skillSlug.trim()) {
+          yield* Effect.tryPromise(() => fs.unlink(full)).pipe(
+            Effect.orElseSucceed(() => false),
+          );
+        }
+      }
+    }
+    return yield* Effect.tryPromise({
+      try: () => fs.unlink(req.skillPath),
+      catch: (err) =>
+        new FsError({
+          operation: "unlink",
+          path: req.skillPath,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+  });
+
 export async function uninstallSkill(
   req: UninstallSkillRequest,
   fs: SkillsFs = defaultSkillsFs,
 ): Promise<boolean> {
-  if (!validateSafeSlug(req.skillSlug)) {
-    return false;
-  }
-  try {
-    for (const workspacePath of req.workspacePaths ?? []) {
-      const linksDir = `${normalizeWs(workspacePath)}/${WORKSPACE_SKILLS_REL}`;
-      let entries: string[];
-      try {
-        entries = await fs.scanSkillsDir(linksDir);
-      } catch {
-        continue;
-      }
-      for (const full of entries) {
-        if ((full.split("/").pop() ?? full) === req.skillSlug.trim()) {
-          try {
-            await fs.unlink(full);
-          } catch {
-              // Best-effort sweep: one stuck link must not block the uninstall
-          }
-        }
-      }
-    }
-    return await fs.unlink(req.skillPath);
-  } catch {
-    return false;
-  }
+  return Effect.runPromise(
+    uninstallSkillEffect(req, fs).pipe(
+      Effect.catch(() => Effect.succeed(false)),
+    ),
+  );
 }
 
 export const listSkillsEffect = (
@@ -563,6 +648,9 @@ export const toggleSkillEffect = (
   Effect.gen(function* () {
     const target = resolveSkillTarget(req.workspacePath, req.skillSlug);
     if (!target) {
+      if (req.enable) {
+        console.error(`Invalid skill slug or path traversal attempt: ${req.skillSlug}`);
+      }
       return yield* Effect.fail(new InvalidSlugError({ slug: req.skillSlug }));
     }
     if (req.enable && fs.ensureDir) {
@@ -658,6 +746,17 @@ export interface SkillsFileSystemService {
     sourcePath: string,
     workspacePath: string,
   ) => Effect.Effect<boolean, InvalidSlugError | FsError>;
+  readonly downloadSkill: (
+    options: DownloadSkillOptions,
+    deps?: DownloadSkillDeps,
+  ) => Effect.Effect<
+    { path: string },
+    InvalidSlugError | FsError | RepoNotFoundError | GitHubNetworkError | GitHubRateLimitError
+  >;
+  readonly uninstallSkill: (
+    req: UninstallSkillRequest,
+    fs?: SkillsFs,
+  ) => Effect.Effect<boolean, InvalidSlugError | FsError>;
 }
 
 export class SkillsFileSystem extends Context.Service<SkillsFileSystem, SkillsFileSystemService>()(
@@ -669,5 +768,7 @@ export const LiveSkillsFileSystem = Layer.succeed(SkillsFileSystem, {
   readSkillMd: (path) => readSkillMdEffect(path),
   toggleSkill: (req) => toggleSkillEffect(req),
   copySkillToWorkspace: (slug, src, ws) => copySkillToWorkspaceEffect(slug, src, ws),
+  downloadSkill: (options, deps) => downloadSkillEffect(options, deps),
+  uninstallSkill: (req, fs) => uninstallSkillEffect(req, fs),
 });
 

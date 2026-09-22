@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
-import { GitHubRateLimitError, RepoNotFoundError, GitHubNetworkError } from "./errors";
+import { GitHubRateLimitError, RepoNotFoundError, GitHubNetworkError, FsError } from "./errors";
 import { GitHubTreeItemSchema, type GitHubTreeItem } from "./schemas";
 import { storageJsonStore, type JsonStore } from "./workspaces";
 
@@ -139,93 +139,8 @@ export function buildGitHubHeaders(token?: string): Record<string, string> {
   return headers;
 }
 
-/**
- * Fetches the latest commit SHA for a GitHub repository using the GitHub REST API.
- */
-export async function fetchLatestCommit(
-  source: string,
-  token?: string,
-  fetchImpl: FetchFn = defaultFetch,
-): Promise<string | null> {
-  const parsed = parseGitHubRepo(source);
-  if (!parsed) return null;
-
-  const headers = buildGitHubHeaders(token);
-
-  try {
-    const res = await fetchImpl(
-      `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits?per_page=1`,
-      { headers },
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data)) return null;
-    // SAFETY: GitHub commits API returns objects with a string sha field
-    const first = data[0] as { sha?: unknown } | undefined;
-    return typeof first?.sha === "string" ? first.sha : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Fetches a repo's SKILL.md from raw.githubusercontent.com, trying the
- * `main` branch first and falling back to `master` (installer.ts parity).
- */
-export async function fetchSkillMd(
-  info: GitHubRepoInfo,
-  token?: string,
-  fetchImpl: FetchFn = defaultFetch,
-): Promise<string | null> {
-  const headers = buildGitHubHeaders(token);
-
-  const subpath = info.path ? `/${info.path}` : "";
-  for (const branch of ["main", "master"]) {
-    try {
-      const res = await fetchImpl(
-        `https://raw.githubusercontent.com/${info.owner}/${info.repo}/${branch}${subpath}/SKILL.md`,
-        { headers },
-      );
-      if (res.ok) {
-        return await res.text();
-      }
-    } catch {
-      // Try next branch
-    }
-  }
-  return null;
-}
-
-/**
- * Loads skills-lock.json if present, or returns an empty lock object.
- */
-export async function loadSkillsLock(store: JsonStore = storageJsonStore()): Promise<SkillsLock> {
-  try {
-    const parsed = store.readJson<unknown>(SKILLS_LOCK_FILE);
-    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
-      // SAFETY: skills-lock.json persists as a JSON-serialized SkillsLock record
-      return parsed as SkillsLock;
-    }
-  } catch {
-    // Fall through to empty lock
-  }
-  return {};
-}
-
-/**
- * Saves the skills-lock.json file.
- */
-export async function saveSkillsLock(
-  lock: SkillsLock,
-  store: JsonStore = storageJsonStore(),
-): Promise<boolean> {
-  try {
-    store.writeJson(SKILLS_LOCK_FILE, lock);
-    return true;
-  } catch {
-    return false;
-  }
-}
+// Forward declarations for commit, skill fetch, and lockfile services are defined
+// below alongside their typed Effect counterparts (fetchLatestCommitEffect, etc.).
 
 // --- Discover service (moved from `tabs/DiscoverTab.tsx`): search any
 // GitHub repo for skills via the trees API plus a curated popular list. ---
@@ -317,72 +232,8 @@ function rateLimitError(status?: number): boolean {
   return status === 403 || status === 429;
 }
 
-// Service-routed Discover search: repo metadata → default branch → recursive
-// tree → `mapTreeToSkillItems`. Takes an already-parsed `GitHubRepoInfo`
-// (callers validate with `parseGitHubRepo` first). Injectable
-// `fetchImpl`/`token` (`FetchFn` contract) so tests pin headers and callers
-// can pass an authed fetch later.
-export async function browseRepoForSkills(
-  info: GitHubRepoInfo,
-  options: BrowseRepoOptions = {},
-): Promise<BrowseRepoResult> {
-  const fetchImpl = options.fetchImpl ?? defaultFetch;
-  const headers = buildGitHubHeaders(options.token);
-  let repoRes: ApiResponse;
-  try {
-    // SAFETY: `FetchFn` implementers return the `FetchResponse` shape plus an
-    // optional numeric `status`; `ApiResponse` only narrows `status` to optional.
-    repoRes = (await fetchImpl(
-      `https://api.github.com/repos/${info.owner}/${info.repo}`,
-      { headers },
-    )) as ApiResponse;
-  } catch {
-    throw new Error("Failed to fetch repository");
-  }
-  if (!repoRes.ok) {
-    if (rateLimitError(repoRes.status)) {
-      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
-    }
-    throw new Error("Repository not found");
-  }
-  // SAFETY: GitHub repo metadata is a JSON object; `default_branch` is
-  // narrowed with `typeof` before use, so the wide record cast is safe.
-  const repoData = (await repoRes.json()) as { default_branch?: unknown };
-  const branch = typeof repoData.default_branch === "string" ? repoData.default_branch : "main";
-  let treeRes: ApiResponse;
-  try {
-    // SAFETY: same `FetchFn` → `ApiResponse` narrowing as the repo call above.
-    treeRes = (await fetchImpl(
-      `https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`,
-      { headers },
-    )) as ApiResponse;
-  } catch {
-    throw new Error("Failed to fetch repository tree");
-  }
-  if (!treeRes.ok) {
-    if (rateLimitError(treeRes.status)) {
-      throw new Error("GitHub rate limit exceeded. Add a token or try again later.");
-    }
-    throw new Error("Failed to fetch repository tree");
-  }
-  // SAFETY: GitHub trees API returns a JSON object with an optional `tree`
-  // array; `Array.isArray` below guarantees an array before entries are read.
-  const treeData = (await treeRes.json()) as { tree?: unknown };
-  // SAFETY: same payload as above — still an array here only when the
-  // `Array.isArray` guard passes, and each entry's fields are narrowed to
-  // strings by the type-predicate filter that follows.
-  const rawEntries = treeData.tree as { type?: unknown; path?: unknown }[];
-  const tree = Array.isArray(treeData.tree)
-    ? rawEntries.filter(
-      (e): e is { type: string; path: string } =>
-        typeof e.type === "string" && typeof e.path === "string",
-    )
-    : [];
-  const repo: GitHubRepoInfo = { owner: info.owner, repo: info.repo, path: info.path, branch };
-  const rows = mapTreeToSkillItems(tree, repo);
-  if (rows.length === 0) throw new Error("No skills found in this repository");
-  return { repo, items: rows };
-}
+// browseRepoForSkillsEffect and browseRepoForSkills are defined below
+// alongside getRepoInfoEffect and fetchRepoTreeEffect.
 
 // Source string the installer consumes for a discovered row
 // (`owner/repo[/path]` shorthand, same acceptance as `parseGitHubRepo`).
@@ -631,6 +482,211 @@ export const getRepoInfo = (
   options?: { token?: string; fetchImpl?: FetchFn },
 ): Promise<GitHubRepoInfoMetadata> => Effect.runPromise(getRepoInfoEffect(repo, options));
 
+export const fetchLatestCommitEffect = (
+  source: string,
+  token?: string,
+  fetchImpl: FetchFn = defaultFetch,
+): Effect.Effect<string, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError> =>
+  Effect.gen(function* () {
+    const parsed = parseGitHubRepo(source);
+    if (!parsed) {
+      return yield* Effect.fail(
+        new RepoNotFoundError({
+          owner: "",
+          repo: source,
+          message: `Invalid repository source: ${source}`,
+        }),
+      );
+    }
+    const headers = buildGitHubHeaders(token);
+    const url = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits?per_page=1`;
+    const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
+    if (!res.ok) {
+      const status = (res as ApiResponse).status;
+      if (status === 404 || (!status && !res.ok)) {
+        return yield* Effect.fail(
+          new RepoNotFoundError({
+            owner: parsed.owner,
+            repo: parsed.repo,
+            message: `Repository not found: ${parsed.owner}/${parsed.repo}`,
+          }),
+        );
+      }
+      if (rateLimitError(status)) {
+        return yield* Effect.fail(
+          new GitHubRateLimitError({
+            message: "GitHub rate limit exceeded. Add a token or try again later.",
+          }),
+        );
+      }
+      return yield* Effect.fail(
+        new GitHubNetworkError({
+          message: `Failed to fetch commits: status ${status ?? "unknown"}`,
+          status,
+        }),
+      );
+    }
+    const data = yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: (e) =>
+        new GitHubNetworkError({
+          message: `Failed to parse commits JSON: ${e instanceof Error ? e.message : String(e)}`,
+        }),
+    });
+    if (!Array.isArray(data) || data.length === 0) {
+      return yield* Effect.fail(
+        new RepoNotFoundError({
+          owner: parsed.owner,
+          repo: parsed.repo,
+          message: "No commits found in repository",
+        }),
+      );
+    }
+    const first = data[0] as { sha?: unknown };
+    if (typeof first?.sha !== "string") {
+      return yield* Effect.fail(
+        new GitHubNetworkError({
+          message: "Commit sha missing from GitHub response",
+        }),
+      );
+    }
+    return first.sha;
+  });
+
+export async function fetchLatestCommit(
+  source: string,
+  token?: string,
+  fetchImpl: FetchFn = defaultFetch,
+): Promise<string | null> {
+  return Effect.runPromise(
+    fetchLatestCommitEffect(source, token, fetchImpl).pipe(
+      Effect.option,
+      Effect.map((opt) => (opt._tag === "Some" ? opt.value : null)),
+    ),
+  );
+}
+
+export const fetchSkillMdEffect = (
+  info: GitHubRepoInfo,
+  token?: string,
+  fetchImpl: FetchFn = defaultFetch,
+): Effect.Effect<string, RepoNotFoundError | GitHubNetworkError> =>
+  Effect.gen(function* () {
+    const subpath = info.path ? `${info.path}/SKILL.md` : "SKILL.md";
+    const repoStr = `${info.owner}/${info.repo}`;
+    const onMain = fetchRawFileEffect(repoStr, "main", subpath, { token, fetchImpl });
+    const onMaster = fetchRawFileEffect(repoStr, "master", subpath, { token, fetchImpl });
+    return yield* onMain.pipe(Effect.catch(() => onMaster));
+  });
+
+export async function fetchSkillMd(
+  info: GitHubRepoInfo,
+  token?: string,
+  fetchImpl: FetchFn = defaultFetch,
+): Promise<string | null> {
+  return Effect.runPromise(
+    fetchSkillMdEffect(info, token, fetchImpl).pipe(
+      Effect.option,
+      Effect.map((opt) => (opt._tag === "Some" ? opt.value : null)),
+    ),
+  );
+}
+
+export const loadSkillsLockEffect = (
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<SkillsLock, FsError> =>
+  Effect.try({
+    try: () => {
+      const parsed = store.readJson<unknown>(SKILLS_LOCK_FILE);
+      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as SkillsLock;
+      }
+      return {};
+    },
+    catch: (err) =>
+      new FsError({
+        operation: "loadSkillsLock",
+        path: SKILLS_LOCK_FILE,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
+export const saveSkillsLockEffect = (
+  lock: SkillsLock,
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<boolean, FsError> =>
+  Effect.try({
+    try: () => {
+      store.writeJson(SKILLS_LOCK_FILE, lock);
+      return true;
+    },
+    catch: (err) =>
+      new FsError({
+        operation: "saveSkillsLock",
+        path: SKILLS_LOCK_FILE,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
+export async function loadSkillsLock(store: JsonStore = storageJsonStore()): Promise<SkillsLock> {
+  return Effect.runPromise(loadSkillsLockEffect(store).pipe(Effect.orElseSucceed(() => ({}))));
+}
+
+export async function saveSkillsLock(
+  lock: SkillsLock,
+  store: JsonStore = storageJsonStore(),
+): Promise<boolean> {
+  return Effect.runPromise(saveSkillsLockEffect(lock, store).pipe(Effect.orElseSucceed(() => false)));
+}
+
+export const browseRepoForSkillsEffect = (
+  info: GitHubRepoInfo,
+  options: BrowseRepoOptions = {},
+): Effect.Effect<
+  BrowseRepoResult,
+  GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError
+> =>
+  Effect.gen(function* () {
+    const repoInfo = yield* getRepoInfoEffect(`${info.owner}/${info.repo}`, options);
+    const branch = repoInfo.defaultBranch || "main";
+    const tree = yield* fetchRepoTreeEffect(
+      `${info.owner}/${info.repo}`,
+      branch,
+      options,
+    );
+    const repo: GitHubRepoInfo = {
+      owner: info.owner,
+      repo: info.repo,
+      path: info.path,
+      branch,
+    };
+    const rows = mapTreeToSkillItems(
+      tree.map((t) => ({ type: t.type, path: t.path })),
+      repo,
+    );
+    if (rows.length === 0) {
+      return yield* Effect.fail(
+        new RepoNotFoundError({
+          owner: info.owner,
+          repo: info.repo,
+          message: "No skills found in this repository",
+        }),
+      );
+    }
+    return { repo, items: rows };
+  });
+
+export async function browseRepoForSkills(
+  info: GitHubRepoInfo,
+  options: BrowseRepoOptions = {},
+): Promise<BrowseRepoResult> {
+  return Effect.runPromise(
+    browseRepoForSkillsEffect(info, options).pipe(
+      Effect.mapError((err) => new Error(err.message)),
+    ),
+  );
+}
+
 export interface GitHubClientService {
   readonly fetchRepoTree: (
     repo: string,
@@ -647,6 +703,27 @@ export interface GitHubClientService {
     repo: string,
     options?: { token?: string; fetchImpl?: FetchFn },
   ) => Effect.Effect<GitHubRepoInfoMetadata, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError>;
+  readonly fetchLatestCommit: (
+    source: string,
+    token?: string,
+    fetchImpl?: FetchFn,
+  ) => Effect.Effect<string, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError>;
+  readonly fetchSkillMd: (
+    info: GitHubRepoInfo,
+    token?: string,
+    fetchImpl?: FetchFn,
+  ) => Effect.Effect<string, RepoNotFoundError | GitHubNetworkError>;
+  readonly browseRepoForSkills: (
+    info: GitHubRepoInfo,
+    options?: BrowseRepoOptions,
+  ) => Effect.Effect<BrowseRepoResult, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError>;
+  readonly loadSkillsLock: (
+    store?: JsonStore,
+  ) => Effect.Effect<SkillsLock, FsError>;
+  readonly saveSkillsLock: (
+    lock: SkillsLock,
+    store?: JsonStore,
+  ) => Effect.Effect<boolean, FsError>;
 }
 
 export class GitHubClient extends Context.Service<GitHubClient, GitHubClientService>()(
@@ -657,5 +734,10 @@ export const LiveGitHubClient = Layer.succeed(GitHubClient, {
   fetchRepoTree: (repo, branch, opts) => fetchRepoTreeEffect(repo, branch, opts),
   fetchRawFile: (repo, branch, path, opts) => fetchRawFileEffect(repo, branch, path, opts),
   getRepoInfo: (repo, opts) => getRepoInfoEffect(repo, opts),
+  fetchLatestCommit: (source, token, fetchImpl) => fetchLatestCommitEffect(source, token, fetchImpl),
+  fetchSkillMd: (info, token, fetchImpl) => fetchSkillMdEffect(info, token, fetchImpl),
+  browseRepoForSkills: (info, opts) => browseRepoForSkillsEffect(info, opts),
+  loadSkillsLock: (store) => loadSkillsLockEffect(store),
+  saveSkillsLock: (lock, store) => saveSkillsLockEffect(lock, store),
 });
 

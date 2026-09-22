@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Linking, Pressable, ScrollView, Switch, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Switch, View } from "react-native";
 import { Text } from "./AppText";
 import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useUniwind } from "uniwind";
@@ -470,7 +470,7 @@ export function SkillDetail({
     if (!skill?.updateAvailable || !onUpdateSkill) return undefined;
     return () => {
       runAction("updating", onUpdateSkill).catch((cause: unknown) => {
-        console.error("Update failed:", cause);
+        Alert.alert("Update failed", cause instanceof Error ? cause.message : "Could not update skill.");
       });
     };
   }, [skill, onUpdateSkill, runAction]);
@@ -540,7 +540,7 @@ export function SkillDetail({
           onConfirm={() =>
             runAction("uninstalling", onUninstallSkill, () => setUninstallOpen(false)).catch(
               (cause: unknown) => {
-                console.error("Uninstall failed:", cause);
+                Alert.alert("Uninstall failed", cause instanceof Error ? cause.message : "Could not uninstall skill.");
               },
             )}
           skillName={skill.name}

@@ -8,6 +8,11 @@ import {
   fetchRepoTreeEffect,
   fetchRawFileEffect,
   getRepoInfoEffect,
+  browseRepoForSkillsEffect,
+  fetchLatestCommitEffect,
+  fetchSkillMdEffect,
+  loadSkillsLockEffect,
+  saveSkillsLockEffect,
   GitHubClient,
   LiveGitHubClient,
   loadSkillsLock,
@@ -233,6 +238,64 @@ describe("Effect GitHub workflows and retries", () => {
     expect(attempts).toBe(3);
     expect(tree).toHaveLength(1);
     expect(tree[0].path).toBe("skills/test/SKILL.md");
+  });
+
+  test("browseRepoForSkillsEffect returns typed RepoNotFoundError on non-existent repo", async () => {
+    const fetchImpl: FetchFn = async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+      text: async () => "",
+    });
+
+    const err = await Effect.runPromise(
+      browseRepoForSkillsEffect({ owner: "missing", repo: "missing" }, { fetchImpl }).pipe(Effect.flip),
+    );
+    expect(err).toBeInstanceOf(RepoNotFoundError);
+  });
+
+  test("fetchLatestCommitEffect returns commit SHA or typed error", async () => {
+    const fetchImpl: FetchFn = async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () => [{ sha: "abcdef123456" }],
+      text: async () => "",
+    });
+
+    const sha = await Effect.runPromise(
+      fetchLatestCommitEffect("anthropics/skills", undefined, fetchImpl),
+    );
+    expect(sha).toBe("abcdef123456");
+
+    const err = await Effect.runPromise(
+      fetchLatestCommitEffect("not a repo", undefined, fetchImpl).pipe(Effect.flip),
+    );
+    expect(err).toBeInstanceOf(RepoNotFoundError);
+  });
+
+  test("loadSkillsLockEffect reads and saves lock cleanly", async () => {
+    const store = storageJsonStore(
+      createStorage({ root: "applicationSupport", subfolder: "skillet-test-lock-effect" }) as never,
+    );
+    const initial = await Effect.runPromise(loadSkillsLockEffect(store));
+    expect(initial).toEqual({});
+
+    await Effect.runPromise(
+      saveSkillsLockEffect(
+        {
+          "anthropics/skills": {
+            source: "anthropics/skills",
+            commitSha: "sha1",
+            updatedAt: "2026-01-01",
+            skills: ["eli5"],
+          },
+        },
+        store,
+      ),
+    );
+
+    const loaded = await Effect.runPromise(loadSkillsLockEffect(store));
+    expect(loaded["anthropics/skills"].commitSha).toBe("sha1");
   });
 });
 

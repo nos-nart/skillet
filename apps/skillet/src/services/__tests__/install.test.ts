@@ -1,4 +1,13 @@
-import { downloadSkill, uninstallSkill, type SkillWriter, type SkillsFs } from "../skills";
+import { Effect } from "effect";
+import {
+  downloadSkill,
+  downloadSkillEffect,
+  uninstallSkill,
+  uninstallSkillEffect,
+  type SkillWriter,
+  type SkillsFs,
+} from "../skills";
+import { InvalidSlugError } from "../errors";
 import type { FetchFn } from "../github";
 import type { JsonStore } from "../workspaces";
 
@@ -141,4 +150,26 @@ test("uninstall refuses unsafe slugs", async () => {
     uninstallSkill({ skillPath: "/Users/x/.skills/e", skillSlug: "../evil" }, fs),
   ).resolves.toBe(false);
   expect(fs.unlinked).toEqual([]);
+});
+
+test("downloadSkillEffect returns typed InvalidSlugError on unsafe slug", async () => {
+  const { writer } = fakeWriter();
+  const store = memoryStore().store;
+  const err = await Effect.runPromise(
+    downloadSkillEffect(
+      { source: "anthropics/skills", skillName: "../evil" },
+      { writer, fetchImpl: stubFetch(null), lockStore: store },
+    ).pipe(Effect.flip),
+  );
+  expect(err).toBeInstanceOf(InvalidSlugError);
+});
+
+test("uninstallSkillEffect returns typed InvalidSlugError on unsafe slug", async () => {
+  const fs = fakeDeleteFs([]);
+  const err = await Effect.runPromise(
+    uninstallSkillEffect({ skillPath: "/Users/x/.skills/e", skillSlug: "../evil" }, fs).pipe(
+      Effect.flip,
+    ),
+  );
+  expect(err).toBeInstanceOf(InvalidSlugError);
 });

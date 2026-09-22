@@ -25,11 +25,11 @@ export type SkillsLock = typeof SkillsLockSchema.Type;
 
 export const GitHubTreeItemSchema = Schema.Struct({
   path: Schema.String,
-  mode: Schema.String,
+  mode: Schema.optionalKey(Schema.String),
   type: Schema.String,
-  sha: Schema.String,
+  sha: Schema.optionalKey(Schema.String),
   size: Schema.optionalKey(Schema.Number),
-  url: Schema.String,
+  url: Schema.optionalKey(Schema.String),
 });
 export type GitHubTreeItem = typeof GitHubTreeItemSchema.Type;
 

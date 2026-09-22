@@ -1,4 +1,6 @@
 import { createStorage, type Storage } from "@legend-apps/storage";
+import * as Effect from "effect/Effect";
+import { FsError } from "./errors";
 
 // Storage-backed workspace/bookmark state for the macOS app, porting
 // `WorkspaceManager` (`src/backend/workspace.ts`) plus the bookmarks
@@ -48,17 +50,31 @@ export function storageJsonStore(storage: Storage = getWorkspaceStorage()): Json
   };
 }
 
+export const getWorkspacesEffect = (
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<Workspace[], FsError> =>
+  Effect.try({
+    try: () => {
+      const parsed = store.readJson<unknown>(WORKSPACES_FILE);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as Workspace[];
+      }
+      return [{ ...DEFAULT_GLOBAL_WORKSPACE }];
+    },
+    catch: (err) =>
+      new FsError({
+        operation: "getWorkspaces",
+        path: WORKSPACES_FILE,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
 export async function getWorkspaces(store: JsonStore = storageJsonStore()): Promise<Workspace[]> {
-  try {
-    const parsed = store.readJson<unknown>(WORKSPACES_FILE);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      // SAFETY: workspaces.json persists as a JSON-serialized Workspace array
-      return parsed as Workspace[];
-    }
-  } catch {
-    // Fallback if file doesn't exist or is unparseable
-  }
-  return [{ ...DEFAULT_GLOBAL_WORKSPACE }];
+  return Effect.runPromise(
+    getWorkspacesEffect(store).pipe(
+      Effect.catch(() => Effect.succeed([{ ...DEFAULT_GLOBAL_WORKSPACE }])),
+    ),
+  );
 }
 
 export async function addWorkspace(
@@ -93,14 +109,28 @@ export async function setCurrentWorkspace(
   store.writeJson(WORKSPACES_FILE, updated);
 }
 
+export const getBookmarksEffect = (
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<string[], FsError> =>
+  Effect.try({
+    try: () => {
+      const parsed = store.readJson<unknown>(BOOKMARKS_FILE);
+      return Array.isArray(parsed) ? (parsed as string[]) : [];
+    },
+    catch: (err) =>
+      new FsError({
+        operation: "getBookmarks",
+        path: BOOKMARKS_FILE,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
 export async function getBookmarks(store: JsonStore = storageJsonStore()): Promise<string[]> {
-  try {
-    const parsed = store.readJson<unknown>(BOOKMARKS_FILE);
-    // SAFETY: bookmarks.json persists as a JSON-serialized string array
-    return Array.isArray(parsed) ? (parsed as string[]) : [];
-  } catch {
-    return [];
-  }
+  return Effect.runPromise(
+    getBookmarksEffect(store).pipe(
+      Effect.catch(() => Effect.succeed([] as string[])),
+    ),
+  );
 }
 
 export async function saveBookmarks(
