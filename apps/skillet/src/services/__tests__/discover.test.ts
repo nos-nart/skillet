@@ -96,9 +96,10 @@ test("surfaces repository-not-found and rate-limit errors", async () => {
   const notFound: FetchFn = () =>
     Promise.resolve({
       ok: false,
+      status: 404,
       json: () => Promise.resolve({}),
       text: () => Promise.resolve(""),
-    });
+    } as never);
   await expect(browseRepoForSkills(info, { fetchImpl: notFound })).rejects.toThrow(
     "Repository not found",
   );

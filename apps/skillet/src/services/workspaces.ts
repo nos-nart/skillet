@@ -82,9 +82,7 @@ export const addWorkspaceEffect = (
   store: JsonStore = storageJsonStore(),
 ): Effect.Effect<void, FsError> =>
   Effect.gen(function* () {
-    const list = yield* getWorkspacesEffect(store).pipe(
-      Effect.catch(() => Effect.succeed([{ ...DEFAULT_GLOBAL_WORKSPACE }])),
-    );
+    const list = yield* getWorkspacesEffect(store);
     if (!list.some((w) => w.path === ws.path || w.id === ws.id)) {
       list.push(ws);
       yield* Effect.try({
@@ -111,9 +109,7 @@ export const removeWorkspaceEffect = (
   store: JsonStore = storageJsonStore(),
 ): Effect.Effect<void, FsError> =>
   Effect.gen(function* () {
-    const list = yield* getWorkspacesEffect(store).pipe(
-      Effect.catch(() => Effect.succeed([{ ...DEFAULT_GLOBAL_WORKSPACE }])),
-    );
+    const list = yield* getWorkspacesEffect(store);
     const filtered = list.filter((w) => w.id !== idOrPath && w.path !== idOrPath);
     if (filtered.length === 0) {
       filtered.push({ ...DEFAULT_GLOBAL_WORKSPACE });
@@ -141,9 +137,7 @@ export const setCurrentWorkspaceEffect = (
   store: JsonStore = storageJsonStore(),
 ): Effect.Effect<void, FsError> =>
   Effect.gen(function* () {
-    const list = yield* getWorkspacesEffect(store).pipe(
-      Effect.catch(() => Effect.succeed([{ ...DEFAULT_GLOBAL_WORKSPACE }])),
-    );
+    const list = yield* getWorkspacesEffect(store);
     const updated = list.map((w) => ({ ...w, isCurrent: w.id === id }));
     yield* Effect.try({
       try: () => store.writeJson(WORKSPACES_FILE, updated),

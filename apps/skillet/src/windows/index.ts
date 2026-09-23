@@ -1,1 +1,1 @@
-export { useWindowId, WindowProvider, withWindowProvider } from "./WindowProvider";
+export { WindowProvider } from "./WindowProvider";

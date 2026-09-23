@@ -42,13 +42,17 @@ function memoryStore() {
 
 // Serves raw SKILL.md on main plus the commits API; master is never reached.
 function stubFetch(skillMd: string | null): FetchFn {
-  return async (url: string) => ({
-    ok: url.includes("/commits?")
+  return async (url: string) => {
+    const ok = url.includes("/commits?")
       ? true
-      : skillMd !== null && url.includes("/main/"),
-    json: async () => [{ sha: "deadbee" }],
-    text: async () => skillMd ?? "",
-  });
+      : skillMd !== null && url.includes("/main/");
+    return {
+      ok,
+      status: ok ? 200 : 404,
+      json: async () => [{ sha: "deadbee" }],
+      text: async () => skillMd ?? "",
+    };
+  };
 }
 
 test("installs a fetched SKILL.md under owner/slug and records the lock", async () => {

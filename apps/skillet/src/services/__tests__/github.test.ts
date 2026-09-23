@@ -73,17 +73,18 @@ test("compareCommitShas detects drift", () => {
 });
 
 function stubFetch(
-  routes: Record<string, { ok: boolean; body: unknown }>,
+  routes: Record<string, { ok: boolean; body: unknown; status?: number }>,
   seen: string[],
 ): FetchFn {
   return async (url: string) => {
     seen.push(url);
     const route = routes[url];
     if (!route) {
-      return { ok: false, json: async () => null, text: async () => "" };
+      return { ok: false, status: 404, json: async () => null, text: async () => "" };
     }
     return {
       ok: route.ok,
+      status: route.status ?? (route.ok ? 200 : 404),
       json: async () => route.body,
       text: async () =>
         typeof route.body === "string" ? route.body : JSON.stringify(route.body),

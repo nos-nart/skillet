@@ -374,8 +374,8 @@ export function DiscoverTab({
   const [installing, setInstalling] = useAtom(installingSkillAtom);
 
   const loading = browseResult.waiting;
-  const repo = !loading && browseResult._tag === "Success" ? browseResult.value.repo : null;
-  const items = !loading && browseResult._tag === "Success" ? browseResult.value.items : [];
+  const repo = browseResult._tag === "Success" ? browseResult.value.repo : null;
+  const items = browseResult._tag === "Success" ? browseResult.value.items : [];
   const error =
     browseResult._tag === "Failure"
       ? formatDiscoverError(Cause.squash(browseResult.cause))

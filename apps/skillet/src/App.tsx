@@ -45,7 +45,7 @@ applyStoredTheme();
 // NOTE: the skillet window is a standard titled NSWindow (AppDelegate never
 // enables FullSizeContentView for this app), so there is a REAL titlebar and
 // no fake 42/52pt titlebar insets — those only added dead space.
-export function App(): React.JSX.Element {
+function AppContent(): React.JSX.Element {
   const theme = useAppTheme();
   const [nav, setNav] = useState<SidebarNav>("skills");
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
@@ -92,8 +92,8 @@ export function App(): React.JSX.Element {
         if (prev && list.some((s) => s.id === prev)) return prev;
         return list[0]?.id;
       });
-    } catch {
-      // Keep the last good list.
+    } catch (err: unknown) {
+      console.error("Failed to refresh skills:", err);
     }
   }, [runFetchSkills, setSkills]);
 
@@ -106,8 +106,8 @@ export function App(): React.JSX.Element {
           ? prev
           : (list.find((w) => w.isCurrent)?.path ?? list[0]?.path),
       );
-    } catch {
-      // Keep the last good list.
+    } catch (err: unknown) {
+      console.error("Failed to refresh workspaces:", err);
     }
   }, [runFetchWorkspaces, setWorkspaces, setCurrentPath]);
 
@@ -212,12 +212,11 @@ export function App(): React.JSX.Element {
 
   return (
     <WindowProvider id="main">
-      <RegistryProvider>
-        {/* NOTE: react-native-macos never initializes Dimensions (no
-            didUpdateDimensions anywhere in the fork), so Dimensions.get('window')
-            throws "No dimension set" — all pane sizes are explicit state, never
-            measured. */}
-        <View className="flex-1 flex-row bg-background">
+      {/* NOTE: react-native-macos never initializes Dimensions (no
+          didUpdateDimensions anywhere in the fork), so Dimensions.get('window')
+          throws "No dimension set" — all pane sizes are explicit state, never
+          measured. */}
+      <View className="flex-1 flex-row bg-background">
         <View style={{ width: navWidth, overflow: "hidden" }}>
           <Sidebar
             currentPath={currentPath}
@@ -311,7 +310,15 @@ export function App(): React.JSX.Element {
             )}
         />
       ) : null}
-      </RegistryProvider>
     </WindowProvider>
   );
 }
+
+export function App(): React.JSX.Element {
+  return (
+    <RegistryProvider>
+      <AppContent />
+    </RegistryProvider>
+  );
+}
+

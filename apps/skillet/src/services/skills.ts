@@ -547,17 +547,13 @@ export async function downloadSkill(
   return Effect.runPromise(
     downloadSkillEffect(options, deps).pipe(
       Effect.map((res) => ({ ok: true as const, path: res.path })),
-      Effect.catch((err: any) => {
+      Effect.catch((err) => {
         const message =
-          err?._tag === "InvalidSlugError" && "slug" in err
+          err._tag === "InvalidSlugError"
             ? (options.source === err.slug
               ? "Invalid GitHub repository format"
               : `Refusing to install unsafe skill slug: ${err.slug}`)
-            : err instanceof Error
-              ? err.message
-              : typeof err?.message === "string"
-                ? err.message
-                : String(err);
+            : err.message;
         return Effect.succeed({ ok: false as const, error: message });
       }),
     ),

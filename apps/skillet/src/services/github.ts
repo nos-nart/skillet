@@ -284,7 +284,7 @@ function mapHttpError(
       message: "GitHub rate limit exceeded. Add a token or try again later.",
     });
   }
-  if (status === 404 || (!status && !res.ok)) {
+  if (status === 404) {
     return new RepoNotFoundError({
       owner: repo.owner,
       repo: repo.repo,
@@ -332,10 +332,22 @@ export const fetchRepoTreeEffect = (
         new GitHubNetworkError({
           message: `Failed to parse tree JSON: ${e instanceof Error ? e.message : String(e)}`,
         }),
-    })) as { tree?: unknown };
+    })) as { tree?: unknown; message?: unknown };
 
     if (!Array.isArray(data?.tree)) {
-      return [];
+      if (
+        typeof data === "object" &&
+        data !== null &&
+        typeof data.message === "string" &&
+        data.message.includes("empty")
+      ) {
+        return [];
+      }
+      return yield* Effect.fail(
+        new GitHubNetworkError({
+          message: "GitHub API response missing tree array",
+        }),
+      );
     }
 
     return yield* Schema.decodeUnknownEffect(
