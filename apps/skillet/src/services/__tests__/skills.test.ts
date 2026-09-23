@@ -141,9 +141,18 @@ test("getSkills dedups by slug across agent dirs", async () => {
   expect(skills.filter((s) => s.slug === "dup")).toHaveLength(1);
 });
 
-test("getSkills tolerates missing dirs", async () => {
+test("getSkills tolerates missing dirs across OS error formats", async () => {
   const skills = await getSkills(["~/.does-not-exist"], fakeFs({}));
   expect(skills).toEqual([]);
+
+  const cocoaFs: SkillsFs = {
+    ...fakeFs({}),
+    scanSkillsDir: async () => {
+      throw new Error("The folder “skills” doesn’t exist.");
+    },
+  };
+  const cocoaSkills = await getSkills(["~/.skills"], cocoaFs);
+  expect(cocoaSkills).toEqual([]);
 });
 
 test("resolveSkillTarget guards traversal slugs", () => {

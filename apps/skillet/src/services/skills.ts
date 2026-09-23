@@ -250,6 +250,24 @@ interface FoundSkillDoc {
   content: string;
 }
 
+export function isMissingDirError(err: unknown): boolean {
+  if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "invalid_path") {
+    return true;
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes("no such file") ||
+    lower.includes("not exist") ||
+    lower.includes("doesn't exist") ||
+    lower.includes("doesn’t exist") ||
+    lower.includes("does not exist") ||
+    lower.includes("invalid_path") ||
+    lower.includes("enoent") ||
+    lower.includes("cannot scan")
+  );
+}
+
 // Recursive walk mirroring `scanDirectoryForSkills` (depth-bounded, skips
 // unreadable dirs). Native scan is single-level, so one extra level covers
 // `~/.skills/<owner>/<slug>` and two cover `<owner>/<repo>/<slug>`.
@@ -266,15 +284,7 @@ async function walkSkillsDir(
   try {
     entries = await fs.scanSkillsDir(dir);
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    const lower = msg.toLowerCase();
-    if (
-      lower.includes("no such file") ||
-      lower.includes("not exist") ||
-      lower.includes("invalid_path") ||
-      lower.includes("enoent") ||
-      lower.includes("cannot scan")
-    ) {
+    if (isMissingDirError(err)) {
       return;
     }
     throw err;
@@ -386,10 +396,7 @@ export const isSkillEnabledEffect = (
         }),
     }).pipe(
       Effect.catchIf(
-        (err) => {
-          const msg = err.message.toLowerCase();
-          return msg.includes("no such file") || msg.includes("not exist") || msg.includes("cannot scan");
-        },
+        (err) => isMissingDirError(err),
         () => Effect.succeed([] as string[]),
       ),
     );

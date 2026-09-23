@@ -35,9 +35,18 @@ RCT_EXPORT_MODULE(NativeSkillsFs)
 - (void)scanSkillsDir:(NSString *)dir resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   NSString *expanded = [dir stringByExpandingTildeInPath];
+  BOOL isDir = NO;
+  if (![[NSFileManager defaultManager] fileExistsAtPath:expanded isDirectory:&isDir] || !isDir) {
+    resolve(@"[]");
+    return;
+  }
   NSError *error = nil;
   NSArray<NSString *> *entries = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:expanded error:&error];
   if (!entries) {
+    if (error.code == NSFileReadNoSuchFileError || error.code == NSNoSuchFileError) {
+      resolve(@"[]");
+      return;
+    }
     reject(@"invalid_path", error.localizedDescription ?: @"Cannot scan skills directory.", error);
     return;
   }
