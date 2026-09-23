@@ -271,12 +271,12 @@ function AppContent(): React.JSX.Element {
   }, []);
 
   return (
-    <>
+    <View className="flex-1 bg-background">
       {/* NOTE: react-native-macos never initializes Dimensions (no
           didUpdateDimensions anywhere in the fork), so Dimensions.get('window')
           throws "No dimension set" — all pane sizes are explicit state, never
           measured. */}
-      <View className="flex-1 flex-row bg-background">
+      <View className="flex-1 flex-row">
         <View style={{ width: navWidth, overflow: "hidden" }}>
           <Sidebar
             currentPath={currentPath}
@@ -374,7 +374,7 @@ function AppContent(): React.JSX.Element {
             )}
         />
       ) : null}
-    </>
+    </View>
   );
 }
 

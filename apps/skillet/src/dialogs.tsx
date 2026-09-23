@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Modal, Pressable, TextInput, View } from "react-native";
+import { Pressable, TextInput, View } from "react-native";
 import { Text } from "./AppText";
 import { parseGitHubRepo } from "./services/github";
 
-// Native-modal ports of the web dialogs (`src/components/NewSkillDialog.tsx`
-// install mode + `src/components/ConfirmDialog.tsx` destructive variant).
-// Spec §2: `ConfirmDialog` → native modal, `NewSkillDialog` form → `TextInput`,
-// URL regex stays (here: `parseGitHubRepo` validation from Task 3). Errors
-// render inline — never `alert()`.
+const CONTINUOUS_CURVE = { borderCurve: "continuous" } as const;
+const INPUT_STYLE = { borderCurve: "continuous", fontFamily: "Space Grotesk" } as const;
 
+// Overlay dialogs matching the web UI (`src/components/NewSkillDialog.tsx`
+// install mode + `src/components/ConfirmDialog.tsx` destructive variant).
+// Uses absolute-positioned backdrop overlay (native React Native macOS Modal
+// is unimplemented in Fabric and crashes with SIGSEGV).
 function DialogShell({
   onClose,
   children,
@@ -17,21 +18,24 @@ function DialogShell({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent visible>
+    <View
+      className="absolute inset-0 z-50 items-center justify-center bg-black/50 px-8"
+      style={CONTINUOUS_CURVE}
+    >
       <Pressable
+        accessibilityLabel="Close dialog"
         accessibilityRole="button"
-        className="flex-1 items-center justify-center bg-black/50 px-8"
+        className="absolute inset-0"
         onPress={onClose}
+      />
+      <Pressable
+        className="z-10 w-full max-w-[420px] rounded-lg border border-border bg-background p-6 shadow-2xl"
+        style={CONTINUOUS_CURVE}
+        onPress={(e) => e.stopPropagation()}
       >
-        <Pressable
-          className="w-full max-w-[420px] rounded-lg border border-border bg-background p-6"
-          style={{ borderCurve: "continuous" }}
-          onPress={(e) => e.stopPropagation()}
-        >
-          {children}
-        </Pressable>
+        {children}
       </Pressable>
-    </Modal>
+    </View>
   );
 }
 
@@ -80,7 +84,7 @@ export function InstallSkillDialog({
         className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-[13px] text-foreground"
         enableFocusRing={false}
         focusRingType="none"
-        style={{ borderCurve: "continuous", fontFamily: "Space Grotesk" }}
+        style={INPUT_STYLE}
         onChangeText={(t) => {
           setSource(t);
           setLocalError(null);
@@ -97,7 +101,7 @@ export function InstallSkillDialog({
         className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-[13px] text-foreground"
         enableFocusRing={false}
         focusRingType="none"
-        style={{ borderCurve: "continuous", fontFamily: "Space Grotesk" }}
+        style={INPUT_STYLE}
         onChangeText={setSkillName}
         placeholder="my-skill"
         value={skillName}
@@ -107,7 +111,7 @@ export function InstallSkillDialog({
         <Pressable
           accessibilityRole="button"
           className="rounded-lg border border-border bg-surface-muted px-3.5 py-1.5"
-          style={{ borderCurve: "continuous" }}
+          style={CONTINUOUS_CURVE}
           disabled={installing}
           onPress={onClose}
         >
@@ -119,7 +123,7 @@ export function InstallSkillDialog({
           className={disabled
             ? "rounded-lg bg-surface-muted px-3.5 py-1.5 opacity-50"
             : "rounded-lg bg-primary px-3.5 py-1.5"}
-          style={{ borderCurve: "continuous" }}
+          style={CONTINUOUS_CURVE}
           disabled={disabled}
           onPress={() => void handleSubmit()}
         >
@@ -153,7 +157,7 @@ export function UninstallSkillDialog({
         <Pressable
           accessibilityRole="button"
           className="rounded-lg border border-border bg-surface-muted px-3.5 py-1.5"
-          style={{ borderCurve: "continuous" }}
+          style={CONTINUOUS_CURVE}
           disabled={uninstalling}
           onPress={onClose}
         >
@@ -162,7 +166,7 @@ export function UninstallSkillDialog({
         <Pressable
           accessibilityRole="button"
           className="rounded-lg bg-danger px-3.5 py-1.5"
-          style={{ borderCurve: "continuous" }}
+          style={CONTINUOUS_CURVE}
           disabled={uninstalling}
           onPress={onConfirm}
         >

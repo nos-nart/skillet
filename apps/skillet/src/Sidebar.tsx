@@ -101,7 +101,7 @@ export function Sidebar({
                 className="rounded-full border border-primary/30 bg-primary/15 px-1.5 py-0"
                 style={CONTINUOUS_CURVE}
               >
-                <Text className="text-[10px] font-bold text-primary" mono>v1.0</Text>
+                <Text className="text-[10px] font-bold text-primary" mono>v2.0</Text>
               </View>
             </View>
             <Text className="text-[11px] text-muted" ellipsizeMode="tail" numberOfLines={1}>

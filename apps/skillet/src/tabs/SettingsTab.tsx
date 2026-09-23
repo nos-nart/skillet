@@ -103,7 +103,7 @@ export function SettingsTab(): React.JSX.Element {
         <View className="gap-2 rounded-lg border border-border bg-surface-muted p-5" style={{ borderCurve: "continuous" }}>
           <Text className="text-[14px] font-semibold text-foreground">Application Runtime</Text>
           <Text className="text-[13px] leading-5 text-muted">
-            Skillet v1.0.0 (React Native macOS · Uniwind · Legend List)
+            Skillet v2.0.0 (React Native macOS · Uniwind · Legend List)
           </Text>
         </View>
       </View>
