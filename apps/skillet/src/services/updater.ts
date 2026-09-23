@@ -1,7 +1,12 @@
 import * as Effect from "effect/Effect";
-import { downloadSkill } from "./skills";
+import { downloadSkill, downloadSkillEffect } from "./skills";
 import type { Skill } from "./skills";
-import { fetchLatestCommit, loadSkillsLock, type FetchFn, type SkillsLock } from "./github";
+import {
+  fetchLatestCommitEffect,
+  loadSkillsLockEffect,
+  type FetchFn,
+  type SkillsLock,
+} from "./github";
 
 // Port of `checkSkillUpdates` (`src/backend/updater.ts`): diffs each installed
 // GitHub package against its lockfile SHA, flagging packages whose remote HEAD
@@ -11,7 +16,9 @@ export const checkSkillUpdatesEffect = (
   opts: { token?: string; fetchImpl?: FetchFn } = {},
 ): Effect.Effect<Record<string, boolean>, never> =>
   Effect.gen(function* () {
-    const lock = yield* Effect.promise(() => loadSkillsLock().catch((): SkillsLock => ({})));
+    const lock = yield* loadSkillsLockEffect().pipe(
+      Effect.catch(() => Effect.succeed({} as SkillsLock)),
+    );
     const updates: Record<string, boolean> = {};
 
     const packages = new Set<string>();
@@ -23,10 +30,10 @@ export const checkSkillUpdatesEffect = (
 
     const checkPackage = (pkg: string) =>
       Effect.gen(function* () {
-        const remoteSha = yield* Effect.tryPromise({
-          try: () => fetchLatestCommit(pkg, opts.token, opts.fetchImpl),
-          catch: () => null,
-        });
+        const remoteSha = yield* fetchLatestCommitEffect(pkg, opts.token, opts.fetchImpl).pipe(
+          Effect.option,
+          Effect.map((opt) => (opt._tag === "Some" ? opt.value : null)),
+        );
         if (!remoteSha) return null;
         const localSha = lock[pkg]?.commitSha;
         const hasUpdate =
@@ -62,6 +69,15 @@ export async function checkSkillUpdates(
 
 // Port of the old `handleUpdateSkill`: reinstalls from the recorded package
 // source (lock parity — `downloadSkill` refreshes the lock SHA on success).
+export const updateSkillEffect = (
+  skill: Skill,
+  opts: { token?: string; fetchImpl?: FetchFn } = {},
+) =>
+  downloadSkillEffect(
+    { source: skill.packageName, skillName: skill.slug, token: opts.token },
+    { fetchImpl: opts.fetchImpl },
+  );
+
 export async function updateSkill(
   skill: Skill,
   opts: { token?: string; fetchImpl?: FetchFn } = {},

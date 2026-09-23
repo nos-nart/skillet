@@ -551,9 +551,7 @@ export const downloadSkillEffect = (
       yield* saveSkillsLockEffect(lock, lockStore).pipe(
         Effect.catch(() => Effect.succeed(false)),
       );
-    }).pipe(
-      Effect.catch(() => Effect.void),
-    );
+    }).pipe(Effect.ignore);
 
     return { path: targetDir };
   });

@@ -15,7 +15,7 @@ import { SettingsTab } from "./tabs/SettingsTab";
 import {
   downloadSkill,
   toggleSkillEffect,
-  uninstallSkill,
+  uninstallSkillEffect,
   type Skill,
 } from "./services/skills";
 import { getGithubToken } from "./services/settings";
@@ -223,12 +223,13 @@ function AppContent(): React.JSX.Element {
   // Deletes the installed skill dir plus its workspace symlinks.
   const handleUninstallSkill = useCallback(
     async (skill: Skill): Promise<void> => {
-      const ok = await uninstallSkill({
-        skillPath: skill.path,
-        skillSlug: skill.slug,
-        workspacePaths: workspaces.map((w) => w.path),
-      });
-      if (!ok) throw new Error(`Could not uninstall ${skill.name}.`);
+      await Effect.runPromise(
+        uninstallSkillEffect({
+          skillPath: skill.path,
+          skillSlug: skill.slug,
+          workspacePaths: workspaces.map((w) => w.path),
+        }),
+      );
       if (selectedId === skill.id) setSelectedId(undefined);
       refreshSkills();
     },
@@ -269,9 +270,9 @@ function AppContent(): React.JSX.Element {
             currentPath={currentPath}
             currentTab={nav}
             error={workspacesError}
-            onAddWorkspace={(path) => void handleAddWorkspace(path)}
+            onAddWorkspace={handleAddWorkspace}
             onDismissError={() => setDismissedWorkspacesError(true)}
-            onSelectWorkspace={(id) => void handleSelectWorkspace(id)}
+            onSelectWorkspace={handleSelectWorkspace}
             onTab={setNav}
             skillsCount={skills.length}
             workspaces={workspaces}

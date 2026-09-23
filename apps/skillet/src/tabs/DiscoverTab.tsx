@@ -21,7 +21,10 @@ import {
 import type { Skill } from "../services/skills";
 import { useThemePalette } from "../services/theme";
 
-const CARD_BORDER_STYLE = { borderCurve: "continuous" } as const;
+const CONTINUOUS_CURVE = { borderCurve: "continuous" } as const;
+const POPULAR_CARD_STYLE = { borderCurve: "continuous", flexBasis: "48%", flexGrow: 1, minWidth: 260 } as const;
+const DISABLED_STATE = { disabled: true } as const;
+const ENABLED_STATE = { disabled: false } as const;
 
 const PopularRepoCard = React.memo(function PopularRepoCard({
   repo,
@@ -38,14 +41,14 @@ const PopularRepoCard = React.memo(function PopularRepoCard({
       accessibilityRole="button"
       className="rounded-lg border border-border bg-surface p-3.5 active:bg-surface-muted/80"
       onPress={() => onSelect(repo.fullName)}
-      style={{ borderCurve: "continuous", flexBasis: "48%", flexGrow: 1, minWidth: 260 }}
+      style={POPULAR_CARD_STYLE}
     >
       <View className="flex-row items-center justify-between gap-2">
         <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
           {avatarFailed ? (
             <View
               className="h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-muted"
-              style={{ borderCurve: "continuous" }}
+              style={CONTINUOUS_CURVE}
             >
               <SFSymbol color={c.muted} name="shippingbox" size={15} />
             </View>
@@ -83,11 +86,6 @@ const PopularRepoCard = React.memo(function PopularRepoCard({
     </Pressable>
   );
 });
-
-const CONTINUOUS_CURVE = { borderCurve: "continuous" } as const;
-const POPULAR_CARD_STYLE = { borderCurve: "continuous", flexBasis: "48%", flexGrow: 1, minWidth: 260 } as const;
-const DISABLED_STATE = { disabled: true } as const;
-const ENABLED_STATE = { disabled: false } as const;
 
 const DiscoveredSkillCard = React.memo(function DiscoveredSkillCard({
   item,
@@ -190,7 +188,7 @@ function DiscoverSearchBar({
           className={`min-w-0 flex-1 flex-row items-center gap-2 rounded-lg border bg-surface-muted px-2.5 ${
             isFocused ? "border-primary" : "border-border"
           }`}
-          style={CARD_BORDER_STYLE}
+          style={CONTINUOUS_CURVE}
         >
           <SFSymbol color={isFocused ? primaryColor : mutedColor} name="magnifyingglass" size={17} />
           <TextInput
@@ -230,7 +228,7 @@ function DiscoverSearchBar({
           }
           disabled={isBrowseDisabled}
           onPress={onSubmit}
-          style={CARD_BORDER_STYLE}
+          style={CONTINUOUS_CURVE}
         >
           <Text
             className={
@@ -243,7 +241,7 @@ function DiscoverSearchBar({
           </Text>
         </Pressable>
       </View>
-      {error ? <Text className="text-[12px] text-danger">{error}</Text> : null}
+      <ErrorBanner className="mt-2" error={error} />
     </View>
   );
 }
@@ -289,7 +287,7 @@ function DiscoveredRepoView({
           accessibilityRole="button"
           className="flex-row items-center gap-1 rounded-md bg-surface-muted px-2.5 py-1 active:opacity-70"
           onPress={onBack}
-          style={CARD_BORDER_STYLE}
+          style={CONTINUOUS_CURVE}
         >
           <SFSymbol color={primaryColor} name="chevron.left" size={12} />
           <Text className="text-[12px] font-semibold text-primary">Back</Text>

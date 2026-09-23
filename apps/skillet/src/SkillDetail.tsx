@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Switch, View } from "react-native";
-import * as Effect from "effect/Effect";
 import { Text } from "./AppText";
 import { ErrorBanner } from "./ErrorBanner";
-import { useRunEffect } from "./hooks/useRunEffect";
 import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useUniwind } from "uniwind";
 import { useThemePalette } from "./services/theme";
@@ -16,6 +14,7 @@ import { isSkillEnabled, type Skill } from "./services/skills";
 import type { Workspace } from "./services/workspaces";
 
 const CONTINUOUS_STYLE = { borderCurve: "continuous" } as const;
+const FENCE_BLOCK_STYLE = { borderRadius: 8 } as const;
 
 const ProseSpan = React.memo(function ProseSpan({
   markdown,
@@ -205,7 +204,7 @@ function SkillMetadataCard({
               <Pressable
                 accessibilityRole="link"
                 className="flex-row items-center gap-1 pt-0.5 active:opacity-75"
-                onPress={() => void Linking.openURL(sourceUrl)}
+                onPress={() => void Linking.openURL(sourceUrl).catch(() => {})}
               >
                 <Text className="min-w-0 flex-1 text-[12px] font-medium text-primary" mono numberOfLines={1}>
                   {sourceUrl}
@@ -387,7 +386,6 @@ export function SkillDetail({
   const [installOpen, setInstallOpen] = useState(false);
   const [uninstallOpen, setUninstallOpen] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
-  const { run: runEffect } = useRunEffect();
   const { theme } = useUniwind();
   const appearance = theme === "dark" ? "dark" : "light";
   const c = useThemePalette();
@@ -399,10 +397,6 @@ export function SkillDetail({
     () => splitMarkdownFences(rawMarkdown === "" ? "# No body content in SKILL.md" : rawMarkdown),
     [rawMarkdown],
   );
-
-  const fenceBlockStyle = useMemo(() => ({
-    borderRadius: 8,
-  } as const), []);
 
   const fenceTextStyle = useMemo(() => ({
     fontFamily: markdownStyle.codeBlock?.fontFamily,
@@ -469,12 +463,7 @@ export function SkillDetail({
       setAction(kind);
       setActionError(null);
       try {
-        await runEffect(
-          Effect.tryPromise({
-            try: () => fn(skill),
-            catch: (err) => (err instanceof Error ? err : new Error(String(err))),
-          }),
-        );
+        await fn(skill);
         close?.();
       } catch (cause) {
         const message = cause instanceof Error ? cause.message : String(cause);
@@ -484,7 +473,7 @@ export function SkillDetail({
         setAction("idle");
       }
     },
-    [skill, runEffect],
+    [skill],
   );
 
   const handleUpdate = useMemo(() => {
@@ -532,7 +521,7 @@ export function SkillDetail({
           />
 
           <SkillDocumentationSection
-            fenceBlockStyle={fenceBlockStyle}
+            fenceBlockStyle={FENCE_BLOCK_STYLE}
             fenceTextStyle={fenceTextStyle}
             fenceThemeName={fenceThemeName}
             markdownStyle={markdownStyle}
