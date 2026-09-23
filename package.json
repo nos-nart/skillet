@@ -48,6 +48,8 @@
     "@legendapp/state": "^3.0.0-beta.42"
   },
   "dependencies": {
-    "fast-text-encoding": "^1.0.6"
+    "@effect/atom-react": "4.0.0-rc.115",
+    "fast-text-encoding": "^1.0.6",
+    "scheduler": "^0.28.0"
   }
 }

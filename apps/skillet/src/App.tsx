@@ -2,6 +2,7 @@ import { WindowProvider } from "./windows";
 import { setMainWindowOptions } from "@legend-apps/window-manager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
+import { RegistryProvider } from "@effect/atom-react";
 import { Sidebar, workspaceName, type SidebarNav } from "./Sidebar";
 import { SkillDetail } from "./SkillDetail";
 import { SkillList } from "./SkillList";
@@ -215,11 +216,12 @@ export function App(): React.JSX.Element {
 
   return (
     <WindowProvider id="main">
-      {/* NOTE: react-native-macos never initializes Dimensions (no
-          didUpdateDimensions anywhere in the fork), so Dimensions.get('window')
-          throws "No dimension set" — all pane sizes are explicit state, never
-          measured. */}
-      <View className="flex-1 flex-row bg-background">
+      <RegistryProvider>
+        {/* NOTE: react-native-macos never initializes Dimensions (no
+            didUpdateDimensions anywhere in the fork), so Dimensions.get('window')
+            throws "No dimension set" — all pane sizes are explicit state, never
+            measured. */}
+        <View className="flex-1 flex-row bg-background">
         <View style={{ width: navWidth, overflow: "hidden" }}>
           <Sidebar
             currentPath={currentPath}
@@ -313,6 +315,7 @@ export function App(): React.JSX.Element {
             )}
         />
       ) : null}
+      </RegistryProvider>
     </WindowProvider>
   );
 }

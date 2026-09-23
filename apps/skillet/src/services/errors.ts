@@ -48,3 +48,11 @@ export class SkillParseError extends Schema.TaggedError<SkillParseError>()(
     message: Schema.String,
   },
 ) {}
+
+export class InvalidRepoFormatError extends Schema.TaggedError<InvalidRepoFormatError>()(
+  "InvalidRepoFormatError",
+  {
+    message: Schema.String,
+  },
+) {}
+

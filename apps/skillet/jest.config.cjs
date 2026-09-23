@@ -30,6 +30,6 @@ module.exports = {
     "^@legend-apps/storage$": "<rootDir>/src/services/__tests__/storageMock.ts",
   },
   transformIgnorePatterns: [
-    "node_modules/(?!(?:\\.bun/[^/]+/node_modules/)?effect)",
+    "node_modules/(?!(?:\\.bun/[^/]+/node_modules/)?(?:@effect/atom-react|effect))",
   ],
 };

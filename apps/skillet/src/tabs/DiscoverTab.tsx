@@ -1,14 +1,17 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Image, Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import { Text } from "../AppText";
 import { SFSymbol } from "@legend-apps/sf-symbol";
-import * as Effect from "effect/Effect";
-import { useRunEffect } from "../hooks/useRunEffect";
+import { useAtom } from "@effect/atom-react";
+import * as Atom from "effect/unstable/reactivity/Atom";
+import * as Cause from "effect/Cause";
 import {
-  browseRepoForSkills,
-  browseRepoForSkillsEffect,
+  browseRepoAtom,
+  formatDiscoverError,
+  installingSkillAtom,
+} from "../services/discoverAtoms";
+import {
   buildInstallSource,
-  parseGitHubRepo,
   POPULAR_REPOS,
   type DiscoveredSkillItem,
   type FetchFn,
@@ -365,50 +368,26 @@ export function DiscoverTab({
   const c = useThemePalette();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [items, setItems] = useState<DiscoveredSkillItem[]>([]);
-  const [repo, setRepo] = useState<GitHubRepoInfo | null>(null);
-  const [installing, setInstalling] = useState<string | null>(null);
-  const activeRequestIdRef = useRef(0);
-  const { run: runEffect, isLoading: loading } = useRunEffect();
+
+  // Declarative Effect Atoms replace fragmented useState + activeRequestIdRef
+  const [browseResult, browseRepo] = useAtom(browseRepoAtom);
+  const [installing, setInstalling] = useAtom(installingSkillAtom);
+
+  const loading = browseResult.waiting;
+  const repo = !loading && browseResult._tag === "Success" ? browseResult.value.repo : null;
+  const items = !loading && browseResult._tag === "Success" ? browseResult.value.items : [];
+  const error =
+    browseResult._tag === "Failure"
+      ? formatDiscoverError(Cause.squash(browseResult.cause))
+      : null;
 
   const handleBrowse = useCallback(
-    async (raw: string): Promise<void> => {
+    (raw: string): void => {
       const trimmed = raw.trim();
       if (trimmed === "" || loading) return;
-      const info = parseGitHubRepo(trimmed);
-      if (!info) {
-        setError("Invalid format. Use owner/repo or a GitHub URL.");
-        return;
-      }
-      const requestId = ++activeRequestIdRef.current;
-      setError(null);
-      setItems([]);
-      setRepo(null);
-      try {
-        const found = await runEffect(browseRepoForSkillsEffect(info, { token, fetchImpl }));
-        if (activeRequestIdRef.current !== requestId) return;
-        setRepo(found.repo);
-        setItems(found.items);
-      } catch (err: unknown) {
-        if (activeRequestIdRef.current !== requestId) return;
-        let message = "Failed to load skills from repository.";
-        if (typeof err === "object" && err !== null && "_tag" in err) {
-          const tagged = err as { _tag: string; message?: string };
-          if (tagged._tag === "GitHubRateLimitError") {
-            message = "GitHub API rate limit exceeded. Add a GitHub Personal Access Token in Settings to continue.";
-          } else if (tagged._tag === "RepoNotFoundError") {
-            message = tagged.message || `Repository not found: ${info.owner}/${info.repo}`;
-          } else if (tagged._tag === "GitHubNetworkError") {
-            message = `Network connection error: ${tagged.message}`;
-          }
-        } else if (err instanceof Error) {
-          message = err.message;
-        }
-        setError(message);
-      }
+      browseRepo({ query: trimmed, token, fetchImpl });
     },
-    [loading, runEffect, token, fetchImpl],
+    [browseRepo, loading, token, fetchImpl],
   );
 
   const handleInstall = useCallback(
@@ -428,28 +407,42 @@ export function DiscoverTab({
           setInstalling(null);
         });
     },
-    [repo, installing, onInstall],
+    [repo, installing, onInstall, setInstalling],
   );
 
-  const handleClearQuery = useCallback(() => setQuery(""), []);
+  const handleClearQuery = useCallback(() => {
+    setQuery("");
+    if (browseResult._tag === "Failure") {
+      browseRepo(Atom.Reset);
+    }
+  }, [browseRepo, browseResult._tag]);
+
   const handleFocus = useCallback(() => setIsFocused(true), []);
   const handleBlur = useCallback(() => setIsFocused(false), []);
-  const handleChangeQuery = useCallback((t: string) => {
-    setQuery(t);
-    setError(null);
-  }, []);
+
+  const handleChangeQuery = useCallback(
+    (t: string) => {
+      setQuery(t);
+      if (browseResult._tag === "Failure") {
+        browseRepo(Atom.Reset);
+      }
+    },
+    [browseRepo, browseResult._tag],
+  );
+
   const handleSubmitQuery = useCallback(() => {
-    void handleBrowse(query);
+    handleBrowse(query);
   }, [handleBrowse, query]);
+
   const handleBack = useCallback(() => {
-    setRepo(null);
-    setItems([]);
+    browseRepo(Atom.Reset);
     setQuery("");
-    setError(null);
-  }, []);
+  }, [browseRepo]);
+
   const handleSelectRepo = useCallback(
     (fullName: string) => {
-      void handleBrowse(fullName);
+      setQuery(fullName);
+      handleBrowse(fullName);
     },
     [handleBrowse],
   );
