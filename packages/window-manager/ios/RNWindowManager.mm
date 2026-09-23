@@ -30,9 +30,9 @@ extern double LegendMainWindowReactRootAttachedTimeMs;
 #if TARGET_OS_OSX
 static NSString * const LegendApplicationReopenRequestedNotification = @"LegendApplicationReopenRequestedNotification";
 static NSString * const LegendMainWindowCloseRequestedNotification = @"LegendMainWindowCloseRequestedNotification";
-extern "C" void LegendPrepareSidebarSplitViewStartup(NSWindow *, NSDictionary *) __attribute__((weak_import));
-extern "C" BOOL LegendAttachSidebarSplitViewStartupRoot(NSWindow *, NSView *, void (^)(void)) __attribute__((weak_import));
-extern "C" void LegendFinishSidebarSplitViewStartup(NSWindow *) __attribute__((weak_import));
+extern "C" __attribute__((weak)) void LegendPrepareSidebarSplitViewStartup(NSWindow *, NSDictionary *) {}
+extern "C" __attribute__((weak)) BOOL LegendAttachSidebarSplitViewStartupRoot(NSWindow *, NSView *, void (^)(void)) { return NO; }
+extern "C" __attribute__((weak)) void LegendFinishSidebarSplitViewStartup(NSWindow *) {}
 static NSString * const LegendMainWindowStartupSplitViewKey = @"LegendMainWindowStartupSplitView";
 
 extern "C" NSDictionary *LegendMainWindowStartupSplitViewConfiguration(void)
