@@ -2,7 +2,7 @@ import { WindowProvider } from "./windows";
 import { setMainWindowOptions } from "@legend-apps/window-manager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
-import { RegistryProvider } from "@effect/atom-react";
+import { RegistryProvider, useAtom } from "@effect/atom-react";
 import { Sidebar, workspaceName, type SidebarNav } from "./Sidebar";
 import { SkillDetail } from "./SkillDetail";
 import { SkillList } from "./SkillList";
@@ -13,7 +13,6 @@ import { DiscoverTab } from "./tabs/DiscoverTab";
 import { SettingsTab } from "./tabs/SettingsTab";
 import {
   downloadSkill,
-  getSkills,
   toggleSkill,
   uninstallSkill,
   type Skill,
@@ -23,10 +22,15 @@ import { checkSkillUpdates, updateSkill } from "./services/updater";
 import { applyStoredTheme, useAppTheme } from "./services/theme";
 import {
   addWorkspace,
-  getWorkspaces,
   setCurrentWorkspace,
   type Workspace,
 } from "./services/workspaces";
+import { fetchSkillsAtom, skillsAtom } from "./services/skillsAtoms";
+import {
+  currentWorkspacePathAtom,
+  fetchWorkspacesAtom,
+  workspacesAtom,
+} from "./services/workspacesAtoms";
 
 // Skillet defaults to dark theme with its signature brand Orange accent
 // (#f97316 / #ea580c / #fb923c). Uniwind defaults to light/system, which
@@ -45,10 +49,12 @@ export function App(): React.JSX.Element {
   const theme = useAppTheme();
   const [nav, setNav] = useState<SidebarNav>("skills");
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [currentPath, setCurrentPath] = useState<string | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
+  const [skills, setSkills] = useAtom(skillsAtom);
+  const [workspaces, setWorkspaces] = useAtom(workspacesAtom);
+  const [currentPath, setCurrentPath] = useAtom(currentWorkspacePathAtom);
+  const [loadSkillsResult, runFetchSkills] = useAtom(fetchSkillsAtom, { mode: "promise" });
+  const [, runFetchWorkspaces] = useAtom(fetchWorkspacesAtom, { mode: "promise" });
+  const isLoading = loadSkillsResult.waiting;
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [newSkillOpen, setNewSkillOpen] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
@@ -60,7 +66,6 @@ export function App(): React.JSX.Element {
   const [navWidth, setNavWidth] = useState(240);
   const navWidthRef = useRef(240);
   const navDragAnchor = useRef(240);
-  const skillsRequestIdRef = useRef(0);
   const selectedSkill = skills.find((s) => s.id === selectedId) ?? null;
 
   const skillListItems = useMemo(
@@ -78,11 +83,8 @@ export function App(): React.JSX.Element {
   );
 
   const refreshSkills = useCallback(async (): Promise<void> => {
-    const requestId = ++skillsRequestIdRef.current;
-    setIsLoading(true);
     try {
-      const list = await getSkills();
-      if (skillsRequestIdRef.current !== requestId) return;
+      const list = await runFetchSkills(undefined);
       setSkills(list);
       // Keep the selection alive across re-scans; default to the first skill
       // like the old UI (LOAD_SKILLS_SUCCESS auto-selects).
@@ -92,16 +94,12 @@ export function App(): React.JSX.Element {
       });
     } catch {
       // Keep the last good list.
-    } finally {
-      if (skillsRequestIdRef.current === requestId) {
-        setIsLoading(false);
-      }
     }
-  }, []);
+  }, [runFetchSkills, setSkills]);
 
-  const refreshWorkspaces = useCallback(async () => {
+  const refreshWorkspaces = useCallback(async (): Promise<void> => {
     try {
-      const list = await getWorkspaces();
+      const list = await runFetchWorkspaces(undefined);
       setWorkspaces(list);
       setCurrentPath((prev) =>
         prev && list.some((w) => w.path === prev)
@@ -111,7 +109,7 @@ export function App(): React.JSX.Element {
     } catch {
       // Keep the last good list.
     }
-  }, []);
+  }, [runFetchWorkspaces, setWorkspaces, setCurrentPath]);
 
   useEffect(() => {
     void refreshSkills();
@@ -195,24 +193,22 @@ export function App(): React.JSX.Element {
     [refreshSkills, selectedId, workspaces],
   );
 
-  const handleSelectWorkspace = useCallback(async (id: string) => {
-    await setCurrentWorkspace(id);
-    const list = await getWorkspaces().catch((): Workspace[] => []);
-    if (list.length > 0) {
-      setWorkspaces(list);
-      setCurrentPath(list.find((w) => w.id === id)?.path ?? list[0]?.path);
-    }
-  }, []);
+  const handleSelectWorkspace = useCallback(
+    async (id: string) => {
+      await setCurrentWorkspace(id);
+      await refreshWorkspaces();
+    },
+    [refreshWorkspaces],
+  );
 
-  const handleAddWorkspace = useCallback(async (path: string) => {
-    await addWorkspace({ id: path, name: workspaceName(path), path });
-    await setCurrentWorkspace(path);
-    const list = await getWorkspaces().catch((): Workspace[] => []);
-    if (list.length > 0) {
-      setWorkspaces(list);
-      setCurrentPath(path);
-    }
-  }, []);
+  const handleAddWorkspace = useCallback(
+    async (path: string) => {
+      await addWorkspace({ id: path, name: workspaceName(path), path });
+      await setCurrentWorkspace(path);
+      await refreshWorkspaces();
+    },
+    [refreshWorkspaces],
+  );
 
   return (
     <WindowProvider id="main">
