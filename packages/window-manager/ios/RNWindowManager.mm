@@ -389,9 +389,17 @@ static NSRect LegendTitlebarMaterialFrame(NSWindow *window, NSView *frameView)
   return NSMakeRect(0, materialMinY, NSWidth(frameBounds), materialHeight);
 }
 
-API_AVAILABLE(macos(26.0))
 static NSView *LegendCreateOverscannedGlassEffectView(NSRect frame)
 {
+  // NSGlassEffectView only exists in the macOS 26 SDK (Xcode 26). Resolve it at
+  // runtime via NSClassFromString so this file still compiles with older SDKs
+  // (e.g. Xcode 16 on CI) — a static reference fails with "use of undeclared
+  // identifier" even when the call site is guarded by @available.
+  Class glassClass = NSClassFromString(@"NSGlassEffectView");
+  if (!glassClass) {
+    return nil;
+  }
+
   NSView *containerView = [[NSView alloc] initWithFrame:frame];
   containerView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
   containerView.wantsLayer = YES;
@@ -400,8 +408,9 @@ static NSView *LegendCreateOverscannedGlassEffectView(NSRect frame)
 
   CGFloat overscan = 48;
   NSRect glassFrame = NSMakeRect(-overscan, 0, NSWidth(frame) + overscan, NSHeight(frame) + overscan);
-  NSGlassEffectView *glassView = [[NSGlassEffectView alloc] initWithFrame:glassFrame];
-  glassView.cornerRadius = 0;
+  NSView *glassView = [[glassClass alloc] initWithFrame:glassFrame];
+  // NSGlassEffectView.cornerRadius — set via KVC to avoid a static reference.
+  [glassView setValue:@0 forKey:@"cornerRadius"];
   glassView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
   glassView.wantsLayer = YES;
   glassView.layer.backgroundColor = NSColor.clearColor.CGColor;
@@ -892,7 +901,10 @@ RCT_EXPORT_MODULE(NativeWindowManager)
 {
   if ([material isEqualToString:@"glass"]) {
     if (@available(macOS 26.0, *)) {
-      return LegendCreateOverscannedGlassEffectView(frame);
+      NSView *glassView = LegendCreateOverscannedGlassEffectView(frame);
+      if (glassView) {
+        return glassView;
+      }
     }
   }
 
