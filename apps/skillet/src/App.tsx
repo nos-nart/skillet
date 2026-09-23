@@ -71,6 +71,7 @@ function AppContent(): React.JSX.Element {
   const [dismissedWorkspacesError, setDismissedWorkspacesError] = useState(false);
   const [updatesMap, setUpdatesMap] = useState<Record<string, boolean>>({});
   const [updatesError, setUpdatesError] = useState<string | null>(null);
+  const [workspaceActionError, setWorkspaceActionError] = useState<string | null>(null);
 
   const skills = loadSkillsResult._tag === "Success" ? loadSkillsResult.value : EMPTY_SKILLS;
   const workspaces = loadWorkspacesResult._tag === "Success" ? loadWorkspacesResult.value : EMPTY_WORKSPACES;
@@ -79,10 +80,11 @@ function AppContent(): React.JSX.Element {
     !dismissedSkillsError && loadSkillsResult._tag === "Failure"
       ? formatFsError(loadSkillsResult.cause)
       : null;
-  const workspacesError =
+  const workspacesLoadError =
     !dismissedWorkspacesError && loadWorkspacesResult._tag === "Failure"
       ? formatFsError(loadWorkspacesResult.cause)
       : null;
+  const workspacesError = workspacesLoadError ?? workspaceActionError;
   const displayedSkillsError = skillsError ?? updatesError;
 
   const isLoading = loadSkillsResult.waiting;
@@ -238,17 +240,27 @@ function AppContent(): React.JSX.Element {
 
   const handleSelectWorkspace = useCallback(
     async (id: string) => {
-      await setCurrentWorkspace(id);
-      refreshWorkspaces();
+      try {
+        setWorkspaceActionError(null);
+        await setCurrentWorkspace(id);
+        refreshWorkspaces();
+      } catch (cause: unknown) {
+        setWorkspaceActionError(cause instanceof Error ? cause.message : "Failed to select workspace.");
+      }
     },
     [refreshWorkspaces],
   );
 
   const handleAddWorkspace = useCallback(
     async (path: string) => {
-      await addWorkspace({ id: path, name: workspaceName(path), path });
-      await setCurrentWorkspace(path);
-      refreshWorkspaces();
+      try {
+        setWorkspaceActionError(null);
+        await addWorkspace({ id: path, name: workspaceName(path), path });
+        await setCurrentWorkspace(path);
+        refreshWorkspaces();
+      } catch (cause: unknown) {
+        setWorkspaceActionError(cause instanceof Error ? cause.message : "Failed to add workspace.");
+      }
     },
     [refreshWorkspaces],
   );
@@ -271,7 +283,7 @@ function AppContent(): React.JSX.Element {
             currentTab={nav}
             error={workspacesError}
             onAddWorkspace={handleAddWorkspace}
-            onDismissError={() => setDismissedWorkspacesError(true)}
+            onDismissError={() => { setDismissedWorkspacesError(true); setWorkspaceActionError(null); }}
             onSelectWorkspace={handleSelectWorkspace}
             onTab={setNav}
             skillsCount={skills.length}

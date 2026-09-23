@@ -319,9 +319,22 @@ export async function getSkills(
     // For GitHub installed skills, the rel might be owner/slug or owner/repo/slug
     const parts = rel.split("/");
     const isGithub = parts.length > 1 || (metadata.sourceUrl?.includes("github.com") ?? false);
-    const packageName =
-      parts.length > 1 ? parts[0] + (parts.length > 2 ? `/${parts[1]}` : "") : "Global skills";
     const slug = parts[parts.length - 1];
+
+    // Derive packageName: prefer owner/repo from sourceUrl metadata (lockfile
+    // keys use owner/repo, not just owner). Fall back to directory structure.
+    let packageName: string;
+    if (parts.length > 2) {
+      // owner/repo/slug layout — take owner/repo
+      packageName = `${parts[0]}/${parts[1]}`;
+    } else if (parts.length > 1) {
+      // owner/slug layout — try to extract owner/repo from sourceUrl
+      const repoInfo = metadata.sourceUrl ? parseGitHubRepo(metadata.sourceUrl) : null;
+      packageName = repoInfo ? `${repoInfo.owner}/${repoInfo.repo}` : parts[0];
+    } else {
+      packageName = "Global skills";
+    }
+    const sourceUrl = metadata.sourceUrl ?? (parts.length > 1 ? `https://github.com/${packageName}` : undefined);
     return {
       id: rel,
       name: metadata.name,
@@ -335,7 +348,7 @@ export async function getSkills(
       rawMarkdown: body,
       isSymlink: false,
       provider: isGithub ? ("github" as const) : ("local" as const),
-      sourceUrl: metadata.sourceUrl ?? (parts.length > 1 ? `https://github.com/${parts[0]}` : undefined),
+      sourceUrl,
     };
   });
 

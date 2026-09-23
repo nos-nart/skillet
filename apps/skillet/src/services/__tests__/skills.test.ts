@@ -120,6 +120,18 @@ test("getSkills finds top-level and nested owner/slug skills", async () => {
   expect(top?.provider).toBe("local");
 });
 
+test("getSkills derives packageName from sourceUrl metadata for owner/slug layouts", async () => {
+  const fs = fakeFs({
+    "~/.skills/acme/architect/SKILL.md":
+      "---\nname: architect\nsource_url: https://github.com/acme/skills-repo\n---\n\nBody",
+  });
+  const skills = await getSkills(["~/.skills"], fs);
+  const skill = skills.find((s) => s.slug === "architect");
+  // When sourceUrl has owner/repo, packageName should be acme/skills-repo (not just acme)
+  expect(skill?.packageName).toBe("acme/skills-repo");
+  expect(skill?.sourceUrl).toBe("https://github.com/acme/skills-repo");
+});
+
 test("getSkills dedups by slug across agent dirs", async () => {
   const fs = fakeFs({
     "~/.skills/dup/SKILL.md": "---\nname: dup\n---\n\nA",

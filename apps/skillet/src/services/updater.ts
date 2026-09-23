@@ -74,7 +74,7 @@ export const updateSkillEffect = (
   opts: { token?: string; fetchImpl?: FetchFn } = {},
 ) =>
   downloadSkillEffect(
-    { source: skill.packageName, skillName: skill.slug, token: opts.token },
+    { source: skill.sourceUrl ?? skill.packageName, skillName: skill.slug, token: opts.token },
     { fetchImpl: opts.fetchImpl },
   );
 
@@ -83,7 +83,7 @@ export async function updateSkill(
   opts: { token?: string; fetchImpl?: FetchFn } = {},
 ): Promise<void> {
   const res = await downloadSkill(
-    { source: skill.packageName, skillName: skill.slug, token: opts.token },
+    { source: skill.sourceUrl ?? skill.packageName, skillName: skill.slug, token: opts.token },
     { fetchImpl: opts.fetchImpl },
   );
   if (!res.ok) throw new Error(res.error);

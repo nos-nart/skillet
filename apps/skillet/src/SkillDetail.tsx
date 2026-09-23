@@ -409,19 +409,24 @@ export function SkillDetail({
     if (!skill) return;
     let cancelled = false;
     void (async () => {
+      const errors: string[] = [];
       const entries = await Promise.all(
         workspaces
           .filter((ws) => ws.id !== "global")
           .map(async (ws): Promise<[string, boolean]> => {
             try {
               return [ws.id, await isSkillEnabled(skill.slug, ws.path)];
-            } catch {
+            } catch (err: unknown) {
+              errors.push(`${ws.name}: ${err instanceof Error ? err.message : "unknown error"}`);
               return [ws.id, false];
             }
           }),
       );
       if (!cancelled) {
         setOptimistic(new Set(entries.filter(([, ok]) => ok).map(([id]) => id)));
+        if (errors.length > 0) {
+          setActionError(`Could not check skill status in: ${errors.join("; ")}`);
+        }
       }
     })();
     return () => {

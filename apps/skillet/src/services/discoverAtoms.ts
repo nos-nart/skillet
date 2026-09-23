@@ -53,25 +53,17 @@ export const browseRepoAtom = Atom.fn((input: BrowseRepoQueryInput) =>
 export const installingSkillAtom = Atom.make<string | null>(null);
 
 export function formatDiscoverError(err: unknown): string {
-  if (typeof err === "object" && err !== null && "_tag" in err) {
-    const tagged = err as { _tag: string; message?: string; owner?: string; repo?: string };
-    if (tagged._tag === "GitHubRateLimitError") {
-      return "GitHub API rate limit exceeded. Add a GitHub Personal Access Token in Settings to continue.";
-    }
-    if (tagged._tag === "RepoNotFoundError") {
-      return (
-        tagged.message ||
-        (tagged.owner && tagged.repo
-          ? `Repository not found: ${tagged.owner}/${tagged.repo}`
-          : "Repository not found.")
-      );
-    }
-    if (tagged._tag === "GitHubNetworkError") {
-      return `Network connection error: ${tagged.message}`;
-    }
-    if (tagged._tag === "InvalidRepoFormatError") {
-      return tagged.message || "Invalid format. Use owner/repo or a GitHub URL.";
-    }
+  if (err instanceof GitHubRateLimitError) {
+    return "GitHub API rate limit exceeded. Add a GitHub Personal Access Token in Settings to continue.";
+  }
+  if (err instanceof RepoNotFoundError) {
+    return err.message || `Repository not found: ${err.owner}/${err.repo}`;
+  }
+  if (err instanceof GitHubNetworkError) {
+    return `Network connection error: ${err.message}`;
+  }
+  if (err instanceof InvalidRepoFormatError) {
+    return err.message || "Invalid format. Use owner/repo or a GitHub URL.";
   }
   if (err instanceof Error) {
     return err.message;

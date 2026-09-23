@@ -8,6 +8,9 @@ import { SKILLET_APP_ICON_URI } from "./assets/appIcon";
 import { toggleAppTheme, useAppTheme, useThemePalette } from "./services/theme";
 import type { Workspace } from "./services/workspaces";
 
+const CONTINUOUS_CURVE = { borderCurve: "continuous" } as const;
+const IMAGE_SIZE = { width: 32, height: 32 } as const;
+
 export type SidebarNav = "skills" | "discover" | "agents" | "settings";
 
 function workspaceName(path: string): string {
@@ -83,12 +86,12 @@ export function Sidebar({
         <View className="min-w-0 flex-1 flex-row items-center gap-2">
           <View
             className="h-8 w-8 shrink-0 overflow-hidden rounded-lg"
-            style={{ borderCurve: "continuous" }}
+            style={CONTINUOUS_CURVE}
           >
             <Image
               accessibilityLabel="Skillet app icon"
               source={{ uri: SKILLET_APP_ICON_URI }}
-              style={{ width: 32, height: 32 }}
+              style={IMAGE_SIZE}
             />
           </View>
           <View className="min-w-0 flex-1">
@@ -96,7 +99,7 @@ export function Sidebar({
               <Text className="text-[14px] font-bold text-foreground">Skillet</Text>
               <View
                 className="rounded-full border border-primary/30 bg-primary/15 px-1.5 py-0"
-                style={{ borderCurve: "continuous" }}
+                style={CONTINUOUS_CURVE}
               >
                 <Text className="text-[10px] font-bold text-primary" mono>v1.0</Text>
               </View>
@@ -111,7 +114,7 @@ export function Sidebar({
           accessibilityRole="button"
           className="ml-2 h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface active:bg-surface-muted"
           onPress={() => toggleAppTheme()}
-          style={{ borderCurve: "continuous" }}
+          style={CONTINUOUS_CURVE}
         >
           {theme === "dark" ? (
             <SFSymbol color={c.muted} name="sun.max" size={18} />
@@ -138,7 +141,7 @@ export function Sidebar({
 
         <View
           className="rounded-lg border border-border bg-surface"
-          style={{ borderCurve: "continuous" }}
+          style={CONTINUOUS_CURVE}
         >
           <Pressable
             accessibilityRole="button"
@@ -184,7 +187,7 @@ export function Sidebar({
                 : "flex-row items-center justify-between rounded-lg px-2.5 py-2 active:bg-surface/50"}
               key={tab}
               onPress={() => onTab(tab)}
-              style={{ borderCurve: "continuous" }}
+              style={CONTINUOUS_CURVE}
             >
               <View className="flex-row items-center gap-2">
                 <View className={active ? "h-3.5 w-1 rounded-full bg-primary" : "h-3.5 w-1 rounded-full bg-transparent"} />
@@ -199,7 +202,7 @@ export function Sidebar({
               {count !== undefined && count > 0 ? (
                 <View
                   className="rounded-full bg-primary/15 px-2 py-0.5"
-                  style={{ borderCurve: "continuous" }}
+                  style={CONTINUOUS_CURVE}
                 >
                   <Text className="text-[10px] font-bold text-primary" mono>{count}</Text>
                 </View>
@@ -219,7 +222,7 @@ export function Sidebar({
             ? "flex-row items-center gap-2 rounded-lg border border-border/70 bg-surface px-2.5 py-2"
             : "flex-row items-center gap-2 rounded-lg px-2.5 py-2 active:bg-surface/50"}
           onPress={() => onTab("settings")}
-          style={{ borderCurve: "continuous" }}
+          style={CONTINUOUS_CURVE}
         >
           <View className={currentTab === "settings" ? "h-3.5 w-1 rounded-full bg-primary" : "h-3.5 w-1 rounded-full bg-transparent"} />
           <SFSymbol
