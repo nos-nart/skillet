@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, Switch, View } from "react-native";
+import { Linking, Pressable, ScrollView, Switch, View } from "react-native";
+import * as Effect from "effect/Effect";
 import { Text } from "./AppText";
+import { ErrorBanner } from "./ErrorBanner";
+import { useRunEffect } from "./hooks/useRunEffect";
 import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useUniwind } from "uniwind";
 import { useThemePalette } from "./services/theme";
@@ -380,9 +383,11 @@ export function SkillDetail({
 }): React.JSX.Element {
   const [optimistic, setOptimistic] = useState<Set<string>>(new Set());
   const [action, setAction] = useState<"idle" | "updating" | "installing" | "uninstalling">("idle");
+  const [actionError, setActionError] = useState<string | null>(null);
   const [installOpen, setInstallOpen] = useState(false);
   const [uninstallOpen, setUninstallOpen] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
+  const { run: runEffect } = useRunEffect();
   const { theme } = useUniwind();
   const appearance = theme === "dark" ? "dark" : "light";
   const c = useThemePalette();
@@ -430,56 +435,62 @@ export function SkillDetail({
     };
   }, [skill, workspaces]);
 
-  const handleToggle = useCallback((ws: Workspace, enable: boolean): void => {
-    setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable }));
-    void Promise.resolve()
-      .then(() => onToggleInRepo(ws, enable))
-      .then((ok) => {
-        if (!ok) {
+  const handleToggle = useCallback(
+    (ws: Workspace, enable: boolean): void => {
+      setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable }));
+      setActionError(null);
+      void Promise.resolve()
+        .then(() => onToggleInRepo(ws, enable))
+        .then((ok) => {
+          if (!ok) {
+            setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable: !enable }));
+            setActionError(
+              `Could not ${enable ? "enable" : "disable"} skill "${skill?.name ?? ""}" in workspace "${ws.name}".`,
+            );
+          }
+        })
+        .catch((err: unknown) => {
           setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable: !enable }));
-          Alert.alert(
-            "Toggle Failed",
-            `Could not ${enable ? "enable" : "disable"} skill "${skill?.name ?? ""}" in workspace "${ws.name}".`,
+          setActionError(
+            err instanceof Error ? err.message : `Could not ${enable ? "enable" : "disable"} skill.`,
           );
-        }
-      })
-      .catch((err: unknown) => {
-        setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable: !enable }));
-        Alert.alert(
-          "Toggle Failed",
-          err instanceof Error ? err.message : `Could not ${enable ? "enable" : "disable"} skill.`,
-        );
-      });
-  }, [onToggleInRepo, skill?.name]);
+        });
+    },
+    [onToggleInRepo, skill?.name],
+  );
 
   const runAction = useCallback(
-    (
+    async (
       kind: typeof action,
       fn: (s: Skill) => Promise<void>,
       close?: () => void,
     ): Promise<void> => {
-      if (!skill) return Promise.resolve();
+      if (!skill) return;
       setAction(kind);
-      return fn(skill).then(
-        () => {
-          setAction("idle");
-          close?.();
-        },
-        (cause: unknown) => {
-          setAction("idle");
-          throw cause;
-        },
-      );
+      setActionError(null);
+      try {
+        await runEffect(
+          Effect.tryPromise({
+            try: () => fn(skill),
+            catch: (err) => (err instanceof Error ? err : new Error(String(err))),
+          }),
+        );
+        close?.();
+      } catch (cause) {
+        const message = cause instanceof Error ? cause.message : String(cause);
+        setActionError(message);
+        throw cause;
+      } finally {
+        setAction("idle");
+      }
     },
-    [skill],
+    [skill, runEffect],
   );
 
   const handleUpdate = useMemo(() => {
     if (!skill?.updateAvailable || !onUpdateSkill) return undefined;
     return () => {
-      runAction("updating", onUpdateSkill).catch((cause: unknown) => {
-        Alert.alert("Update failed", cause instanceof Error ? cause.message : "Could not update skill.");
-      });
+      void runAction("updating", onUpdateSkill).catch(() => {});
     };
   }, [skill, onUpdateSkill, runAction]);
 
@@ -502,6 +513,11 @@ export function SkillDetail({
         onOpenUninstall={onUninstallSkill ? () => setUninstallOpen(true) : undefined}
         onUpdate={handleUpdate}
         skill={skill}
+      />
+      <ErrorBanner
+        className="mx-6 mt-3"
+        error={actionError}
+        onDismiss={() => setActionError(null)}
       />
 
       <ScrollView className="flex-1">
@@ -546,10 +562,8 @@ export function SkillDetail({
         <UninstallSkillDialog
           onClose={() => setUninstallOpen(false)}
           onConfirm={() =>
-            runAction("uninstalling", onUninstallSkill, () => setUninstallOpen(false)).catch(
-              (cause: unknown) => {
-                Alert.alert("Uninstall failed", cause instanceof Error ? cause.message : "Could not uninstall skill.");
-              },
+            void runAction("uninstalling", onUninstallSkill, () => setUninstallOpen(false)).catch(
+              () => {},
             )}
           skillName={skill.name}
           uninstalling={action === "uninstalling"}

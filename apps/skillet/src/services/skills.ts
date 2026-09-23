@@ -22,6 +22,7 @@ import {
   fetchLatestCommitEffect,
   fetchSkillMd,
   fetchSkillMdEffect,
+  getRepoInfoEffect,
   loadSkillsLock,
   loadSkillsLockEffect,
   parseGitHubRepo,
@@ -264,8 +265,19 @@ async function walkSkillsDir(
   let entries: string[];
   try {
     entries = await fs.scanSkillsDir(dir);
-  } catch {
-    return;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const lower = msg.toLowerCase();
+    if (
+      lower.includes("no such file") ||
+      lower.includes("not exist") ||
+      lower.includes("invalid_path") ||
+      lower.includes("enoent") ||
+      lower.includes("cannot scan")
+    ) {
+      return;
+    }
+    throw err;
   }
   for (const full of entries) {
     const base = full.split("/").pop() ?? full;
@@ -463,6 +475,12 @@ export const downloadSkillEffect = (
       );
     }
 
+    // Verify repository exists and is accessible
+    yield* getRepoInfoEffect(`${repoInfo.owner}/${repoInfo.repo}`, {
+      token: options.token,
+      fetchImpl,
+    });
+
     const globalDir = globalDirForRepo(repoInfo.owner, repoInfo.repo);
     const targetDir =
       options.targetDir ?? `~/${globalDir}/${repoInfo.owner}/${skillSlug}`;
@@ -657,9 +675,6 @@ export const toggleSkillEffect = (
   Effect.gen(function* () {
     const target = resolveSkillTarget(req.workspacePath, req.skillSlug);
     if (!target) {
-      if (req.enable) {
-        console.error(`Invalid skill slug or path traversal attempt: ${req.skillSlug}`);
-      }
       return yield* Effect.fail(new InvalidSlugError({ slug: req.skillSlug }));
     }
     if (req.enable && fs.ensureDir) {

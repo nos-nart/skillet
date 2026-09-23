@@ -9,7 +9,7 @@ import {
   type SkillWriter,
   type SkillsFs,
 } from "../skills";
-import { GitHubRateLimitError, InvalidSlugError } from "../errors";
+import { GitHubRateLimitError, InvalidSlugError, RepoNotFoundError } from "../errors";
 import type { FetchFn } from "../github";
 import type { JsonStore } from "../workspaces";
 
@@ -40,16 +40,22 @@ function memoryStore() {
   return { store, peek: (): unknown => data };
 }
 
-// Serves raw SKILL.md on main plus the commits API; master is never reached.
+// Serves repo metadata, commits API, and raw SKILL.md on main; master is never reached.
 function stubFetch(skillMd: string | null): FetchFn {
   return async (url: string) => {
-    const ok = url.includes("/commits?")
-      ? true
-      : skillMd !== null && url.includes("/main/");
+    const isRepoInfo = url.includes("/repos/") && !url.includes("/commits");
+    const isCommits = url.includes("/commits?");
+    const isRaw = skillMd !== null && url.includes("/main/");
+    const ok = isRepoInfo || isCommits || isRaw;
     return {
       ok,
       status: ok ? 200 : 404,
-      json: async () => [{ sha: "deadbee" }],
+      json: async () => {
+        if (isRepoInfo) {
+          return { default_branch: "main" };
+        }
+        return [{ sha: "deadbee" }];
+      },
       text: async () => skillMd ?? "",
     };
   };
@@ -208,3 +214,23 @@ test("installSkill alias works cleanly with installSkillEffect", async () => {
   );
   expect(res.ok).toBe(true);
 });
+
+test("installSkillEffect propagates RepoNotFoundError when repository does not exist", async () => {
+  const { writer } = fakeWriter();
+  const store = memoryStore().store;
+  const notFoundFetch: FetchFn = async () => ({
+    ok: false,
+    status: 404,
+    json: async () => ({ message: "Not Found" }),
+    text: async () => "Not Found",
+  });
+
+  const err = await Effect.runPromise(
+    installSkillEffect(
+      { source: "nonexistent/repo" },
+      { writer, fetchImpl: notFoundFetch, lockStore: store },
+    ).pipe(Effect.flip),
+  );
+  expect(err).toBeInstanceOf(RepoNotFoundError);
+});
+

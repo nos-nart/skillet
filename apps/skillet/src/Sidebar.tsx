@@ -3,6 +3,7 @@ import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useState } from "react";
 import { Image, Pressable, View } from "react-native";
 import { Text } from "./AppText";
+import { ErrorBanner } from "./ErrorBanner";
 import { SKILLET_APP_ICON_URI } from "./assets/appIcon";
 import { toggleAppTheme, useAppTheme, useThemePalette } from "./services/theme";
 import type { Workspace } from "./services/workspaces";
@@ -168,23 +169,7 @@ export function Sidebar({
             ))
             : null}
         </View>
-        {error ? (
-          <View className="flex-row items-center justify-between rounded-lg border border-danger/30 bg-danger/10 px-2.5 py-1.5">
-            <Text className="min-w-0 flex-1 text-[11px] font-medium text-danger" numberOfLines={2}>
-              {error}
-            </Text>
-            {onDismissError ? (
-              <Pressable
-                accessibilityLabel="Dismiss error"
-                accessibilityRole="button"
-                className="pl-2"
-                onPress={onDismissError}
-              >
-                <SFSymbol color={c.danger} name="xmark" size={12} />
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
+        <ErrorBanner error={error} onDismiss={onDismissError} />
       </View>
 
       <View className="gap-1 px-2 pt-2">

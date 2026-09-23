@@ -3,6 +3,7 @@ import { SFSymbol } from "@legend-apps/sf-symbol";
 import React, { useCallback, useMemo, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { Text } from "./AppText";
+import { ErrorBanner } from "./ErrorBanner";
 import { useThemePalette } from "./services/theme";
 
 const CONTINUOUS_ROW_STYLE = { borderCurve: "continuous" } as const;
@@ -367,23 +368,7 @@ export function SkillList({
           primaryColor={c.primary}
           query={query}
         />
-        {error ? (
-          <View className="flex-row items-center justify-between rounded-lg border border-danger/30 bg-danger/10 px-2.5 py-1.5">
-            <Text className="min-w-0 flex-1 text-[11px] font-medium text-danger" numberOfLines={2}>
-              {error}
-            </Text>
-            {onDismissError ? (
-              <Pressable
-                accessibilityLabel="Dismiss error"
-                accessibilityRole="button"
-                className="pl-2"
-                onPress={onDismissError}
-              >
-                <SFSymbol color={c.danger} name="xmark" size={12} />
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
+        <ErrorBanner error={error} onDismiss={onDismissError} />
         <Text className="px-1 pt-0.5 text-[11px] text-muted">
           {skills.length} skills{filtered.length !== skills.length ? ` · ${filtered.length} shown` : ""}
         </Text>

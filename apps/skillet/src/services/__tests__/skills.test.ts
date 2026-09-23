@@ -232,6 +232,23 @@ describe("SkillsFileSystem Effect Service", () => {
     expect(skills[0].slug).toBe("test-skill");
   });
 
+  test("listSkillsEffect fails with FsError on unexpected filesystem error", async () => {
+    const fs: SkillsFs = {
+      scanSkillsDir: async () => {
+        throw new Error("EACCES: permission denied, scandir '/root/.skills'");
+      },
+      readSkillMd: async () => "",
+      symlink: async () => true,
+      unlink: async () => true,
+    };
+
+    const err = await Effect.runPromise(
+      listSkillsEffect(["/root/.skills"], fs).pipe(Effect.flip),
+    );
+    expect(err).toBeInstanceOf(FsError);
+    expect(err.message).toContain("permission denied");
+  });
+
   test("toggleSkillEffect fails with InvalidSlugError on path traversal attempt", async () => {
     const fs = fakeFs({});
     const req = {

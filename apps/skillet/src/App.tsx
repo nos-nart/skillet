@@ -1,4 +1,3 @@
-import { WindowProvider } from "./windows";
 import { setMainWindowOptions } from "@legend-apps/window-manager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
@@ -26,17 +25,31 @@ import {
   setCurrentWorkspace,
   type Workspace,
 } from "./services/workspaces";
-import { fetchSkillsAtom, skillsAtom } from "./services/skillsAtoms";
+import { fetchSkillsAtom } from "./services/skillsAtoms";
 import {
   currentWorkspacePathAtom,
   fetchWorkspacesAtom,
-  workspacesAtom,
 } from "./services/workspacesAtoms";
+import { FsError } from "./services/errors";
 
 // Skillet defaults to dark theme with its signature brand Orange accent
 // (#f97316 / #ea580c / #fb923c). Uniwind defaults to light/system, which
 // rendered as broken white, so apply the persisted theme here.
 applyStoredTheme();
+
+const EMPTY_SKILLS: Skill[] = [];
+const EMPTY_WORKSPACES: Workspace[] = [];
+
+function formatFsError(cause: Cause.Cause<unknown>): string {
+  const error = Cause.squash(cause);
+  if (error instanceof FsError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Filesystem operation failed.";
+}
 
 // 3-pane layout matching the old Deno UI (`src/App.tsx` ResizablePanelGroup):
 // nav sidebar | skill list | detail, every boundary natively draggable. The
@@ -50,22 +63,23 @@ function AppContent(): React.JSX.Element {
   const theme = useAppTheme();
   const [nav, setNav] = useState<SidebarNav>("skills");
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const [skills, setSkills] = useAtom(skillsAtom);
-  const [workspaces, setWorkspaces] = useAtom(workspacesAtom);
   const [currentPath, setCurrentPath] = useAtom(currentWorkspacePathAtom);
   const [loadSkillsResult, runFetchSkills] = useAtom(fetchSkillsAtom, { mode: "promise" });
   const [loadWorkspacesResult, runFetchWorkspaces] = useAtom(fetchWorkspacesAtom, { mode: "promise" });
   const [dismissedSkillsError, setDismissedSkillsError] = useState(false);
   const [dismissedWorkspacesError, setDismissedWorkspacesError] = useState(false);
+  const [updatesMap, setUpdatesMap] = useState<Record<string, boolean>>({});
+
+  const skills = loadSkillsResult._tag === "Success" ? loadSkillsResult.value : EMPTY_SKILLS;
+  const workspaces = loadWorkspacesResult._tag === "Success" ? loadWorkspacesResult.value : EMPTY_WORKSPACES;
 
   const skillsError =
     !dismissedSkillsError && loadSkillsResult._tag === "Failure"
-      ? (Cause.squash(loadSkillsResult.cause) as { message?: string })?.message ?? "Failed to load skills from disk."
+      ? formatFsError(loadSkillsResult.cause)
       : null;
-
   const workspacesError =
     !dismissedWorkspacesError && loadWorkspacesResult._tag === "Failure"
-      ? (Cause.squash(loadWorkspacesResult.cause) as { message?: string })?.message ?? "Failed to load workspaces from disk."
+      ? formatFsError(loadWorkspacesResult.cause)
       : null;
 
   const isLoading = loadSkillsResult.waiting;
@@ -80,7 +94,15 @@ function AppContent(): React.JSX.Element {
   const [navWidth, setNavWidth] = useState(240);
   const navWidthRef = useRef(240);
   const navDragAnchor = useRef(240);
-  const selectedSkill = skills.find((s) => s.id === selectedId) ?? null;
+
+  const selectedSkill = useMemo(() => {
+    const s = skills.find((skill) => skill.id === selectedId);
+    if (!s) return null;
+    return {
+      ...s,
+      updateAvailable: updatesMap[s.packageName] ?? s.updateAvailable,
+    };
+  }, [skills, selectedId, updatesMap]);
 
   const skillListItems = useMemo(
     () =>
@@ -91,16 +113,15 @@ function AppContent(): React.JSX.Element {
         packageName: s.packageName,
         trigger: s.metadata.trigger ?? `/${s.slug}`,
         description: s.metadata.description || s.name,
-        updateAvailable: s.updateAvailable,
+        updateAvailable: updatesMap[s.packageName] ?? s.updateAvailable,
       })),
-    [skills],
+    [skills, updatesMap],
   );
 
   const refreshSkills = useCallback(async (): Promise<void> => {
     try {
       setDismissedSkillsError(false);
       const list = await runFetchSkills(undefined);
-      setSkills(list);
       // Keep the selection alive across re-scans; default to the first skill
       // like the old UI (LOAD_SKILLS_SUCCESS auto-selects).
       setSelectedId((prev) => {
@@ -110,13 +131,12 @@ function AppContent(): React.JSX.Element {
     } catch (err: unknown) {
       console.error("Failed to refresh skills:", err);
     }
-  }, [runFetchSkills, setSkills]);
+  }, [runFetchSkills]);
 
   const refreshWorkspaces = useCallback(async (): Promise<void> => {
     try {
       setDismissedWorkspacesError(false);
       const list = await runFetchWorkspaces(undefined);
-      setWorkspaces(list);
       setCurrentPath((prev) =>
         prev && list.some((w) => w.path === prev)
           ? prev
@@ -125,7 +145,7 @@ function AppContent(): React.JSX.Element {
     } catch (err: unknown) {
       console.error("Failed to refresh workspaces:", err);
     }
-  }, [runFetchWorkspaces, setWorkspaces, setCurrentPath]);
+  }, [runFetchWorkspaces, setCurrentPath]);
 
   useEffect(() => {
     void refreshSkills();
@@ -175,9 +195,7 @@ function AppContent(): React.JSX.Element {
     try {
       const token = getGithubToken();
       const map = await checkSkillUpdates(skills, { token });
-      setSkills((prev) =>
-        prev.map((s) => ({ ...s, updateAvailable: map[s.packageName] ?? false })),
-      );
+      setUpdatesMap(map);
     } catch (cause: unknown) {
       console.error("Update check failed:", cause);
     } finally {
@@ -226,8 +244,43 @@ function AppContent(): React.JSX.Element {
     [refreshWorkspaces],
   );
 
+  const handleCheckUpdatesCallback = useCallback(() => {
+    void handleCheckUpdates();
+  }, [handleCheckUpdates]);
+
+  const handleRescanCallback = useCallback(() => {
+    void refreshSkills();
+  }, [refreshSkills]);
+
+  const handleDismissSkillsError = useCallback(() => {
+    setDismissedSkillsError(true);
+  }, []);
+
+  const handleDismissWorkspacesError = useCallback(() => {
+    setDismissedWorkspacesError(true);
+  }, []);
+
+  const handleOpenNewSkill = useCallback(() => {
+    setInstallError(null);
+    setNewSkillOpen(true);
+  }, []);
+
+  const handleAddWorkspaceCallback = useCallback(
+    (path: string) => {
+      void handleAddWorkspace(path);
+    },
+    [handleAddWorkspace],
+  );
+
+  const handleSelectWorkspaceCallback = useCallback(
+    (id: string) => {
+      void handleSelectWorkspace(id);
+    },
+    [handleSelectWorkspace],
+  );
+
   return (
-    <WindowProvider id="main">
+    <>
       {/* NOTE: react-native-macos never initializes Dimensions (no
           didUpdateDimensions anywhere in the fork), so Dimensions.get('window')
           throws "No dimension set" — all pane sizes are explicit state, never
@@ -238,9 +291,9 @@ function AppContent(): React.JSX.Element {
             currentPath={currentPath}
             currentTab={nav}
             error={workspacesError}
-            onAddWorkspace={(path) => void handleAddWorkspace(path)}
-            onDismissError={() => setDismissedWorkspacesError(true)}
-            onSelectWorkspace={(id) => void handleSelectWorkspace(id)}
+            onAddWorkspace={handleAddWorkspaceCallback}
+            onDismissError={handleDismissWorkspacesError}
+            onSelectWorkspace={handleSelectWorkspaceCallback}
             onTab={setNav}
             skillsCount={skills.length}
             workspaces={workspaces}
@@ -263,13 +316,10 @@ function AppContent(): React.JSX.Element {
                 error={skillsError}
                 isCheckingUpdates={isCheckingUpdates}
                 isLoading={isLoading}
-                onCheckUpdates={() => void handleCheckUpdates()}
-                onDismissError={() => setDismissedSkillsError(true)}
-                onNewSkill={() => {
-                  setInstallError(null);
-                  setNewSkillOpen(true);
-                }}
-                onRescan={() => void refreshSkills()}
+                onCheckUpdates={handleCheckUpdatesCallback}
+                onDismissError={handleDismissSkillsError}
+                onNewSkill={handleOpenNewSkill}
+                onRescan={handleRescanCallback}
                 onSelect={setSelectedId}
                 selectedId={selectedId}
                 skills={skillListItems}
@@ -330,7 +380,7 @@ function AppContent(): React.JSX.Element {
             )}
         />
       ) : null}
-    </WindowProvider>
+    </>
   );
 }
 
