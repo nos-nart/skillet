@@ -43,7 +43,7 @@ RCT_EXPORT_MODULE(NativeSkillsFs)
   NSError *error = nil;
   NSArray<NSString *> *entries = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:expanded error:&error];
   if (!entries) {
-    if (error.code == NSFileReadNoSuchFileError || error.code == NSNoSuchFileError) {
+    if (error.code == NSFileReadNoSuchFileError || error.code == NSFileNoSuchFileError) {
       resolve(@"[]");
       return;
     }
