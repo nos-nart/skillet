@@ -77,36 +77,90 @@ export async function getWorkspaces(store: JsonStore = storageJsonStore()): Prom
   );
 }
 
+export const addWorkspaceEffect = (
+  ws: Workspace,
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<void, FsError> =>
+  Effect.gen(function* () {
+    const list = yield* getWorkspacesEffect(store).pipe(
+      Effect.catch(() => Effect.succeed([{ ...DEFAULT_GLOBAL_WORKSPACE }])),
+    );
+    if (!list.some((w) => w.path === ws.path || w.id === ws.id)) {
+      list.push(ws);
+      yield* Effect.try({
+        try: () => store.writeJson(WORKSPACES_FILE, list),
+        catch: (err) =>
+          new FsError({
+            operation: "writeJson",
+            path: WORKSPACES_FILE,
+            message: err instanceof Error ? err.message : String(err),
+          }),
+      });
+    }
+  });
+
 export async function addWorkspace(
   ws: Workspace,
   store: JsonStore = storageJsonStore(),
 ): Promise<void> {
-  const list = await getWorkspaces(store);
-  if (!list.some((w) => w.path === ws.path || w.id === ws.id)) {
-    list.push(ws);
-    store.writeJson(WORKSPACES_FILE, list);
-  }
+  return Effect.runPromise(addWorkspaceEffect(ws, store));
 }
+
+export const removeWorkspaceEffect = (
+  idOrPath: string,
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<void, FsError> =>
+  Effect.gen(function* () {
+    const list = yield* getWorkspacesEffect(store).pipe(
+      Effect.catch(() => Effect.succeed([{ ...DEFAULT_GLOBAL_WORKSPACE }])),
+    );
+    const filtered = list.filter((w) => w.id !== idOrPath && w.path !== idOrPath);
+    if (filtered.length === 0) {
+      filtered.push({ ...DEFAULT_GLOBAL_WORKSPACE });
+    }
+    yield* Effect.try({
+      try: () => store.writeJson(WORKSPACES_FILE, filtered),
+      catch: (err) =>
+        new FsError({
+          operation: "writeJson",
+          path: WORKSPACES_FILE,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+  });
 
 export async function removeWorkspace(
   idOrPath: string,
   store: JsonStore = storageJsonStore(),
 ): Promise<void> {
-  const list = await getWorkspaces(store);
-  const filtered = list.filter((w) => w.id !== idOrPath && w.path !== idOrPath);
-  if (filtered.length === 0) {
-    filtered.push({ ...DEFAULT_GLOBAL_WORKSPACE });
-  }
-  store.writeJson(WORKSPACES_FILE, filtered);
+  return Effect.runPromise(removeWorkspaceEffect(idOrPath, store));
 }
+
+export const setCurrentWorkspaceEffect = (
+  id: string,
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<void, FsError> =>
+  Effect.gen(function* () {
+    const list = yield* getWorkspacesEffect(store).pipe(
+      Effect.catch(() => Effect.succeed([{ ...DEFAULT_GLOBAL_WORKSPACE }])),
+    );
+    const updated = list.map((w) => ({ ...w, isCurrent: w.id === id }));
+    yield* Effect.try({
+      try: () => store.writeJson(WORKSPACES_FILE, updated),
+      catch: (err) =>
+        new FsError({
+          operation: "writeJson",
+          path: WORKSPACES_FILE,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+    });
+  });
 
 export async function setCurrentWorkspace(
   id: string,
   store: JsonStore = storageJsonStore(),
 ): Promise<void> {
-  const list = await getWorkspaces(store);
-  const updated = list.map((w) => ({ ...w, isCurrent: w.id === id }));
-  store.writeJson(WORKSPACES_FILE, updated);
+  return Effect.runPromise(setCurrentWorkspaceEffect(id, store));
 }
 
 export const getBookmarksEffect = (
@@ -133,9 +187,23 @@ export async function getBookmarks(store: JsonStore = storageJsonStore()): Promi
   );
 }
 
+export const saveBookmarksEffect = (
+  bookmarks: string[],
+  store: JsonStore = storageJsonStore(),
+): Effect.Effect<void, FsError> =>
+  Effect.try({
+    try: () => store.writeJson(BOOKMARKS_FILE, bookmarks),
+    catch: (err) =>
+      new FsError({
+        operation: "writeJson",
+        path: BOOKMARKS_FILE,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
 export async function saveBookmarks(
   bookmarks: string[],
   store: JsonStore = storageJsonStore(),
 ): Promise<void> {
-  store.writeJson(BOOKMARKS_FILE, bookmarks);
+  return Effect.runPromise(saveBookmarksEffect(bookmarks, store));
 }

@@ -350,16 +350,23 @@ export const isSkillEnabledEffect = (
       return yield* Effect.fail(new InvalidSlugError({ slug: skillSlug }));
     }
     const normalizedWs = normalizeWs(workspacePath);
+    const targetDir = `${normalizedWs}/${WORKSPACE_SKILLS_REL}`;
     const entries = yield* Effect.tryPromise({
-      try: () => fs.scanSkillsDir(`${normalizedWs}/${WORKSPACE_SKILLS_REL}`),
+      try: () => fs.scanSkillsDir(targetDir),
       catch: (err) =>
         new FsError({
           operation: "scanSkillsDir",
-          path: `${normalizedWs}/${WORKSPACE_SKILLS_REL}`,
+          path: targetDir,
           message: err instanceof Error ? err.message : String(err),
         }),
     }).pipe(
-      Effect.catch(() => Effect.succeed([] as string[])),
+      Effect.catchIf(
+        (err) => {
+          const msg = err.message.toLowerCase();
+          return msg.includes("no such file") || msg.includes("not exist") || msg.includes("cannot scan");
+        },
+        () => Effect.succeed([] as string[]),
+      ),
     );
     return entries.some((full) => (full.split("/").pop() ?? full) === skillSlug.trim());
   });
@@ -464,7 +471,10 @@ export const downloadSkillEffect = (
     const defaultContent = `---\nname: ${skillSlug}\ndescription: Skill installed from ${repoUrl}\nsource_url: https://github.com/${repoUrl}\n---\n\n# ${skillSlug}\n\nInstalled from https://github.com/${repoUrl}\n`;
 
     const skillContent = yield* fetchSkillMdEffect(repoInfo, options.token, fetchImpl).pipe(
-      Effect.catch(() => Effect.succeed(defaultContent)),
+      Effect.catchIf(
+        (err) => err._tag === "RepoNotFoundError",
+        () => Effect.succeed(defaultContent),
+      ),
     );
 
     const dirOk = yield* Effect.tryPromise({
@@ -553,6 +563,9 @@ export async function downloadSkill(
     ),
   );
 }
+
+export const installSkillEffect = downloadSkillEffect;
+export const installSkill = downloadSkill;
 
 export interface UninstallSkillRequest {
   skillPath: string; // absolute path of the installed skill dir
@@ -753,6 +766,13 @@ export interface SkillsFileSystemService {
     { path: string },
     InvalidSlugError | FsError | RepoNotFoundError | GitHubNetworkError | GitHubRateLimitError
   >;
+  readonly installSkill: (
+    options: DownloadSkillOptions,
+    deps?: DownloadSkillDeps,
+  ) => Effect.Effect<
+    { path: string },
+    InvalidSlugError | FsError | RepoNotFoundError | GitHubNetworkError | GitHubRateLimitError
+  >;
   readonly uninstallSkill: (
     req: UninstallSkillRequest,
     fs?: SkillsFs,
@@ -769,6 +789,7 @@ export const LiveSkillsFileSystem = Layer.succeed(SkillsFileSystem, {
   toggleSkill: (req) => toggleSkillEffect(req),
   copySkillToWorkspace: (slug, src, ws) => copySkillToWorkspaceEffect(slug, src, ws),
   downloadSkill: (options, deps) => downloadSkillEffect(options, deps),
+  installSkill: (options, deps) => installSkillEffect(options, deps),
   uninstallSkill: (req, fs) => uninstallSkillEffect(req, fs),
 });
 

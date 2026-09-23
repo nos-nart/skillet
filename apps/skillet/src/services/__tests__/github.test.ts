@@ -297,5 +297,46 @@ describe("Effect GitHub workflows and retries", () => {
     const loaded = await Effect.runPromise(loadSkillsLockEffect(store));
     expect(loaded["anthropics/skills"].commitSha).toBe("sha1");
   });
+
+  test("browseRepoForSkillsEffect succeeds with empty items when repo has no skills", async () => {
+    const fetchImpl: FetchFn = async (url) => {
+      if (url.includes("/repos/owner/repo/git/trees/")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ tree: [{ path: "README.md", type: "blob" }] }),
+          text: async () => "",
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ default_branch: "main" }),
+        text: async () => "",
+      };
+    };
+
+    const result = await Effect.runPromise(
+      browseRepoForSkillsEffect({ owner: "owner", repo: "repo" }, { fetchImpl }),
+    );
+    expect(result.items).toEqual([]);
+    expect(result.repo.owner).toBe("owner");
+  });
+
+  test("fetchSkillMdEffect propagates GitHubRateLimitError on 403", async () => {
+    const fetchImpl: FetchFn = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+      text: async () => "",
+    });
+
+    const err = await Effect.runPromise(
+      fetchSkillMdEffect({ owner: "anthropics", repo: "skills" }, undefined, fetchImpl).pipe(
+        Effect.flip,
+      ),
+    );
+    expect(err).toBeInstanceOf(GitHubRateLimitError);
+  });
 });
 

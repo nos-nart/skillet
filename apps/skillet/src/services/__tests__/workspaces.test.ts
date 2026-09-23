@@ -1,11 +1,16 @@
+import { Effect } from "effect";
 import { createStorage } from "@legend-apps/storage";
 import {
   addWorkspace,
+  addWorkspaceEffect,
   getBookmarks,
   getWorkspaces,
   removeWorkspace,
+  removeWorkspaceEffect,
   saveBookmarks,
+  saveBookmarksEffect,
   setCurrentWorkspace,
+  setCurrentWorkspaceEffect,
   storageJsonStore,
   type JsonStore,
   type Workspace,
@@ -60,4 +65,21 @@ test("bookmarks default empty and round-trip", async () => {
   await expect(getBookmarks(store)).resolves.toEqual([]);
   await saveBookmarks(["eli5", "acme/architect"], store);
   await expect(getBookmarks(store)).resolves.toEqual(["eli5", "acme/architect"]);
+});
+
+test("workspaces Effect mutations round-trip properly", async () => {
+  const store = testStore("skillet-test-ws-effects");
+  await Effect.runPromise(addWorkspaceEffect(ws({ id: "eff1", name: "Effect 1" }), store));
+  await Effect.runPromise(setCurrentWorkspaceEffect("eff1", store));
+
+  let list = await getWorkspaces(store);
+  expect(list.find((w) => w.id === "eff1")?.isCurrent).toBe(true);
+
+  await Effect.runPromise(saveBookmarksEffect(["eff-bookmark"], store));
+  const bms = await getBookmarks(store);
+  expect(bms).toEqual(["eff-bookmark"]);
+
+  await Effect.runPromise(removeWorkspaceEffect("eff1", store));
+  list = await getWorkspaces(store);
+  expect(list.some((w) => w.id === "eff1")).toBe(false);
 });

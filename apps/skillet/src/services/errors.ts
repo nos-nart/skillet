@@ -21,7 +21,7 @@ export class GitHubNetworkError extends Schema.TaggedError<GitHubNetworkError>()
   "GitHubNetworkError",
   {
     message: Schema.String,
-    status: Schema.optionalKey(Schema.Number),
+    status: Schema.optionalKey(Schema.UndefinedOr(Schema.Number)),
   },
 ) {}
 

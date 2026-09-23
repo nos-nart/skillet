@@ -2,12 +2,14 @@ import { Effect } from "effect";
 import {
   downloadSkill,
   downloadSkillEffect,
+  installSkill,
+  installSkillEffect,
   uninstallSkill,
   uninstallSkillEffect,
   type SkillWriter,
   type SkillsFs,
 } from "../skills";
-import { InvalidSlugError } from "../errors";
+import { GitHubRateLimitError, InvalidSlugError } from "../errors";
 import type { FetchFn } from "../github";
 import type { JsonStore } from "../workspaces";
 
@@ -172,4 +174,33 @@ test("uninstallSkillEffect returns typed InvalidSlugError on unsafe slug", async
     ),
   );
   expect(err).toBeInstanceOf(InvalidSlugError);
+});
+
+test("installSkillEffect propagates GitHubRateLimitError when fetch fails with 403", async () => {
+  const { writer } = fakeWriter();
+  const store = memoryStore().store;
+  const rateLimitFetch: FetchFn = async () => ({
+    ok: false,
+    status: 403,
+    json: async () => ({}),
+    text: async () => "",
+  });
+
+  const err = await Effect.runPromise(
+    installSkillEffect(
+      { source: "anthropics/skills/skills/eli5" },
+      { writer, fetchImpl: rateLimitFetch, lockStore: store },
+    ).pipe(Effect.flip),
+  );
+  expect(err).toBeInstanceOf(GitHubRateLimitError);
+});
+
+test("installSkill alias works cleanly with installSkillEffect", async () => {
+  const { files, writer } = fakeWriter();
+  const { store } = memoryStore();
+  const res = await installSkill(
+    { source: "anthropics/skills/skills/eli5" },
+    { writer, fetchImpl: stubFetch("---\nname: eli5\n---\n\nBody"), lockStore: store },
+  );
+  expect(res.ok).toBe(true);
 });

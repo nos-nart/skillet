@@ -272,6 +272,31 @@ export type GitHubRepoInfoMetadata = {
   updatedAt: string;
 };
 
+function mapHttpError(
+  res: FetchResponse,
+  repo: { owner: string; repo: string },
+  customNotFoundMessage?: string,
+  customNetworkMessage?: string,
+): GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError {
+  const status = (res as ApiResponse).status;
+  if (rateLimitError(status)) {
+    return new GitHubRateLimitError({
+      message: "GitHub rate limit exceeded. Add a token or try again later.",
+    });
+  }
+  if (status === 404 || (!status && !res.ok)) {
+    return new RepoNotFoundError({
+      owner: repo.owner,
+      repo: repo.repo,
+      message: customNotFoundMessage ?? `Repository not found: ${repo.owner}/${repo.repo}`,
+    });
+  }
+  return new GitHubNetworkError({
+    message: customNetworkMessage ?? `GitHub API error: status ${status ?? "unknown"}`,
+    status,
+  });
+}
+
 export const fetchRepoTreeEffect = (
   repo: string,
   branch: string,
@@ -295,29 +320,8 @@ export const fetchRepoTreeEffect = (
     const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
 
     if (!res.ok) {
-      // SAFETY: FetchResponse in RN and test stubs carries an optional numeric status code
-      const status = (res as ApiResponse).status;
-      if (status === 404 || (!status && !res.ok)) {
-        return yield* Effect.fail(
-          new RepoNotFoundError({
-            owner: parsed.owner,
-            repo: parsed.repo,
-            message: "Repository or branch not found",
-          }),
-        );
-      }
-      if (rateLimitError(status)) {
-        return yield* Effect.fail(
-          new GitHubRateLimitError({
-            message: "GitHub rate limit exceeded. Add a token or try again later.",
-          }),
-        );
-      }
       return yield* Effect.fail(
-        new GitHubNetworkError({
-          message: `GitHub API error: status ${status ?? "unknown"}`,
-          status,
-        }),
+        mapHttpError(res, parsed, "Repository or branch not found"),
       );
     }
 
@@ -351,7 +355,7 @@ export const fetchRawFileEffect = (
   branch: string,
   path: string,
   options: { token?: string; fetchImpl?: FetchFn } = {},
-): Effect.Effect<string, RepoNotFoundError | GitHubNetworkError> =>
+): Effect.Effect<string, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError> =>
   Effect.gen(function* () {
     const parsed = parseGitHubRepo(repo);
     if (!parsed) {
@@ -371,22 +375,13 @@ export const fetchRawFileEffect = (
     const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
 
     if (!res.ok) {
-      // SAFETY: FetchResponse carries an optional status code in fetch implementations
-      const status = (res as ApiResponse).status;
-      if (status === 404 || (!status && !res.ok)) {
-        return yield* Effect.fail(
-          new RepoNotFoundError({
-            owner: parsed.owner,
-            repo: parsed.repo,
-            message: `File not found: ${path}`,
-          }),
-        );
-      }
       return yield* Effect.fail(
-        new GitHubNetworkError({
-          message: `Failed to fetch raw file: status ${status ?? "unknown"}`,
-          status,
-        }),
+        mapHttpError(
+          res,
+          parsed,
+          `File not found: ${path}`,
+          `Failed to fetch raw file: status ${(res as ApiResponse).status ?? "unknown"}`,
+        ),
       );
     }
 
@@ -421,30 +416,7 @@ export const getRepoInfoEffect = (
     const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
 
     if (!res.ok) {
-      // SAFETY: FetchResponse carries an optional status code in fetch implementations
-      const status = (res as ApiResponse).status;
-      if (status === 404 || (!status && !res.ok)) {
-        return yield* Effect.fail(
-          new RepoNotFoundError({
-            owner: parsed.owner,
-            repo: parsed.repo,
-            message: `Repository not found: ${parsed.owner}/${parsed.repo}`,
-          }),
-        );
-      }
-      if (rateLimitError(status)) {
-        return yield* Effect.fail(
-          new GitHubRateLimitError({
-            message: "GitHub rate limit exceeded. Add a token or try again later.",
-          }),
-        );
-      }
-      return yield* Effect.fail(
-        new GitHubNetworkError({
-          message: `GitHub API error: status ${status ?? "unknown"}`,
-          status,
-        }),
-      );
+      return yield* Effect.fail(mapHttpError(res, parsed));
     }
 
     // SAFETY: GitHub repository endpoint returns a JSON metadata record
@@ -502,28 +474,13 @@ export const fetchLatestCommitEffect = (
     const url = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits?per_page=1`;
     const res = yield* requestWithRetry(() => fetchImpl(url, { headers }));
     if (!res.ok) {
-      const status = (res as ApiResponse).status;
-      if (status === 404 || (!status && !res.ok)) {
-        return yield* Effect.fail(
-          new RepoNotFoundError({
-            owner: parsed.owner,
-            repo: parsed.repo,
-            message: `Repository not found: ${parsed.owner}/${parsed.repo}`,
-          }),
-        );
-      }
-      if (rateLimitError(status)) {
-        return yield* Effect.fail(
-          new GitHubRateLimitError({
-            message: "GitHub rate limit exceeded. Add a token or try again later.",
-          }),
-        );
-      }
       return yield* Effect.fail(
-        new GitHubNetworkError({
-          message: `Failed to fetch commits: status ${status ?? "unknown"}`,
-          status,
-        }),
+        mapHttpError(
+          res,
+          parsed,
+          `Repository not found: ${parsed.owner}/${parsed.repo}`,
+          `Failed to fetch commits: status ${(res as ApiResponse).status ?? "unknown"}`,
+        ),
       );
     }
     const data = yield* Effect.tryPromise({
@@ -546,7 +503,7 @@ export const fetchLatestCommitEffect = (
     if (typeof first?.sha !== "string") {
       return yield* Effect.fail(
         new GitHubNetworkError({
-          message: "Commit sha missing from GitHub response",
+          message: "Commit sha missing from response",
         }),
       );
     }
@@ -570,13 +527,15 @@ export const fetchSkillMdEffect = (
   info: GitHubRepoInfo,
   token?: string,
   fetchImpl: FetchFn = defaultFetch,
-): Effect.Effect<string, RepoNotFoundError | GitHubNetworkError> =>
+): Effect.Effect<string, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError> =>
   Effect.gen(function* () {
     const subpath = info.path ? `${info.path}/SKILL.md` : "SKILL.md";
     const repoStr = `${info.owner}/${info.repo}`;
     const onMain = fetchRawFileEffect(repoStr, "main", subpath, { token, fetchImpl });
     const onMaster = fetchRawFileEffect(repoStr, "master", subpath, { token, fetchImpl });
-    return yield* onMain.pipe(Effect.catch(() => onMaster));
+    return yield* onMain.pipe(
+      Effect.catchIf((err) => err._tag === "RepoNotFoundError", () => onMaster),
+    );
   });
 
 export async function fetchSkillMd(
@@ -611,6 +570,10 @@ export const loadSkillsLockEffect = (
       }),
   });
 
+export async function loadSkillsLock(store: JsonStore = storageJsonStore()): Promise<SkillsLock> {
+  return Effect.runPromise(loadSkillsLockEffect(store).pipe(Effect.orElseSucceed(() => ({}))));
+}
+
 export const saveSkillsLockEffect = (
   lock: SkillsLock,
   store: JsonStore = storageJsonStore(),
@@ -627,10 +590,6 @@ export const saveSkillsLockEffect = (
         message: err instanceof Error ? err.message : String(err),
       }),
   });
-
-export async function loadSkillsLock(store: JsonStore = storageJsonStore()): Promise<SkillsLock> {
-  return Effect.runPromise(loadSkillsLockEffect(store).pipe(Effect.orElseSucceed(() => ({}))));
-}
 
 export async function saveSkillsLock(
   lock: SkillsLock,
@@ -664,15 +623,6 @@ export const browseRepoForSkillsEffect = (
       tree.map((t) => ({ type: t.type, path: t.path })),
       repo,
     );
-    if (rows.length === 0) {
-      return yield* Effect.fail(
-        new RepoNotFoundError({
-          owner: info.owner,
-          repo: info.repo,
-          message: "No skills found in this repository",
-        }),
-      );
-    }
     return { repo, items: rows };
   });
 
@@ -698,7 +648,7 @@ export interface GitHubClientService {
     branch: string,
     path: string,
     options?: { token?: string; fetchImpl?: FetchFn },
-  ) => Effect.Effect<string, GitHubNetworkError | RepoNotFoundError>;
+  ) => Effect.Effect<string, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError>;
   readonly getRepoInfo: (
     repo: string,
     options?: { token?: string; fetchImpl?: FetchFn },
@@ -712,7 +662,7 @@ export interface GitHubClientService {
     info: GitHubRepoInfo,
     token?: string,
     fetchImpl?: FetchFn,
-  ) => Effect.Effect<string, RepoNotFoundError | GitHubNetworkError>;
+  ) => Effect.Effect<string, GitHubRateLimitError | RepoNotFoundError | GitHubNetworkError>;
   readonly browseRepoForSkills: (
     info: GitHubRepoInfo,
     options?: BrowseRepoOptions,

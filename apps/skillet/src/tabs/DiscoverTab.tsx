@@ -3,6 +3,7 @@ import { Alert, Image, Linking, Pressable, ScrollView, TextInput, View } from "r
 import { Text } from "../AppText";
 import { SFSymbol } from "@legend-apps/sf-symbol";
 import * as Effect from "effect/Effect";
+import { useRunEffect } from "../hooks/useRunEffect";
 import {
   browseRepoForSkills,
   browseRepoForSkillsEffect,
@@ -364,12 +365,12 @@ export function DiscoverTab({
   const c = useThemePalette();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<DiscoveredSkillItem[]>([]);
   const [repo, setRepo] = useState<GitHubRepoInfo | null>(null);
   const [installing, setInstalling] = useState<string | null>(null);
   const activeRequestIdRef = useRef(0);
+  const { run: runEffect, isLoading: loading } = useRunEffect();
 
   const handleBrowse = useCallback(
     async (raw: string): Promise<void> => {
@@ -381,44 +382,33 @@ export function DiscoverTab({
         return;
       }
       const requestId = ++activeRequestIdRef.current;
-      setLoading(true);
       setError(null);
       setItems([]);
       setRepo(null);
       try {
-        const result = await Effect.runPromise(
-          browseRepoForSkillsEffect(info, { token, fetchImpl }).pipe(
-            Effect.map((found) => ({ ok: true as const, found })),
-            Effect.catch((err) => {
-              let message = "Failed to load skills from repository.";
-              if (err._tag === "GitHubRateLimitError") {
-                message = "GitHub API rate limit exceeded. Add a GitHub Personal Access Token in Settings to continue.";
-              } else if (err._tag === "RepoNotFoundError") {
-                message = err.message || `Repository or skills not found: ${info.owner}/${info.repo}`;
-              } else if (err._tag === "GitHubNetworkError") {
-                message = `Network connection error: ${err.message}`;
-              }
-              return Effect.succeed({ ok: false as const, message });
-            }),
-          ),
-        );
+        const found = await runEffect(browseRepoForSkillsEffect(info, { token, fetchImpl }));
         if (activeRequestIdRef.current !== requestId) return;
-        if (result.ok) {
-          setRepo(result.found.repo);
-          setItems(result.found.items);
-        } else {
-          setError(result.message);
-        }
+        setRepo(found.repo);
+        setItems(found.items);
       } catch (err: unknown) {
         if (activeRequestIdRef.current !== requestId) return;
-        setError(err instanceof Error ? err.message : "Failed to load skills from repository.");
-      } finally {
-        if (activeRequestIdRef.current === requestId) {
-          setLoading(false);
+        let message = "Failed to load skills from repository.";
+        if (typeof err === "object" && err !== null && "_tag" in err) {
+          const tagged = err as { _tag: string; message?: string };
+          if (tagged._tag === "GitHubRateLimitError") {
+            message = "GitHub API rate limit exceeded. Add a GitHub Personal Access Token in Settings to continue.";
+          } else if (tagged._tag === "RepoNotFoundError") {
+            message = tagged.message || `Repository not found: ${info.owner}/${info.repo}`;
+          } else if (tagged._tag === "GitHubNetworkError") {
+            message = `Network connection error: ${tagged.message}`;
+          }
+        } else if (err instanceof Error) {
+          message = err.message;
         }
+        setError(message);
       }
     },
-    [loading, token, fetchImpl],
+    [loading, runEffect, token, fetchImpl],
   );
 
   const handleInstall = useCallback(

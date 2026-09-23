@@ -437,12 +437,20 @@ export function SkillDetail({
       .then((ok) => {
         if (!ok) {
           setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable: !enable }));
+          Alert.alert(
+            "Toggle Failed",
+            `Could not ${enable ? "enable" : "disable"} skill "${skill?.name ?? ""}" in workspace "${ws.name}".`,
+          );
         }
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         setOptimistic((prev) => toggleReducer(prev, { workspaceId: ws.id, enable: !enable }));
+        Alert.alert(
+          "Toggle Failed",
+          err instanceof Error ? err.message : `Could not ${enable ? "enable" : "disable"} skill.`,
+        );
       });
-  }, [onToggleInRepo]);
+  }, [onToggleInRepo, skill?.name]);
 
   const runAction = useCallback(
     (
