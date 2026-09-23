@@ -28,7 +28,7 @@
     },
     "apps/skillet": {
       "name": "@skillet/app-skillet",
-      "version": "0.0.1",
+      "version": "2.0.0",
       "dependencies": {
         "@legend-apps/file-dialog": "workspace:*",
         "@legend-apps/sf-symbol": "workspace:*",
