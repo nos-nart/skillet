@@ -9,41 +9,62 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-macos:
+    name: Build macOS (${{ matrix.target }})
+    runs-on: macos-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            output: Skillet-macOS-x64.dmg
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            output: Skillet-macOS-arm64.dmg
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            output: Skillet-Windows-x64.msi
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            output: Skillet-Linux-x64.AppImage
-
-    runs-on: ${{ matrix.os }}
+          - arch: arm
+            target: Apple Silicon (arm64)
+            dmg: Skillet-macOS-arm64.dmg
+          - arch: x86
+            target: Intel (x64)
+            dmg: Skillet-macOS-x64.dmg
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          deno-version: v2.x
+          bun-version: latest
 
-      - name: Build Web Assets
-        run: deno task build
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-      - name: Package Desktop App
-        run: deno desktop --icon public/icon.png -A --include dist --target ${{ matrix.target }} -o ${{ matrix.output }} desktop.ts
+      - name: Install dependencies
+        run: bun install
 
-      - name: Upload Release Asset
+      - name: Run verification (typecheck & tests)
+        run: |
+          bun run typecheck
+          bun run test
+
+      - name: Package macOS App (${{ matrix.arch }})
+        run: |
+          bun scripts/package-macos-app.ts skillet ${{ matrix.arch }} --skip-sign --skip-notarize --skip-appcast
+
+      - name: Create DMG (${{ matrix.dmg }})
+        run: |
+          hdiutil create -volname "Skillet" -srcfolder "dist/skillet/macos/Skillet.app" -ov -format UDZO "dist/skillet/macos/${{ matrix.dmg }}"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Skillet-macOS-${{ matrix.arch }}
+          path: |
+            dist/skillet/macos/${{ matrix.dmg }}
+            dist/skillet/macos/Skillet-*-${{ matrix.arch }}.zip
+
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         with:
-          files: ${{ matrix.output }}
+          files: |
+            dist/skillet/macos/${{ matrix.dmg }}
+            dist/skillet/macos/Skillet-*-${{ matrix.arch }}.zip
