@@ -77,6 +77,20 @@ export async function getWorkspaces(store: JsonStore = storageJsonStore()): Prom
   );
 }
 
+const writeWorkspacesFileEffect = (
+  store: JsonStore,
+  data: Workspace[],
+): Effect.Effect<void, FsError> =>
+  Effect.try({
+    try: () => store.writeJson(WORKSPACES_FILE, data),
+    catch: (err) =>
+      new FsError({
+        operation: "writeJson",
+        path: WORKSPACES_FILE,
+        message: err instanceof Error ? err.message : String(err),
+      }),
+  });
+
 export const addWorkspaceEffect = (
   ws: Workspace,
   store: JsonStore = storageJsonStore(),
@@ -85,15 +99,7 @@ export const addWorkspaceEffect = (
     const list = yield* getWorkspacesEffect(store);
     if (!list.some((w) => w.path === ws.path || w.id === ws.id)) {
       list.push(ws);
-      yield* Effect.try({
-        try: () => store.writeJson(WORKSPACES_FILE, list),
-        catch: (err) =>
-          new FsError({
-            operation: "writeJson",
-            path: WORKSPACES_FILE,
-            message: err instanceof Error ? err.message : String(err),
-          }),
-      });
+      yield* writeWorkspacesFileEffect(store, list);
     }
   });
 
@@ -114,15 +120,7 @@ export const removeWorkspaceEffect = (
     if (filtered.length === 0) {
       filtered.push({ ...DEFAULT_GLOBAL_WORKSPACE });
     }
-    yield* Effect.try({
-      try: () => store.writeJson(WORKSPACES_FILE, filtered),
-      catch: (err) =>
-        new FsError({
-          operation: "writeJson",
-          path: WORKSPACES_FILE,
-          message: err instanceof Error ? err.message : String(err),
-        }),
-    });
+    yield* writeWorkspacesFileEffect(store, filtered);
   });
 
 export async function removeWorkspace(
@@ -139,15 +137,7 @@ export const setCurrentWorkspaceEffect = (
   Effect.gen(function* () {
     const list = yield* getWorkspacesEffect(store);
     const updated = list.map((w) => ({ ...w, isCurrent: w.id === id }));
-    yield* Effect.try({
-      try: () => store.writeJson(WORKSPACES_FILE, updated),
-      catch: (err) =>
-        new FsError({
-          operation: "writeJson",
-          path: WORKSPACES_FILE,
-          message: err instanceof Error ? err.message : String(err),
-        }),
-    });
+    yield* writeWorkspacesFileEffect(store, updated);
   });
 
 export async function setCurrentWorkspace(

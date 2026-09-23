@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
-import { Alert, Image, Linking, Pressable, ScrollView, TextInput, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import { Image, Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import { Text } from "../AppText";
+import { ErrorBanner } from "../ErrorBanner";
 import { SFSymbol } from "@legend-apps/sf-symbol";
 import { useAtom } from "@effect/atom-react";
 import * as Atom from "effect/unstable/reactivity/Atom";
@@ -22,7 +23,7 @@ import { useThemePalette } from "../services/theme";
 
 const CARD_BORDER_STYLE = { borderCurve: "continuous" } as const;
 
-function PopularRepoCard({
+const PopularRepoCard = React.memo(function PopularRepoCard({
   repo,
   onSelect,
 }: {
@@ -81,14 +82,14 @@ function PopularRepoCard({
       </View>
     </Pressable>
   );
-}
+});
 
 const CONTINUOUS_CURVE = { borderCurve: "continuous" } as const;
 const POPULAR_CARD_STYLE = { borderCurve: "continuous", flexBasis: "48%", flexGrow: 1, minWidth: 260 } as const;
 const DISABLED_STATE = { disabled: true } as const;
 const ENABLED_STATE = { disabled: false } as const;
 
-function DiscoveredSkillCard({
+const DiscoveredSkillCard = React.memo(function DiscoveredSkillCard({
   item,
   repoOwner,
   repoName,
@@ -145,7 +146,7 @@ function DiscoveredSkillCard({
       </Pressable>
     </View>
   );
-}
+});
 
 interface DiscoverSearchBarProps {
   query: string;
@@ -373,6 +374,9 @@ export function DiscoverTab({
   const [browseResult, browseRepo] = useAtom(browseRepoAtom);
   const [installing, setInstalling] = useAtom(installingSkillAtom);
 
+  const [installError, setInstallError] = useState<string | null>(null);
+  const [installSuccess, setInstallSuccess] = useState<string | null>(null);
+
   const loading = browseResult.waiting;
   const repo = browseResult._tag === "Success" ? browseResult.value.repo : null;
   const items = browseResult._tag === "Success" ? browseResult.value.items : [];
@@ -395,13 +399,15 @@ export function DiscoverTab({
       if (!repo || installing) return;
       const source = buildInstallSource(repo, item.path);
       setInstalling(item.path);
+      setInstallError(null);
+      setInstallSuccess(null);
       void Promise.resolve()
         .then(() => onInstall(source))
         .then(() => {
-          Alert.alert("Skill installed", `${item.name} was added to your skills.`);
+          setInstallSuccess(`Installed "${item.name}"`);
         })
         .catch((cause: unknown) => {
-          Alert.alert("Install failed", cause instanceof Error ? cause.message : "Could not install skill.");
+          setInstallError(cause instanceof Error ? cause.message : "Could not install skill.");
         })
         .finally(() => {
           setInstalling(null);
@@ -437,6 +443,8 @@ export function DiscoverTab({
   const handleBack = useCallback(() => {
     browseRepo(Atom.Reset);
     setQuery("");
+    setInstallError(null);
+    setInstallSuccess(null);
   }, [browseRepo]);
 
   const handleSelectRepo = useCallback(
@@ -462,6 +470,24 @@ export function DiscoverTab({
         primaryColor={c.primary}
         query={query}
       />
+      <ErrorBanner
+        className="mx-4 mb-2"
+        error={installError}
+        onDismiss={() => setInstallError(null)}
+      />
+      {installSuccess ? (
+        <View className="mx-4 mb-2 flex-row items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5">
+          <Text className="text-[11px] font-medium text-primary">{installSuccess}</Text>
+          <Pressable
+            accessibilityLabel="Dismiss message"
+            accessibilityRole="button"
+            className="pl-2"
+            onPress={() => setInstallSuccess(null)}
+          >
+            <SFSymbol color={c.primary} name="xmark" size={12} />
+          </Pressable>
+        </View>
+      ) : null}
       {repo ? (
         <DiscoveredRepoView
           installedSkills={installedSkills}

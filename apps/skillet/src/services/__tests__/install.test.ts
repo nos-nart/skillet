@@ -9,7 +9,7 @@ import {
   type SkillWriter,
   type SkillsFs,
 } from "../skills";
-import { GitHubRateLimitError, InvalidSlugError, RepoNotFoundError } from "../errors";
+import { FsError, GitHubRateLimitError, InvalidSlugError, RepoNotFoundError } from "../errors";
 import type { FetchFn } from "../github";
 import type { JsonStore } from "../workspaces";
 
@@ -184,6 +184,24 @@ test("uninstallSkillEffect returns typed InvalidSlugError on unsafe slug", async
     ),
   );
   expect(err).toBeInstanceOf(InvalidSlugError);
+});
+
+test("uninstallSkillEffect returns typed FsError on unlink failure", async () => {
+  const fs: SkillsFs = {
+    scanSkillsDir: async () => [],
+    readSkillMd: async () => "",
+    symlink: async () => true,
+    unlink: async () => {
+      throw new Error("EACCES: permission denied, unlink '/Users/x/.skills/e'");
+    },
+  };
+  const err = await Effect.runPromise(
+    uninstallSkillEffect({ skillPath: "/Users/x/.skills/e", skillSlug: "valid-slug" }, fs).pipe(
+      Effect.flip,
+    ),
+  );
+  expect(err).toBeInstanceOf(FsError);
+  expect(err.message).toContain("permission denied");
 });
 
 test("installSkillEffect propagates GitHubRateLimitError when fetch fails with 403", async () => {

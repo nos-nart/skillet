@@ -3,7 +3,6 @@ import * as Atom from "effect/unstable/reactivity/Atom";
 import { getWorkspacesEffect, type Workspace } from "./workspaces";
 import type { FsError } from "./errors";
 
-export const workspacesAtom = Atom.make<Workspace[]>([]);
 export const currentWorkspacePathAtom = Atom.make<string | undefined>(undefined);
 
 export const fetchWorkspacesAtom = Atom.fn(

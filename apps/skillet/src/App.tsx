@@ -2,6 +2,7 @@ import { setMainWindowOptions } from "@legend-apps/window-manager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import * as Cause from "effect/Cause";
+import * as Effect from "effect/Effect";
 import { RegistryProvider, useAtom } from "@effect/atom-react";
 import { Sidebar, workspaceName, type SidebarNav } from "./Sidebar";
 import { SkillDetail } from "./SkillDetail";
@@ -13,7 +14,7 @@ import { DiscoverTab } from "./tabs/DiscoverTab";
 import { SettingsTab } from "./tabs/SettingsTab";
 import {
   downloadSkill,
-  toggleSkill,
+  toggleSkillEffect,
   uninstallSkill,
   type Skill,
 } from "./services/skills";
@@ -64,11 +65,12 @@ function AppContent(): React.JSX.Element {
   const [nav, setNav] = useState<SidebarNav>("skills");
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [currentPath, setCurrentPath] = useAtom(currentWorkspacePathAtom);
-  const [loadSkillsResult, runFetchSkills] = useAtom(fetchSkillsAtom, { mode: "promise" });
-  const [loadWorkspacesResult, runFetchWorkspaces] = useAtom(fetchWorkspacesAtom, { mode: "promise" });
+  const [loadSkillsResult, runFetchSkills] = useAtom(fetchSkillsAtom);
+  const [loadWorkspacesResult, runFetchWorkspaces] = useAtom(fetchWorkspacesAtom);
   const [dismissedSkillsError, setDismissedSkillsError] = useState(false);
   const [dismissedWorkspacesError, setDismissedWorkspacesError] = useState(false);
   const [updatesMap, setUpdatesMap] = useState<Record<string, boolean>>({});
+  const [updatesError, setUpdatesError] = useState<string | null>(null);
 
   const skills = loadSkillsResult._tag === "Success" ? loadSkillsResult.value : EMPTY_SKILLS;
   const workspaces = loadWorkspacesResult._tag === "Success" ? loadWorkspacesResult.value : EMPTY_WORKSPACES;
@@ -81,6 +83,7 @@ function AppContent(): React.JSX.Element {
     !dismissedWorkspacesError && loadWorkspacesResult._tag === "Failure"
       ? formatFsError(loadWorkspacesResult.cause)
       : null;
+  const displayedSkillsError = skillsError ?? updatesError;
 
   const isLoading = loadSkillsResult.waiting;
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
@@ -118,38 +121,40 @@ function AppContent(): React.JSX.Element {
     [skills, updatesMap],
   );
 
-  const refreshSkills = useCallback(async (): Promise<void> => {
-    try {
-      setDismissedSkillsError(false);
-      const list = await runFetchSkills(undefined);
-      // Keep the selection alive across re-scans; default to the first skill
-      // like the old UI (LOAD_SKILLS_SUCCESS auto-selects).
+  // Keep selection aligned reactively whenever skills change
+  useEffect(() => {
+    if (skills.length > 0) {
       setSelectedId((prev) => {
-        if (prev && list.some((s) => s.id === prev)) return prev;
-        return list[0]?.id;
+        if (prev && skills.some((s) => s.id === prev)) return prev;
+        return skills[0]?.id;
       });
-    } catch (err: unknown) {
-      console.error("Failed to refresh skills:", err);
     }
+  }, [skills]);
+
+  // Keep workspace selection aligned reactively whenever workspaces change
+  useEffect(() => {
+    if (workspaces.length > 0) {
+      setCurrentPath((prev) =>
+        prev && workspaces.some((w) => w.path === prev)
+          ? prev
+          : (workspaces.find((w) => w.isCurrent)?.path ?? workspaces[0]?.path),
+      );
+    }
+  }, [workspaces, setCurrentPath]);
+
+  const refreshSkills = useCallback(() => {
+    setDismissedSkillsError(false);
+    runFetchSkills(undefined);
   }, [runFetchSkills]);
 
-  const refreshWorkspaces = useCallback(async (): Promise<void> => {
-    try {
-      setDismissedWorkspacesError(false);
-      const list = await runFetchWorkspaces(undefined);
-      setCurrentPath((prev) =>
-        prev && list.some((w) => w.path === prev)
-          ? prev
-          : (list.find((w) => w.isCurrent)?.path ?? list[0]?.path),
-      );
-    } catch (err: unknown) {
-      console.error("Failed to refresh workspaces:", err);
-    }
-  }, [runFetchWorkspaces, setCurrentPath]);
+  const refreshWorkspaces = useCallback(() => {
+    setDismissedWorkspacesError(false);
+    runFetchWorkspaces(undefined);
+  }, [runFetchWorkspaces]);
 
   useEffect(() => {
-    void refreshSkills();
-    void refreshWorkspaces();
+    refreshSkills();
+    refreshWorkspaces();
   }, [refreshSkills, refreshWorkspaces]);
 
   // Native controls (Switch, window chrome) follow NSAppearance, not Uniwind —
@@ -167,12 +172,14 @@ function AppContent(): React.JSX.Element {
     async (workspace: Workspace, enable: boolean): Promise<boolean> => {
       const skill = skills.find((s) => s.id === selectedId) ?? null;
       if (!skill) return false;
-      return toggleSkill({
-        skillSlug: skill.slug,
-        sourcePath: skill.path,
-        workspacePath: workspace.path,
-        enable,
-      });
+      return Effect.runPromise(
+        toggleSkillEffect({
+          skillSlug: skill.slug,
+          sourcePath: skill.path,
+          workspacePath: workspace.path,
+          enable,
+        }),
+      );
     },
     [skills, selectedId],
   );
@@ -183,7 +190,7 @@ function AppContent(): React.JSX.Element {
     async (source: string, skillName?: string): Promise<void> => {
       const res = await downloadSkill({ source, skillName });
       if (!res.ok) throw new Error(res.error);
-      await refreshSkills();
+      refreshSkills();
     },
     [refreshSkills],
   );
@@ -192,12 +199,13 @@ function AppContent(): React.JSX.Element {
   // GitHub HEAD, then flags skills in place (no re-scan wipes the flags).
   const handleCheckUpdates = useCallback(async (): Promise<void> => {
     setIsCheckingUpdates(true);
+    setUpdatesError(null);
     try {
       const token = getGithubToken();
       const map = await checkSkillUpdates(skills, { token });
       setUpdatesMap(map);
     } catch (cause: unknown) {
-      console.error("Update check failed:", cause);
+      setUpdatesError(cause instanceof Error ? cause.message : "Failed to check for skill updates.");
     } finally {
       setIsCheckingUpdates(false);
     }
@@ -207,7 +215,7 @@ function AppContent(): React.JSX.Element {
   const handleUpdateSkill = useCallback(
     async (skill: Skill): Promise<void> => {
       await updateSkill(skill, { token: getGithubToken() });
-      await refreshSkills();
+      refreshSkills();
     },
     [refreshSkills],
   );
@@ -222,7 +230,7 @@ function AppContent(): React.JSX.Element {
       });
       if (!ok) throw new Error(`Could not uninstall ${skill.name}.`);
       if (selectedId === skill.id) setSelectedId(undefined);
-      await refreshSkills();
+      refreshSkills();
     },
     [refreshSkills, selectedId, workspaces],
   );
@@ -230,7 +238,7 @@ function AppContent(): React.JSX.Element {
   const handleSelectWorkspace = useCallback(
     async (id: string) => {
       await setCurrentWorkspace(id);
-      await refreshWorkspaces();
+      refreshWorkspaces();
     },
     [refreshWorkspaces],
   );
@@ -239,45 +247,15 @@ function AppContent(): React.JSX.Element {
     async (path: string) => {
       await addWorkspace({ id: path, name: workspaceName(path), path });
       await setCurrentWorkspace(path);
-      await refreshWorkspaces();
+      refreshWorkspaces();
     },
     [refreshWorkspaces],
   );
 
-  const handleCheckUpdatesCallback = useCallback(() => {
-    void handleCheckUpdates();
-  }, [handleCheckUpdates]);
-
-  const handleRescanCallback = useCallback(() => {
-    void refreshSkills();
-  }, [refreshSkills]);
-
   const handleDismissSkillsError = useCallback(() => {
     setDismissedSkillsError(true);
+    setUpdatesError(null);
   }, []);
-
-  const handleDismissWorkspacesError = useCallback(() => {
-    setDismissedWorkspacesError(true);
-  }, []);
-
-  const handleOpenNewSkill = useCallback(() => {
-    setInstallError(null);
-    setNewSkillOpen(true);
-  }, []);
-
-  const handleAddWorkspaceCallback = useCallback(
-    (path: string) => {
-      void handleAddWorkspace(path);
-    },
-    [handleAddWorkspace],
-  );
-
-  const handleSelectWorkspaceCallback = useCallback(
-    (id: string) => {
-      void handleSelectWorkspace(id);
-    },
-    [handleSelectWorkspace],
-  );
 
   return (
     <>
@@ -291,9 +269,9 @@ function AppContent(): React.JSX.Element {
             currentPath={currentPath}
             currentTab={nav}
             error={workspacesError}
-            onAddWorkspace={handleAddWorkspaceCallback}
-            onDismissError={handleDismissWorkspacesError}
-            onSelectWorkspace={handleSelectWorkspaceCallback}
+            onAddWorkspace={(path) => void handleAddWorkspace(path)}
+            onDismissError={() => setDismissedWorkspacesError(true)}
+            onSelectWorkspace={(id) => void handleSelectWorkspace(id)}
             onTab={setNav}
             skillsCount={skills.length}
             workspaces={workspaces}
@@ -313,13 +291,16 @@ function AppContent(): React.JSX.Element {
           <>
             <View className="bg-surface" style={{ width: listWidth, overflow: "hidden" }}>
               <SkillList
-                error={skillsError}
+                error={displayedSkillsError}
                 isCheckingUpdates={isCheckingUpdates}
                 isLoading={isLoading}
-                onCheckUpdates={handleCheckUpdatesCallback}
+                onCheckUpdates={() => void handleCheckUpdates()}
                 onDismissError={handleDismissSkillsError}
-                onNewSkill={handleOpenNewSkill}
-                onRescan={handleRescanCallback}
+                onNewSkill={() => {
+                  setInstallError(null);
+                  setNewSkillOpen(true);
+                }}
+                onRescan={refreshSkills}
                 onSelect={setSelectedId}
                 selectedId={selectedId}
                 skills={skillListItems}
