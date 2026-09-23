@@ -2,6 +2,7 @@ import { WindowProvider } from "./windows";
 import { setMainWindowOptions } from "@legend-apps/window-manager";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
+import * as Cause from "effect/Cause";
 import { RegistryProvider, useAtom } from "@effect/atom-react";
 import { Sidebar, workspaceName, type SidebarNav } from "./Sidebar";
 import { SkillDetail } from "./SkillDetail";
@@ -53,7 +54,20 @@ function AppContent(): React.JSX.Element {
   const [workspaces, setWorkspaces] = useAtom(workspacesAtom);
   const [currentPath, setCurrentPath] = useAtom(currentWorkspacePathAtom);
   const [loadSkillsResult, runFetchSkills] = useAtom(fetchSkillsAtom, { mode: "promise" });
-  const [, runFetchWorkspaces] = useAtom(fetchWorkspacesAtom, { mode: "promise" });
+  const [loadWorkspacesResult, runFetchWorkspaces] = useAtom(fetchWorkspacesAtom, { mode: "promise" });
+  const [dismissedSkillsError, setDismissedSkillsError] = useState(false);
+  const [dismissedWorkspacesError, setDismissedWorkspacesError] = useState(false);
+
+  const skillsError =
+    !dismissedSkillsError && loadSkillsResult._tag === "Failure"
+      ? (Cause.squash(loadSkillsResult.cause) as { message?: string })?.message ?? "Failed to load skills from disk."
+      : null;
+
+  const workspacesError =
+    !dismissedWorkspacesError && loadWorkspacesResult._tag === "Failure"
+      ? (Cause.squash(loadWorkspacesResult.cause) as { message?: string })?.message ?? "Failed to load workspaces from disk."
+      : null;
+
   const isLoading = loadSkillsResult.waiting;
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
   const [newSkillOpen, setNewSkillOpen] = useState(false);
@@ -84,6 +98,7 @@ function AppContent(): React.JSX.Element {
 
   const refreshSkills = useCallback(async (): Promise<void> => {
     try {
+      setDismissedSkillsError(false);
       const list = await runFetchSkills(undefined);
       setSkills(list);
       // Keep the selection alive across re-scans; default to the first skill
@@ -99,6 +114,7 @@ function AppContent(): React.JSX.Element {
 
   const refreshWorkspaces = useCallback(async (): Promise<void> => {
     try {
+      setDismissedWorkspacesError(false);
       const list = await runFetchWorkspaces(undefined);
       setWorkspaces(list);
       setCurrentPath((prev) =>
@@ -221,7 +237,9 @@ function AppContent(): React.JSX.Element {
           <Sidebar
             currentPath={currentPath}
             currentTab={nav}
+            error={workspacesError}
             onAddWorkspace={(path) => void handleAddWorkspace(path)}
+            onDismissError={() => setDismissedWorkspacesError(true)}
             onSelectWorkspace={(id) => void handleSelectWorkspace(id)}
             onTab={setNav}
             skillsCount={skills.length}
@@ -242,9 +260,11 @@ function AppContent(): React.JSX.Element {
           <>
             <View className="bg-surface" style={{ width: listWidth, overflow: "hidden" }}>
               <SkillList
+                error={skillsError}
                 isCheckingUpdates={isCheckingUpdates}
                 isLoading={isLoading}
                 onCheckUpdates={() => void handleCheckUpdates()}
+                onDismissError={() => setDismissedSkillsError(true)}
                 onNewSkill={() => {
                   setInstallError(null);
                   setNewSkillOpen(true);

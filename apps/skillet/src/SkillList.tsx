@@ -270,6 +270,8 @@ export function SkillList({
   onRescan,
   isLoading = false,
   isCheckingUpdates = false,
+  error = null,
+  onDismissError,
 }: {
   skills: SkillListItem[];
   selectedId?: string;
@@ -279,6 +281,8 @@ export function SkillList({
   onRescan?: () => void;
   isLoading?: boolean;
   isCheckingUpdates?: boolean;
+  error?: string | null;
+  onDismissError?: () => void;
 }): React.JSX.Element {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -363,6 +367,23 @@ export function SkillList({
           primaryColor={c.primary}
           query={query}
         />
+        {error ? (
+          <View className="flex-row items-center justify-between rounded-lg border border-danger/30 bg-danger/10 px-2.5 py-1.5">
+            <Text className="min-w-0 flex-1 text-[11px] font-medium text-danger" numberOfLines={2}>
+              {error}
+            </Text>
+            {onDismissError ? (
+              <Pressable
+                accessibilityLabel="Dismiss error"
+                accessibilityRole="button"
+                className="pl-2"
+                onPress={onDismissError}
+              >
+                <SFSymbol color={c.danger} name="xmark" size={12} />
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
         <Text className="px-1 pt-0.5 text-[11px] text-muted">
           {skills.length} skills{filtered.length !== skills.length ? ` · ${filtered.length} shown` : ""}
         </Text>
