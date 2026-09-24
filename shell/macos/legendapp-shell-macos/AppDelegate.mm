@@ -284,11 +284,19 @@ static NSView *LegendCreateMusicGlassHostView(NSRect frame, NSView **contentView
 
   NSView *hostView = content;
   if (@available(macOS 26.0, *)) {
-    NSGlassEffectView *glassView = [[NSGlassEffectView alloc] initWithFrame:bounds];
-    glassView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-    glassView.contentView = content;
-    LegendMakeViewTransparent(glassView);
-    hostView = glassView;
+    // NSGlassEffectView only exists in the macOS 26 SDK (Xcode 26). Resolve it
+    // at runtime via NSClassFromString so this file still compiles with older
+    // SDKs (e.g. Xcode 16 on CI) — a static reference fails with "use of
+    // undeclared identifier" even when guarded by @available.
+    Class glassClass = NSClassFromString(@"NSGlassEffectView");
+    NSView *glassView = glassClass ? [[glassClass alloc] initWithFrame:bounds] : nil;
+    if (glassView) {
+      glassView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+      // NSGlassEffectView.contentView — set via KVC to avoid a static reference.
+      [glassView setValue:content forKey:@"contentView"];
+      LegendMakeViewTransparent(glassView);
+      hostView = glassView;
+    }
   }
 
   *contentView = content;
