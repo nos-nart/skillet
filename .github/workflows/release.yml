@@ -43,7 +43,12 @@ jobs:
         run: bun install
 
       - name: Restore enriched-markdown native assets
-        run: node node_modules/react-native-enriched-markdown/postinstall.mjs
+        # postinstall downloads the vendored RaTeX XCFramework + grammars.
+        # Resolve from apps/skillet: bun's hoist layout differs between
+        # machines (root vs workspace node_modules), so never hardcode it.
+        run: |
+          SCRIPT="$(node -e "console.log(require.resolve('react-native-enriched-markdown/postinstall.mjs', { paths: ['apps/skillet'] }))")"
+          node "$SCRIPT"
 
       - name: Run verification (typecheck & tests)
         run: |
