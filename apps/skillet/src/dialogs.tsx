@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Pressable, TextInput, View } from "react-native";
+import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Text } from "./AppText";
 import { parseGitHubRepo } from "./services/github";
+import { useThemePalette } from "./services/theme";
 
 const CONTINUOUS_CURVE = { borderCurve: "continuous" } as const;
 const INPUT_STYLE = { borderCurve: "continuous", fontFamily: "Space Grotesk" } as const;
@@ -48,6 +49,7 @@ function DialogShell({
   // 0 = hidden, 1 = shown. Enter plays on mount; requesting close plays the
   // mirrored exit first and only then unmounts (symmetric paths, apple §7).
   const reduceMotion = useReduceMotion();
+  const palette = useThemePalette();
   const progress = useRef(new Animated.Value(0)).current;
   const closing = useRef(false);
 
@@ -79,7 +81,14 @@ function DialogShell({
 
   return (
     <View className="absolute inset-0 z-50 items-center justify-center px-8">
-      <Animated.View className="absolute inset-0 bg-black" style={{ opacity: scrimOpacity }} />
+      {/* NOTE: literal styles, not className — uniwind only interprets
+          className on its wrapped components, and stock Animated.View is not
+          one of them (className would be silently dropped, breaking the
+          overlay). Token values come from useThemePalette so both themes
+          stay in sync. */}
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: "#000000", opacity: scrimOpacity }]}
+      />
       <Pressable
         accessibilityLabel="Close dialog"
         accessibilityRole="button"
@@ -92,8 +101,24 @@ function DialogShell({
           already blocks backdrop presses: hit-testing finds this subtree first
           and there is no bubbling to the backdrop sibling in native RN. */}
       <Animated.View
-        className="w-full max-w-[420px] rounded-lg border border-border bg-background p-6 shadow-2xl"
-        style={[{ opacity: progress, transform: [{ scale: cardScale }] }, CONTINUOUS_CURVE]}
+        style={[
+          {
+            opacity: progress,
+            transform: [{ scale: cardScale }],
+            width: "100%",
+            maxWidth: 420,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: palette.border,
+            backgroundColor: palette.background,
+            padding: 24,
+            shadowColor: "#000000",
+            shadowOpacity: 0.25,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 8 },
+          },
+          CONTINUOUS_CURVE,
+        ]}
       >
         {children(requestClose)}
       </Animated.View>

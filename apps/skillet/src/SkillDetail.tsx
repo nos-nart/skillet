@@ -30,7 +30,7 @@ function FadeOnMount({ children }: { children: React.ReactNode }): React.JSX.Ele
       useNativeDriver: false,
     }).start();
   }, [opacity]);
-  return <Animated.View className="flex-1" style={{ opacity }}>{children}</Animated.View>;
+  return <Animated.View style={{ flex: 1, opacity }}>{children}</Animated.View>;
 }
 
 const ProseSpan = React.memo(function ProseSpan({
