@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Animated, Easing, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { openFileDialog } from "@legend-apps/file-dialog";
+import { SFSymbol } from "@legend-apps/sf-symbol";
 import { Text } from "./AppText";
 import { parseGitHubRepo } from "./services/github";
 import { WORKSPACE_SKILLS_REL } from "./services/skills";
@@ -165,6 +166,81 @@ function formatInstalls(installs: number): string {
   return `${installs} install${installs === 1 ? "" : "s"}`;
 }
 
+// Inline dropdown mirroring the Sidebar workspace picker: a toggle row with
+// the current scope plus collapsible options (Global, workspaces, Browse).
+function ScopeDropdown({
+  scope,
+  scopeOpen,
+  workspaces,
+  onToggle,
+  onSelect,
+  onBrowse,
+}: {
+  scope: InstallScope;
+  scopeOpen: boolean;
+  workspaces: Workspace[];
+  onToggle: () => void;
+  onSelect: (scope: InstallScope) => void;
+  onBrowse: () => void;
+}): React.JSX.Element {
+  const c = useThemePalette();
+  return (
+    <View className="rounded-lg border border-border bg-surface-muted" style={CONTINUOUS_CURVE}>
+      <Pressable
+        accessibilityRole="button"
+        className="flex-row items-center gap-2 px-3 py-2 active:opacity-70"
+        onPress={onToggle}
+      >
+        <SFSymbol color={c.muted} name="arrow.triangle.branch" size={14} />
+        <Text className="min-w-0 flex-1 text-[12px] font-medium text-foreground" numberOfLines={1}>
+          {scopeLabel(scope)}
+        </Text>
+        <SFSymbol color={c.muted} name="chevron.down" size={12} />
+      </Pressable>
+      {scopeOpen ? (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            className="flex-row items-center gap-2 border-t border-border px-3 py-2 active:opacity-70"
+            onPress={() => onSelect({ kind: "global" })}
+          >
+            <Text className="min-w-0 flex-1 text-[12px] text-foreground" numberOfLines={1}>
+              Global
+            </Text>
+            {scope.kind === "global" ? <SFSymbol color={c.primary} name="checkmark" size={13} /> : null}
+          </Pressable>
+          {workspaces.map((ws) => {
+            const selected = scope.kind === "workspace" && scope.path === ws.path;
+            return (
+              <Pressable
+                key={ws.id}
+                accessibilityRole="button"
+                className="flex-row items-center gap-2 border-t border-border px-3 py-2 active:opacity-70"
+                onPress={() => onSelect({ kind: "workspace", path: ws.path, name: ws.name })}
+              >
+                <Text className="min-w-0 flex-1 text-[12px] text-foreground" numberOfLines={1}>
+                  {ws.name}
+                </Text>
+                {selected ? <SFSymbol color={c.primary} name="checkmark" size={13} /> : null}
+              </Pressable>
+            );
+          })}
+          <Pressable
+            accessibilityRole="button"
+            className="flex-row items-center gap-2 border-t border-border px-3 py-2 active:opacity-70"
+            onPress={onBrowse}
+          >
+            <Text className="min-w-0 flex-1 text-[12px] text-foreground" numberOfLines={1}>
+              Browse folder…
+            </Text>
+            {scope.kind === "folder" ? <SFSymbol color={c.primary} name="checkmark" size={13} /> : null}
+          </Pressable>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 export function InstallSkillDialog({
   initialSource = "",
   installing = false,
@@ -193,7 +269,20 @@ export function InstallSkillDialog({
   const [scope, setScope] = useState<InstallScope>({ kind: "global" });
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [scopeOpen, setScopeOpen] = useState(false);
   const error = externalError ?? localError;
+
+  // A selected workspace can disappear (removed elsewhere) while the dialog
+  // is open; fall back to Global rather than installing into a stale path
+  // (ensureDir would silently recreate it).
+  useEffect(() => {
+    setScope((prev) => {
+      if (prev.kind === "workspace" && !workspaces.some((ws) => ws.path === prev.path)) {
+        return { kind: "global" };
+      }
+      return prev;
+    });
+  }, [workspaces]);
 
   useEffect(() => {
     const q = query.trim();
@@ -342,57 +431,24 @@ export function InstallSkillDialog({
         </ScrollView>
       ) : null}
       <Text className="pb-1 pt-3 text-[11px] font-semibold uppercase text-muted">Install to</Text>
-      <View className="flex-row flex-wrap gap-1.5">
-        <Pressable
-          accessibilityRole="button"
-          className={scope.kind === "global"
-            ? "rounded-lg bg-primary px-2.5 py-1"
-            : "rounded-lg border border-border bg-surface-muted px-2.5 py-1"}
-          style={CONTINUOUS_CURVE}
-          onPress={() => setScope({ kind: "global" })}
-        >
-          <Text className={scope.kind === "global"
-            ? "text-[12px] font-semibold text-white"
-            : "text-[12px] font-medium text-foreground"}>
-            Global
-          </Text>
-        </Pressable>
-        {workspaces.map((ws) => {
-          const selected = scope.kind === "workspace" && scope.path === ws.path;
-          return (
-            <Pressable
-              key={ws.id}
-              accessibilityRole="button"
-              className={selected
-                ? "rounded-lg bg-primary px-2.5 py-1"
-                : "rounded-lg border border-border bg-surface-muted px-2.5 py-1"}
-              style={CONTINUOUS_CURVE}
-              onPress={() => setScope({ kind: "workspace", path: ws.path, name: ws.name })}
-            >
-              <Text className={selected
-                ? "text-[12px] font-semibold text-white"
-                : "text-[12px] font-medium text-foreground"}
-                numberOfLines={1}>
-                {ws.name}
-              </Text>
-            </Pressable>
-          );
-        })}
-        <Pressable
-          accessibilityRole="button"
-          className={scope.kind === "folder"
-            ? "rounded-lg bg-primary px-2.5 py-1"
-            : "rounded-lg border border-border bg-surface-muted px-2.5 py-1"}
-          style={CONTINUOUS_CURVE}
-          onPress={handleBrowse}
-        >
-          <Text className={scope.kind === "folder"
-            ? "text-[12px] font-semibold text-white"
-            : "text-[12px] font-medium text-foreground"}>
-            Browse…
-          </Text>
-        </Pressable>
-      </View>
+      <ScopeDropdown
+        scope={scope}
+        scopeOpen={scopeOpen}
+        // The workspace list always contains the synthetic "Global Scope"
+        // pseudo-workspace (id "global", path ~/.skills) — the hardcoded
+        // Global option already covers it, and treating it as a repo root
+        // would nest installs under ~/.skills/.skills/.
+        workspaces={workspaces.filter((ws) => ws.id !== "global")}
+        onToggle={() => setScopeOpen((v) => !v)}
+        onSelect={(next) => {
+          setScope(next);
+          setScopeOpen(false);
+        }}
+        onBrowse={() => {
+          setScopeOpen(false);
+          handleBrowse();
+        }}
+      />
       {scope.kind === "folder" ? (
         <Text className="pt-1 text-[11px] text-muted" numberOfLines={1}>
           {scope.path}
