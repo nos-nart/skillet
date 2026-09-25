@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Linking, Pressable, ScrollView, Switch, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, Linking, Pressable, ScrollView, Switch, View } from "react-native";
 import { Text } from "./AppText";
 import { ErrorBanner } from "./ErrorBanner";
 import { SFSymbol } from "@legend-apps/sf-symbol";
@@ -15,6 +15,23 @@ import type { Workspace } from "./services/workspaces";
 
 const CONTINUOUS_STYLE = { borderCurve: "continuous" } as const;
 const FENCE_BLOCK_STYLE = { borderRadius: 8 } as const;
+const DETAIL_FADE_EASE = Easing.bezier(0.23, 1, 0.32, 1);
+
+// Remount-driven fade (App keys SkillDetail by skill id): replaces the
+// jump-cut between skills with a short cross-fade. Opacity-only, so it stays
+// correct under reduced motion (apple §14).
+function FadeOnMount({ children }: { children: React.ReactNode }): React.JSX.Element {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 160,
+      easing: DETAIL_FADE_EASE,
+      useNativeDriver: false,
+    }).start();
+  }, [opacity]);
+  return <Animated.View className="flex-1" style={{ opacity }}>{children}</Animated.View>;
+}
 
 const ProseSpan = React.memo(function ProseSpan({
   markdown,
@@ -85,7 +102,7 @@ function SkillDetailHeader({
       <View className="flex-row items-start justify-between gap-3">
         <View className="min-w-0 flex-1">
           <View className="flex-row flex-wrap items-center gap-2">
-            <Text className="text-[22px] font-bold text-foreground">{skill.name}</Text>
+            <Text className="text-[22px] font-bold tracking-tight text-foreground">{skill.name}</Text>
             <View className="rounded-md border border-border bg-surface-muted px-2 py-0.5" style={CONTINUOUS_STYLE}>
               <Text className="text-[11px] font-semibold capitalize text-muted">
                 {skill.scope === "global" ? "Global" : "Project"}
@@ -500,6 +517,7 @@ export function SkillDetail({
 
   return (
     <View className="flex-1 bg-background" key={skill.id}>
+      <FadeOnMount>
       <SkillDetailHeader
         action={action}
         c={c}
@@ -563,6 +581,7 @@ export function SkillDetail({
           uninstalling={action === "uninstalling"}
         />
       ) : null}
+      </FadeOnMount>
     </View>
   );
 }

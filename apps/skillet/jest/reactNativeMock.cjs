@@ -31,4 +31,60 @@ module.exports = {
   Image: createComponent("Image"),
   Alert: { alert: () => {} },
   Linking: { openURL: async () => true, canOpenURL: async () => true },
+  AccessibilityInfo: {
+    isReduceMotionEnabled: async () => false,
+    isScreenReaderEnabled: async () => false,
+  },
+  Easing: {
+    linear: (t) => t,
+    ease: (t) => t,
+    quad: (t) => t,
+    cubic: (t) => t,
+    poly: () => (t) => t,
+    sin: (t) => t,
+    circle: (t) => t,
+    exp: (t) => t,
+    elastic: () => (t) => t,
+    back: () => (t) => t,
+    bounce: (t) => t,
+    bezier: () => (t) => t,
+    in: (fn) => fn ?? ((t) => t),
+    out: (fn) => fn ?? ((t) => t),
+    inOut: (fn) => fn ?? ((t) => t),
+    step0: () => 0,
+    step1: () => 1,
+  },
+  Animated: {
+    Value: class {
+      constructor(value) {
+        this.__value = value;
+      }
+      setValue(value) {
+        this.__value = value;
+      }
+      interpolate(config) {
+        return { __interpolation: config };
+      }
+    },
+    View: createComponent("AnimatedView"),
+    Text: createComponent("AnimatedText"),
+    timing: (value, config) => ({
+      start: (cb) => {
+        value.setValue(config.toValue);
+        cb?.({ finished: true });
+      },
+    }),
+    spring: (value, config) => ({
+      start: (cb) => {
+        value.setValue(config.toValue);
+        cb?.({ finished: true });
+      },
+    }),
+    parallel: (animations) => ({
+      start: (cb) => {
+        for (const a of animations) a.start();
+        cb?.({ finished: true });
+      },
+    }),
+  },
 };
