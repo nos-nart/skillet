@@ -28,13 +28,17 @@ function DialogShell({
         className="absolute inset-0"
         onPress={onClose}
       />
-      <Pressable
-        className="z-10 w-full max-w-[420px] rounded-lg border border-border bg-background p-6 shadow-2xl"
+      {/* NOTE: plain View, not a nested Pressable. Pressables nested inside a
+          Pressable never receive taps on react-native-macos (the parent steals
+          the responder/pointer), which deadened every dialog button. A View
+          already blocks backdrop presses: hit-testing finds this subtree first
+          and there is no bubbling to the backdrop sibling in native RN. */}
+      <View
+        className="w-full max-w-[420px] rounded-lg border border-border bg-background p-6 shadow-2xl"
         style={CONTINUOUS_CURVE}
-        onPress={(e) => e.stopPropagation()}
       >
         {children}
-      </Pressable>
+      </View>
     </View>
   );
 }

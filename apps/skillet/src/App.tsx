@@ -332,7 +332,6 @@ function AppContent(): React.JSX.Element {
             <View className="min-w-0 flex-1 bg-background">
               <SkillDetail
                 key={selectedSkill?.id ?? "none"}
-                onInstallSkill={handleInstallSkill}
                 onToggleInRepo={handleToggle}
                 onUninstallSkill={handleUninstallSkill}
                 onUpdateSkill={handleUpdateSkill}
