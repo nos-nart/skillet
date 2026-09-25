@@ -132,7 +132,7 @@ export const DEFAULT_SKILL_DIRS: readonly string[] = AGENT_SKILL_DIRS.map(
 
 // Workspace-local skills always live under the universal `.skills` dir
 // (verbatim `getAgentRelPath` from `src/backend/agents.ts`).
-const WORKSPACE_SKILLS_REL = ".skills";
+export const WORKSPACE_SKILLS_REL = ".skills";
 
 // Small built-in frontmatter field parser replacing `npm:yaml` (no new deps).
 // Handles `key: value` scalars (quotes stripped) plus `tools`/`agents` as

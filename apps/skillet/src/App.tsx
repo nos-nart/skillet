@@ -189,8 +189,8 @@ function AppContent(): React.JSX.Element {
   // Installs whatever source the InstallSkillDialog collected (not the
   // selected skill — see SkillDetail): refresh re-resolves the selection.
   const handleInstallSkill = useCallback(
-    async (source: string, skillName?: string): Promise<void> => {
-      const res = await downloadSkill({ source, skillName });
+    async (source: string, skillName?: string, targetDir?: string): Promise<void> => {
+      const res = await downloadSkill({ source, skillName, targetDir });
       if (!res.ok) throw new Error(res.error);
       refreshSkills();
     },
@@ -357,6 +357,8 @@ function AppContent(): React.JSX.Element {
       {newSkillOpen ? (
         <InstallSkillDialog
           error={installError}
+          installedSlugs={skills.map((s) => s.slug)}
+          workspaces={workspaces}
           onClose={() => {
             setNewSkillOpen(false);
             setInstallError(null);

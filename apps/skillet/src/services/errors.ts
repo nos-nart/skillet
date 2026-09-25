@@ -32,6 +32,13 @@ export class InvalidSlugError extends Schema.TaggedError<InvalidSlugError>()(
   },
 ) {}
 
+export class SkillsShNetworkError extends Schema.TaggedError<SkillsShNetworkError>()(
+  "SkillsShNetworkError",
+  {
+    message: Schema.String,
+  },
+) {}
+
 export class FsError extends Schema.TaggedError<FsError>()(
   "FsError",
   {
