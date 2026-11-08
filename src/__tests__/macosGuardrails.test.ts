@@ -68,6 +68,17 @@ export function validateRepoBuildAndWorkflowContracts(
     );
   }
 
+  if (!/runs-on:\s*macos-26\b/.test(releaseWorkflowText)) {
+    errors.push(
+      `.github/workflows/release.yml must use "runs-on: macos-26" so Xcode 26+ and the macOS 26 SDK (NSGlassEffectView) are active by default.`,
+    );
+  }
+  if (/runs-on:\s*macos-1[0-5]\b/.test(releaseWorkflowText)) {
+    errors.push(
+      `.github/workflows/release.yml must not use legacy macos-14 or macos-15 runners (default Xcode 16 lacks macOS 26 AppKit symbols required by @legendapp/spark).`,
+    );
+  }
+
   const legacyPathMatch = /\b(scripts\/[\w./-]+|apps\/skillet\b|shell\/[\w./-]+|packages\/[\w./-]+)/.exec(
     releaseWorkflowText,
   );
@@ -142,6 +153,8 @@ test("guardrail catches real past CI mistakes from commits 7032dcd and 5fe905b",
   });
   const desktopConfig = JSON.stringify({ version: "2.0.0" });
   const brokenWorkflow7032dcd = `
+    runs-on: macos-15
+    steps:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -163,6 +176,8 @@ test("guardrail catches real past CI mistakes from commits 7032dcd and 5fe905b",
       expect.stringContaining('package.json must set engines.node to a minimum semver range ">=26.12.1"'),
       expect.stringContaining('.github/workflows/release.yml must use "node-version-file: package.json"'),
       expect.stringContaining('.github/workflows/release.yml must not hardcode "node-version"'),
+      expect.stringContaining('.github/workflows/release.yml must use "runs-on: macos-26"'),
+      expect.stringContaining('.github/workflows/release.yml must not use legacy macos-14 or macos-15 runners'),
       expect.stringContaining('references removed legacy monorepo path'),
     ]),
   );
