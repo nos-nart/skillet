@@ -17,9 +17,11 @@ jobs:
       matrix:
         include:
           - arch: arm
+            spark_arch: arm64
             target: Apple Silicon (arm64)
             dmg: Skillet-macOS-arm64.dmg
           - arch: x86
+            spark_arch: x64
             target: Intel (x64)
             dmg: Skillet-macOS-x64.dmg
 
@@ -37,27 +39,32 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install dependencies
         run: bun install
 
       - name: Restore enriched-markdown native assets
-        # postinstall downloads the vendored RaTeX XCFramework + grammars.
-        # Resolve from apps/skillet: bun's hoist layout differs between
-        # machines (root vs workspace node_modules), so never hardcode it.
         run: |
-          SCRIPT="$(node -e "console.log(require.resolve('react-native-enriched-markdown/postinstall.mjs', { paths: ['apps/skillet'] }))")"
-          node "$SCRIPT"
+          SCRIPT="$(node -e "console.log(require.resolve('react-native-enriched-markdown/postinstall.mjs', { paths: ['.'] }))")"
+          INIT_CWD="$PWD" node "$SCRIPT"
 
-      - name: Run verification (typecheck & tests)
+      - name: Run verification (typecheck, tests, and spark doctor)
         run: |
           bun run typecheck
           bun run test
+          bun run doctor
 
-      - name: Package macOS App (${{ matrix.arch }})
+      - name: Build and Stage macOS App (${{ matrix.arch }})
+        env:
+          SPARK_MACOS_ARCH: ${{ matrix.spark_arch }}
         run: |
-          bun scripts/package-macos-app.ts skillet ${{ matrix.arch }} --skip-sign --skip-notarize --skip-appcast
+          bun run build
+          mkdir -p dist/skillet/macos
+          rm -rf dist/skillet/macos/Skillet.app
+          cp -R ".spark/products/macos-${{ matrix.spark_arch }}/release/Skillet.app" "dist/skillet/macos/Skillet.app"
+          VERSION="$(node -p "require('./desktop.config.json').version")"
+          ditto -c -k --sequesterRsrc --keepParent "dist/skillet/macos/Skillet.app" "dist/skillet/macos/Skillet-${VERSION}-${{ matrix.arch }}.zip"
 
       - name: Create DMG (${{ matrix.dmg }})
         run: |
