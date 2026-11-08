@@ -1,9 +1,12 @@
 {
   "name": "skillet",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "private": true,
   "license": "MIT",
   "main": "index.ts",
+  "engines": {
+    "node": ">=26.12.1"
+  },
   "scripts": {
     "start": "spark dev",
     "macos": "spark dev",

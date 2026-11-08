@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@legendapp/spark/desktop.config.schema.json",
   "name": "Skillet",
   "projectId": "skillet-macos-desktop",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "platforms": ["macos"],
   "macos": {
     "bundleIdentifier": "so.skillet.macos"
