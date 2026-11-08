@@ -1,0 +1,26 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "index.ts",
+    "App.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "jest/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "apps",
+    "shell",
+    "packages",
+    "scripts"
+  ]
+}

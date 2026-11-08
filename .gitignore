@@ -1,5 +1,13 @@
 node_modules/
+.threaded-runtime/
+.spark/*
+!.spark/version
+macos/
+windows/
 dist/
+app.json
+react-native.config.js
+.expo/
 .vite/
 docs/
 .repos/
@@ -9,5 +17,6 @@ docs/
 .scratch/
 .DS_Store
 
-# legend shell generated config (metro/native codegen output)
-shell/.legend/
+# Spark verified release package inputs
+!/spark-packages/
+!/spark-packages/**
